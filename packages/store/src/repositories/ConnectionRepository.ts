@@ -609,4 +609,86 @@ export class ConnectionRepository extends BaseRepository<Connection> {
       )
     }
   }
+
+  /**
+   * 获取连接统计信息
+   */
+  async getConnectionStatistics(projectId?: string): Promise<{
+    totalConnections: number
+    connectionsByType: Record<string, number>
+    avgWeight: number
+    mostConnectedNodes: Array<{ nodeId: string; connectionCount: number }>
+  }> {
+    try {
+      let whereConditions: string[] = []
+      let params: any[] = []
+
+      if (projectId) {
+        whereConditions.push('project_id = $' + (params.length + 1))
+        params.push(projectId)
+      }
+
+      const whereClause = whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : ''
+
+      // 总连接数
+      const totalQuery = `SELECT COUNT(*) as total FROM ${this.tableName} ${whereClause}`
+      const totalResult = await this.pool.query(totalQuery, params)
+      const totalConnections = parseInt(totalResult.rows[0].total)
+
+      // 按类型统计
+      const typeQuery = `
+        SELECT type, COUNT(*) as count
+        FROM ${this.tableName} ${whereClause}
+        GROUP BY type
+      `
+      const typeResult = await this.pool.query(typeQuery, params)
+      const connectionsByType: Record<string, number> = {}
+      typeResult.rows.forEach(row => {
+        connectionsByType[row.type] = parseInt(row.count)
+      })
+
+      // 平均权重
+      const avgWeightQuery = `
+        SELECT COALESCE(AVG(weight), 0) as avg_weight
+        FROM ${this.tableName} ${whereClause}
+      `
+      const avgWeightResult = await this.pool.query(avgWeightQuery, params)
+      const avgWeight = parseFloat(avgWeightResult.rows[0].avg_weight) || 0
+
+      // 最连接的节点
+      const mostConnectedQuery = `
+        SELECT
+          node_id,
+          COUNT(*) as connection_count
+        FROM (
+          SELECT source_node_id as node_id FROM ${this.tableName} ${whereClause}
+          UNION ALL
+          SELECT target_node_id as node_id FROM ${this.tableName} ${whereClause}
+        ) AS all_nodes
+        GROUP BY node_id
+        ORDER BY connection_count DESC
+        LIMIT 10
+      `
+      const mostConnectedResult = await this.pool.query(mostConnectedQuery, params)
+      const mostConnectedNodes = mostConnectedResult.rows.map(row => ({
+        nodeId: row.node_id,
+        connectionCount: parseInt(row.connection_count)
+      }))
+
+      return {
+        totalConnections,
+        connectionsByType,
+        avgWeight,
+        mostConnectedNodes
+      }
+    } catch (error) {
+      throw new DatabaseError(
+        `获取连接统计失败: ${error instanceof Error ? error.message : error}`,
+        'GET_CONNECTION_STATISTICS_ERROR',
+        { projectId }
+      )
+    }
+  }
 }

@@ -43,7 +43,7 @@ export class NodeController extends BaseController {
     } else if (userId) {
       nodes = await this.nodeRepo.findByUser(userId, { limit, offset })
     } else {
-      nodes = await this.nodeRepo.findMany(filter, { limit, offset })
+      nodes = await this.nodeRepo.findMany({ ...filter, limit, offset })
     }
 
     const total = nodes.length

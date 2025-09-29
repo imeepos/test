@@ -179,12 +179,12 @@ export class SystemController extends BaseController {
       postgres: {
         status: healthCheck.postgres.status,
         latency: healthCheck.postgres.latency,
-        version: healthCheck.postgres.version
+        error: healthCheck.postgres.error
       },
       redis: {
         status: healthCheck.redis.status,
         latency: healthCheck.redis.latency,
-        version: healthCheck.redis.version
+        error: healthCheck.redis.error
       }
     }
 

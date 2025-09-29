@@ -31,7 +31,7 @@ export class ConnectionController extends BaseController {
     } else if (targetNodeId) {
       connections = await this.connectionRepo.findByTargetNode(targetNodeId)
     } else {
-      connections = await this.connectionRepo.findMany({}, { limit, offset })
+      connections = await this.connectionRepo.findMany({ limit, offset })
     }
 
     const total = connections.length
