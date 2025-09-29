@@ -147,7 +147,7 @@ export const validatePassword = (password: string): {
 }
 
 // 常量 - 从外部包导入
-export {
+import {
   NODE_STATUS,
   PROJECT_STATUS,
   CONNECTION_TYPE,
@@ -157,7 +157,16 @@ export {
   IMPORTANCE_LEVEL
 } from '@sker/models'
 
-// 默认导出
+export {
+  NODE_STATUS,
+  PROJECT_STATUS,
+  CONNECTION_TYPE,
+  AI_TASK_STATUS,
+  AI_TASK_TYPE,
+  SEMANTIC_TYPE,
+  IMPORTANCE_LEVEL
+}
+
 export default {
   createStoreService,
   NODE_STATUS,
