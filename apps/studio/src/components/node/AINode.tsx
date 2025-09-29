@@ -163,10 +163,41 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
             {getStatusIcon()}
           </div>
 
-          {/* 版本和时间 */}
-          <div className="flex items-center gap-2 text-xs text-sidebar-text-muted">
+          {/* 版本信息 */}
+          <div className="flex items-center gap-1">
+            {data.version > 1 && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                         bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                title={`版本 ${data.version} | 编辑 ${data.metadata?.editCount || 0} 次`}
+              >
+                v{data.version}
+              </span>
+            )}
+            {data.metadata?.autoSaved && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                         bg-green-500/20 text-green-400 border border-green-500/30"
+                title="自动保存"
+              >
+                AS
+              </span>
+            )}
+          </div>
+
+          {/* 版本和时间信息 */}
+          <div
+            className="flex items-center gap-2 text-xs text-sidebar-text-muted cursor-help"
+            title={`版本 ${data.version} | 编辑 ${data.metadata?.editCount || 0} 次 | 创建: ${new Date(data.createdAt).toLocaleString()} | 更新: ${new Date(data.updatedAt).toLocaleString()}`}
+          >
             <Clock className="h-3 w-3" />
             <span>v{data.version}</span>
+            {data.metadata?.editCount && data.metadata.editCount > 0 && (
+              <span className="text-blue-400">·{data.metadata.editCount}</span>
+            )}
+            {data.metadata?.autoSaved && (
+              <span className="text-green-400" title="自动保存">🟢</span>
+            )}
           </div>
         </div>
 

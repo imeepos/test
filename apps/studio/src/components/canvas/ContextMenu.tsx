@@ -16,6 +16,10 @@ import {
   Tag,
   Eye,
   MoreHorizontal,
+  Merge,
+  FileText,
+  GitMerge,
+  BarChart3,
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
 import type { Position, AINode } from '@/types'
@@ -41,6 +45,8 @@ interface ContextMenuProps {
   onDeleteNode?: (nodeId: string) => void
   onCopyNode?: (nodeId: string) => void
   onOptimizeNode?: (nodeId: string) => void
+  onFusionCreate?: (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => void
+  selectedNodeIds?: string[]
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({
@@ -54,10 +60,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onDeleteNode,
   onCopyNode,
   onOptimizeNode,
+  onFusionCreate,
+  selectedNodeIds = [],
 }) => {
   const { addToast } = useUIStore()
-  const { getNode, duplicateNode, deleteNode } = useNodeStore()
-  const { selectedNodeIds, clearSelection } = useCanvasStore()
+  const { getNode, getNodes, duplicateNode, deleteNode } = useNodeStore()
+  const { clearSelection, selectAll } = useCanvasStore()
   
   const [menuItems, setMenuItems] = useState<ContextMenuItem[]>([])
 
@@ -65,7 +73,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const generateMenuItems = useCallback((): ContextMenuItem[] => {
     switch (targetType) {
       case 'canvas':
-        return [
+        const items = [
           {
             id: 'create-node',
             label: '创建节点',
@@ -81,13 +89,56 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: '粘贴',
             icon: Clipboard,
             shortcut: 'Ctrl+V',
-            disabled: true, // TODO: 实现剪贴板功能
-            onClick: () => {
-              addToast({
-                type: 'info',
-                title: '功能开发中',
-                message: '粘贴功能即将推出'
-              })
+            onClick: async () => {
+              try {
+                const clipboardText = await navigator.clipboard.readText()
+                if (clipboardText) {
+                  // 尝试解析为节点数据
+                  try {
+                    const clipboardData = JSON.parse(clipboardText)
+                    if (clipboardData.type === 'sker-node' && clipboardData.node) {
+                      // 从剪贴板创建节点
+                      onCreateNode?.({
+                        x: position.x + 20,
+                        y: position.y + 20
+                      })
+                      addToast({
+                        type: 'success',
+                        title: '粘贴成功',
+                        message: `已粘贴节点: ${clipboardData.node.title || '未命名'}`
+                      })
+                    } else {
+                      // 作为普通文本创建节点
+                      onCreateNode?.(position)
+                      addToast({
+                        type: 'success',
+                        title: '粘贴文本',
+                        message: '已将文本内容创建为新节点'
+                      })
+                    }
+                  } catch {
+                    // 作为普通文本创建节点
+                    onCreateNode?.(position)
+                    addToast({
+                      type: 'success',
+                      title: '粘贴文本',
+                      message: '已将文本内容创建为新节点'
+                    })
+                  }
+                } else {
+                  addToast({
+                    type: 'warning',
+                    title: '剪贴板为空',
+                    message: '没有可粘贴的内容'
+                  })
+                }
+              } catch (error) {
+                addToast({
+                  type: 'error',
+                  title: '粘贴失败',
+                  message: '无法访问剪贴板'
+                })
+              }
               onClose()
             }
           },
@@ -97,15 +148,70 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             icon: MousePointer,
             shortcut: 'Ctrl+A',
             onClick: () => {
-              // TODO: 实现全选功能
-              addToast({
-                type: 'info',
-                title: '功能开发中',
-                message: '全选功能即将推出'
-              })
+              try {
+                const getAllNodeIds = () => getNodes().map(node => node.id)
+                selectAll(getAllNodeIds)
+
+                const nodeCount = getNodes().length
+                addToast({
+                  type: 'success',
+                  title: '全选成功',
+                  message: `已选中 ${nodeCount} 个节点`
+                })
+              } catch (error) {
+                addToast({
+                  type: 'error',
+                  title: '全选失败',
+                  message: '操作失败，请重试'
+                })
+              }
               onClose()
             }
-          },
+          }
+        ]
+
+        // 如果有多个选中的节点，添加融合选项
+        if (selectedNodeIds.length >= 2) {
+          items.push(
+            {
+              id: 'divider-fusion',
+              label: '',
+              icon: MoreHorizontal,
+              divider: true,
+              onClick: () => {}
+            },
+            {
+              id: 'fusion-synthesis',
+              label: '智能融合',
+              icon: Merge,
+              shortcut: 'Ctrl+M',
+              onClick: () => {
+                onFusionCreate?.(selectedNodeIds, 'synthesis', position)
+                onClose()
+              }
+            },
+            {
+              id: 'fusion-summary',
+              label: '总结汇总',
+              icon: FileText,
+              onClick: () => {
+                onFusionCreate?.(selectedNodeIds, 'summary', position)
+                onClose()
+              }
+            },
+            {
+              id: 'fusion-comparison',
+              label: '对比分析',
+              icon: BarChart3,
+              onClick: () => {
+                onFusionCreate?.(selectedNodeIds, 'comparison', position)
+                onClose()
+              }
+            }
+          )
+        }
+
+        items.push(
           {
             id: 'divider-1',
             label: '',
@@ -126,7 +232,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               onClose()
             }
           }
-        ]
+        )
+
+        return items
 
       case 'node':
         if (!targetId) return []
@@ -167,8 +275,45 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: '复制节点',
             icon: Copy,
             shortcut: 'Ctrl+C',
-            onClick: () => {
-              onCopyNode?.(targetId)
+            onClick: async () => {
+              try {
+                const node = getNode(targetId)
+                if (node) {
+                  const clipboardData = {
+                    type: 'sker-node',
+                    timestamp: new Date().toISOString(),
+                    node: {
+                      id: node.id,
+                      content: node.content,
+                      title: node.title,
+                      importance: node.importance,
+                      confidence: node.confidence,
+                      tags: [...node.tags],
+                      metadata: node.metadata
+                    }
+                  }
+
+                  await navigator.clipboard.writeText(JSON.stringify(clipboardData, null, 2))
+
+                  addToast({
+                    type: 'success',
+                    title: '复制成功',
+                    message: `节点 "${node.title || '未命名'}" 已复制到剪贴板`
+                  })
+                } else {
+                  addToast({
+                    type: 'error',
+                    title: '复制失败',
+                    message: '找不到要复制的节点'
+                  })
+                }
+              } catch (error) {
+                addToast({
+                  type: 'error',
+                  title: '复制失败',
+                  message: '无法访问剪贴板'
+                })
+              }
               onClose()
             }
           },
@@ -205,11 +350,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: '版本历史',
             icon: History,
             onClick: () => {
-              addToast({
-                type: 'info',
-                title: '功能开发中',
-                message: '版本历史功能即将推出'
-              })
+              const node = getNode(targetId)
+              if (node) {
+                // 显示版本信息
+                const versionInfo = `
+节点版本: v${node.version}
+创建时间: ${new Date(node.createdAt).toLocaleString()}
+更新时间: ${new Date(node.updatedAt).toLocaleString()}
+编辑次数: ${node.metadata?.editCount || 0}
+${node.metadata?.lastModified ? `最后修改: ${new Date(node.metadata.lastModified).toLocaleString()}` : ''}
+${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
+                `.trim()
+
+                addToast({
+                  type: 'info',
+                  title: `节点版本信息 - ${node.title || '未命名'}`,
+                  message: versionInfo,
+                  duration: 8000
+                })
+              } else {
+                addToast({
+                  type: 'error',
+                  title: '查看失败',
+                  message: '找不到节点信息'
+                })
+              }
               onClose()
             }
           },

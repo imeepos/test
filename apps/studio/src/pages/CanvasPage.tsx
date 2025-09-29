@@ -9,8 +9,8 @@ import type { Position } from '@/types'
 
 const CanvasPage: React.FC = () => {
   const { sidebarCollapsed, sidebarWidth, addToast } = useUIStore()
-  const { addNode, getNode } = useNodeStore()
-  const { updateStats } = useCanvasStore()
+  const { addNode, getNode, getNodes } = useNodeStore()
+  const { updateStats, selectedNodeIds, selectAll } = useCanvasStore()
   const { startProcessing, connectionStatus } = useAIStore()
 
   // 处理画布双击创建节点
@@ -131,6 +131,93 @@ const CanvasPage: React.FC = () => {
     [getNode, addNode, addToast, startProcessing, connectionStatus]
   )
 
+  // 处理多输入融合
+  const handleFusionCreate = React.useCallback(
+    async (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => {
+      try {
+        if (selectedNodeIds.length < 2) {
+          addToast({
+            type: 'warning',
+            title: '融合失败',
+            message: '请选择至少2个节点进行融合',
+            duration: 3000,
+          })
+          return
+        }
+
+        // 获取选中的节点
+        const inputNodes = selectedNodeIds.map(id => getNode(id)).filter(Boolean)
+        if (inputNodes.length < 2) {
+          addToast({
+            type: 'error',
+            title: '融合失败',
+            message: '找不到足够的有效节点',
+            duration: 3000,
+          })
+          return
+        }
+
+        const typeMap = {
+          summary: '总结汇总',
+          synthesis: '智能融合',
+          comparison: '对比分析'
+        }
+
+        // 开始AI处理
+        startProcessing('fusion', {
+          inputs: inputNodes.map(node => node.content),
+          type: 'fusion',
+          context: `${typeMap[fusionType]} ${inputNodes.length} 个节点的内容`,
+        })
+
+        // 显示开始处理的提示
+        addToast({
+          type: 'info',
+          title: `开始${typeMap[fusionType]}`,
+          message: `正在处理 ${inputNodes.length} 个节点的内容，请稍候...`,
+          duration: 3000,
+        })
+
+        // 使用nodeService创建融合节点
+        const newNode = await nodeService.fusionGenerate(inputNodes, fusionType, position)
+
+        // 添加到store
+        const nodeId = addNode({
+          content: newNode.content,
+          title: newNode.title,
+          importance: newNode.importance,
+          confidence: newNode.confidence,
+          status: newNode.status,
+          tags: newNode.tags,
+          position: newNode.position,
+          connections: newNode.connections,
+          version: newNode.version,
+          metadata: newNode.metadata,
+        })
+
+        // 显示成功提示
+        const confidencePercent = Math.round((newNode.confidence || 0) * 100)
+        addToast({
+          type: 'success',
+          title: `${typeMap[fusionType]}完成`,
+          message: `已成功融合 ${inputNodes.length} 个节点（置信度: ${confidencePercent}%）`,
+          duration: 4000,
+        })
+
+        console.log('融合节点创建:', nodeId, '类型:', fusionType, '源节点:', selectedNodeIds)
+      } catch (error) {
+        console.error('融合创建失败:', error)
+        addToast({
+          type: 'error',
+          title: '融合失败',
+          message: error instanceof Error ? error.message : '请稍后重试',
+          duration: 3000,
+        })
+      }
+    },
+    [getNode, addNode, addToast, startProcessing]
+  )
+
   // 计算主内容区域的样式
   const mainContentStyle = React.useMemo(() => {
     const sidebarWidthValue = sidebarCollapsed ? 48 : sidebarWidth
@@ -142,7 +229,7 @@ const CanvasPage: React.FC = () => {
 
   // 键盘快捷键处理
   React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
       // 阻止一些默认行为
       if (event.target === document.body) {
         // 阻止空格键滚动页面
@@ -162,6 +249,235 @@ const CanvasPage: React.FC = () => {
               message: '自动保存已启用，无需手动保存',
               duration: 3000,
             })
+            break
+          case 'c':
+            // 复制选中的节点
+            if (selectedNodeIds.length > 0) {
+              event.preventDefault()
+              try {
+                const selectedNodes = selectedNodeIds.map(id => getNode(id)).filter(Boolean)
+                if (selectedNodes.length > 0) {
+                  const clipboardData = {
+                    type: 'sker-nodes',
+                    timestamp: new Date().toISOString(),
+                    nodes: selectedNodes.map(node => ({
+                      id: node.id,
+                      content: node.content,
+                      title: node.title,
+                      importance: node.importance,
+                      confidence: node.confidence,
+                      tags: [...node.tags],
+                      metadata: node.metadata
+                    }))
+                  }
+
+                  await navigator.clipboard.writeText(JSON.stringify(clipboardData, null, 2))
+
+                  addToast({
+                    type: 'success',
+                    title: '复制成功',
+                    message: `已复制 ${selectedNodes.length} 个节点`,
+                    duration: 3000,
+                  })
+                }
+              } catch (error) {
+                addToast({
+                  type: 'error',
+                  title: '复制失败',
+                  message: '无法访问剪贴板',
+                  duration: 3000,
+                })
+              }
+            }
+            break
+          case 'v':
+            // 粘贴节点
+            event.preventDefault()
+            try {
+              const clipboardText = await navigator.clipboard.readText()
+              if (clipboardText) {
+                try {
+                  const clipboardData = JSON.parse(clipboardText)
+                  if (clipboardData.type === 'sker-nodes' && clipboardData.nodes) {
+                    // 粘贴多个节点
+                    let pastedCount = 0
+                    for (let i = 0; i < clipboardData.nodes.length; i++) {
+                      const nodeData = clipboardData.nodes[i]
+                      const position = { x: 100 + i * 50, y: 100 + i * 50 }
+
+                      try {
+                        const newNode = await nodeService.createNode({
+                          position,
+                          content: nodeData.content,
+                          title: nodeData.title,
+                          importance: nodeData.importance,
+                          useAI: false,
+                        })
+
+                        addNode({
+                          content: newNode.content,
+                          title: newNode.title,
+                          importance: newNode.importance,
+                          confidence: newNode.confidence,
+                          status: newNode.status,
+                          tags: newNode.tags,
+                          position: newNode.position,
+                          connections: newNode.connections,
+                          version: newNode.version,
+                          metadata: newNode.metadata,
+                        })
+                        pastedCount++
+                      } catch (error) {
+                        console.error('粘贴节点失败:', error)
+                      }
+                    }
+
+                    if (pastedCount > 0) {
+                      addToast({
+                        type: 'success',
+                        title: '粘贴成功',
+                        message: `已粘贴 ${pastedCount} 个节点`,
+                        duration: 3000,
+                      })
+                    }
+                  } else if (clipboardData.type === 'sker-node' && clipboardData.node) {
+                    // 粘贴单个节点
+                    const nodeData = clipboardData.node
+                    const position = { x: 100, y: 100 }
+
+                    const newNode = await nodeService.createNode({
+                      position,
+                      content: nodeData.content,
+                      title: nodeData.title,
+                      importance: nodeData.importance,
+                      useAI: false,
+                    })
+
+                    addNode({
+                      content: newNode.content,
+                      title: newNode.title,
+                      importance: newNode.importance,
+                      confidence: newNode.confidence,
+                      status: newNode.status,
+                      tags: newNode.tags,
+                      position: newNode.position,
+                      connections: newNode.connections,
+                      version: newNode.version,
+                      metadata: newNode.metadata,
+                    })
+
+                    addToast({
+                      type: 'success',
+                      title: '粘贴成功',
+                      message: `已粘贴节点: ${nodeData.title || '未命名'}`,
+                      duration: 3000,
+                    })
+                  } else {
+                    // 作为普通文本创建新节点
+                    const newNode = await nodeService.createNode({
+                      position: { x: 100, y: 100 },
+                      content: clipboardText,
+                      importance: 3,
+                      useAI: false,
+                    })
+
+                    addNode({
+                      content: newNode.content,
+                      title: newNode.title,
+                      importance: newNode.importance,
+                      confidence: newNode.confidence,
+                      status: newNode.status,
+                      tags: newNode.tags,
+                      position: newNode.position,
+                      connections: newNode.connections,
+                      version: newNode.version,
+                      metadata: newNode.metadata,
+                    })
+
+                    addToast({
+                      type: 'success',
+                      title: '粘贴文本',
+                      message: '已将文本内容创建为新节点',
+                      duration: 3000,
+                    })
+                  }
+                } catch {
+                  // 作为普通文本处理
+                  const newNode = await nodeService.createNode({
+                    position: { x: 100, y: 100 },
+                    content: clipboardText,
+                    importance: 3,
+                    useAI: false,
+                  })
+
+                  addNode({
+                    content: newNode.content,
+                    title: newNode.title,
+                    importance: newNode.importance,
+                    confidence: newNode.confidence,
+                    status: newNode.status,
+                    tags: newNode.tags,
+                    position: newNode.position,
+                    connections: newNode.connections,
+                    version: newNode.version,
+                    metadata: newNode.metadata,
+                  })
+
+                  addToast({
+                    type: 'success',
+                    title: '粘贴文本',
+                    message: '已将文本内容创建为新节点',
+                    duration: 3000,
+                  })
+                }
+              } else {
+                addToast({
+                  type: 'warning',
+                  title: '剪贴板为空',
+                  message: '没有可粘贴的内容',
+                  duration: 3000,
+                })
+              }
+            } catch (error) {
+              addToast({
+                type: 'error',
+                title: '粘贴失败',
+                message: '无法访问剪贴板',
+                duration: 3000,
+              })
+            }
+            break
+          case 'a':
+            // 全选节点
+            event.preventDefault()
+            try {
+              const getAllNodeIds = () => getNodes().map(node => node.id)
+              selectAll(getAllNodeIds)
+
+              const nodeCount = getNodes().length
+              if (nodeCount > 0) {
+                addToast({
+                  type: 'success',
+                  title: '全选成功',
+                  message: `已选中 ${nodeCount} 个节点`,
+                  duration: 3000,
+                })
+              } else {
+                addToast({
+                  type: 'info',
+                  title: '画布为空',
+                  message: '当前画布没有节点',
+                  duration: 3000,
+                })
+              }
+            } catch (error) {
+              addToast({
+                type: 'error',
+                title: '全选失败',
+                message: '操作失败，请重试',
+                duration: 3000,
+              })
+            }
             break
           case 'z':
             if (event.shiftKey) {
@@ -190,7 +506,7 @@ const CanvasPage: React.FC = () => {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [addToast])
+  }, [addToast, selectedNodeIds, getNode, getNodes, addNode, selectAll])
 
   // 初始化提示
   React.useEffect(() => {
@@ -229,6 +545,7 @@ const CanvasPage: React.FC = () => {
             onCanvasDoubleClick={handleCanvasDoubleClick}
             onNodeDoubleClick={handleNodeDoubleClick}
             onDragExpand={handleDragExpand}
+            onFusionCreate={handleFusionCreate}
           />
 
           {/* 画布控制器 */}
@@ -247,7 +564,9 @@ const CanvasPage: React.FC = () => {
             <li>• 双击空白处创建组件</li>
             <li>• 拖拽连线扩展思维</li>
             <li>• 右键获取更多操作</li>
-            <li>• 使用侧边栏搜索组件</li>
+            <li>• Ctrl+C/V 复制粘贴节点</li>
+            <li>• Ctrl+A 全选所有节点</li>
+            <li>• 悬停版本信息查看历史</li>
           </ul>
         </motion.div>
       </motion.main>

@@ -36,6 +36,7 @@ export interface CanvasProps {
   onCanvasDoubleClick?: (position: Position) => void
   onNodeCreate?: (position: Position) => void
   onDragExpand?: (sourceNodeId: string, position: Position) => void
+  onFusionCreate?: (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => void
 }
 
 const Canvas: React.FC<CanvasProps> = ({
@@ -43,6 +44,7 @@ const Canvas: React.FC<CanvasProps> = ({
   onCanvasDoubleClick,
   onNodeCreate,
   onDragExpand,
+  onFusionCreate,
 }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null)
@@ -605,6 +607,8 @@ const Canvas: React.FC<CanvasProps> = ({
         onCopyNode={(nodeId) => {
           console.log('Copy node from menu:', nodeId)
         }}
+        onFusionCreate={onFusionCreate}
+        selectedNodeIds={selectedNodeIds}
       />
     </div>
   )

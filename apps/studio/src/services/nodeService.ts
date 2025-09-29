@@ -241,6 +241,110 @@ class NodeService {
   }
 
   /**
+   * 多输入融合生成
+   */
+  async fusionGenerate(
+    inputNodes: AINode[],
+    fusionType: 'summary' | 'synthesis' | 'comparison' = 'synthesis',
+    position: Position
+  ): Promise<AINode> {
+    if (inputNodes.length < 2) {
+      throw new Error('融合生成至少需要2个输入节点')
+    }
+
+    const nodeId = `node-${Date.now()}`
+    const now = new Date()
+
+    try {
+      // 准备输入内容
+      const inputs = inputNodes.map(node => {
+        const title = node.title ? `[${node.title}] ` : ''
+        return title + node.content
+      })
+
+      // 调用AI融合生成
+      const aiResponse = await aiService.fusionGenerate(inputs, fusionType)
+
+      // 生成标题
+      let nodeTitle = aiResponse.title || ''
+      if (!nodeTitle) {
+        try {
+          nodeTitle = await aiService.generateTitle(aiResponse.content)
+        } catch {
+          const typeMap = {
+            summary: '总结',
+            synthesis: '综合',
+            comparison: '对比分析'
+          }
+          nodeTitle = `${typeMap[fusionType]}结果`
+        }
+      }
+
+      // 融合标签
+      const allTags = inputNodes.reduce((tags, node) => {
+        node.tags.forEach(tag => {
+          if (!tags.includes(tag)) {
+            tags.push(tag)
+          }
+        })
+        return tags
+      }, [] as string[])
+
+      // 添加融合类型标签
+      allTags.push(`融合-${fusionType}`)
+
+      const node: AINode = {
+        id: nodeId,
+        content: aiResponse.content,
+        title: nodeTitle,
+        importance: Math.max(...inputNodes.map(n => n.importance)),
+        confidence: aiResponse.confidence,
+        status: 'completed',
+        tags: allTags,
+        position,
+        connections: [],
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        metadata: {
+          semantic: ['fusion', fusionType],
+          editCount: 0,
+          fusionSource: inputNodes.map(n => n.id),
+          fusionType,
+        }
+      }
+
+      return node
+
+    } catch (error) {
+      console.error('融合生成失败:', error)
+
+      // 创建失败时的空节点
+      return {
+        id: nodeId,
+        content: '融合生成失败，请手动输入内容...',
+        title: '融合节点',
+        importance: 3,
+        confidence: 0,
+        status: 'error',
+        tags: ['融合失败'],
+        position,
+        connections: [],
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        metadata: {
+          semantic: ['fusion-error'],
+          editCount: 0,
+          fusionSource: inputNodes.map(n => n.id),
+          fusionType,
+          error: error instanceof Error ? error.message : '未知错误'
+        }
+      }
+    }
+  }
+
+  /**
    * 拖拽扩展生成
    */
   async dragExpandGenerate(sourceNode: AINode, targetPosition: Position): Promise<AINode> {

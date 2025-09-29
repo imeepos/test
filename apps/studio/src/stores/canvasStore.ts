@@ -29,6 +29,7 @@ export interface CanvasState {
   addSelectedNode: (id: string) => void
   removeSelectedNode: (id: string) => void
   clearSelection: () => void
+  selectAll: (getAllNodeIds: () => string[]) => void
   
   // 画布操作
   zoomIn: () => void
@@ -104,6 +105,11 @@ export const useCanvasStore = create<CanvasState>()(
         
         clearSelection: () =>
           set({ selectedNodeIds: [] }, false, 'canvas/clearSelection'),
+
+        selectAll: (getAllNodeIds) => {
+          const allNodeIds = getAllNodeIds()
+          set({ selectedNodeIds: allNodeIds }, false, 'canvas/selectAll')
+        },
         
         // 画布操作
         zoomIn: () =>
