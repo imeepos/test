@@ -1,0 +1,36 @@
+{
+  "name": "@sker/integration-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SKER系统集成测试套件",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run integration/",
+    "test:broker-engine": "vitest run integration/broker-engine-integration.test.ts"
+  },
+  "dependencies": {
+    "@sker/broker": "workspace:*",
+    "@sker/engine": "workspace:*",
+    "@sker/models": "workspace:*",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0"
+  },
+  "keywords": [
+    "integration-tests",
+    "broker",
+    "engine",
+    "messaging",
+    "ai-tasks"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

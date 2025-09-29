@@ -7,6 +7,11 @@ import type {
   QueueProcessorConfig,
   TaskQueueStats
 } from '../types/messaging.js'
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES,
+  ROUTING_KEYS
+} from '@sker/models'
 
 /**
  * AI 任务队列处理器 - 处理来自消息队列的 AI 任务
@@ -303,27 +308,50 @@ export class AITaskQueueProcessor extends EventEmitter {
   }
 
   /**
-   * 处理 AI 任务
+   * 处理 AI 任务 - 使用统一的任务类型
    */
   private async processAITask(taskData: AITaskMessage): Promise<any> {
+    // 使用统一的任务类型处理
     switch (taskData.type) {
-      case 'content_generation':
-        return await this.aiEngine.generateContent(taskData.data)
+      case 'generate':
+        return await this.aiEngine.generateContent({
+          inputs: taskData.inputs,
+          context: taskData.context,
+          instruction: taskData.instruction,
+          options: taskData.metadata
+        })
 
-      case 'content_optimization':
-        return await this.aiEngine.optimizeContent(taskData.data)
+      case 'optimize':
+        return await this.aiEngine.optimizeContent({
+          content: taskData.inputs[0],
+          instruction: taskData.instruction,
+          context: taskData.context,
+          options: taskData.metadata
+        })
 
-      case 'semantic_analysis':
-        return await this.aiEngine.analyzeSemantics(taskData.data)
+      case 'analyze':
+        return await this.aiEngine.analyzeSemantics(
+          taskData.inputs[0],
+          { context: taskData.context }
+        )
 
-      case 'content_fusion':
-        return await this.aiEngine.fuseContent(taskData.data)
+      case 'fusion':
+        return await this.aiEngine.fuseContent({
+          inputs: taskData.inputs,
+          instruction: taskData.instruction,
+          context: taskData.context,
+          fusionType: 'synthesis',
+          options: taskData.metadata
+        })
 
-      case 'node_enhancement':
-        return await this.aiEngine.enhanceNode(taskData.data)
-
-      case 'batch_processing':
-        return await this.aiEngine.batchProcess(taskData.data)
+      case 'expand':
+        return await this.aiEngine.enhanceNode({
+          baseContent: taskData.inputs[0],
+          instruction: taskData.instruction,
+          context: taskData.context,
+          expansionType: 'detail',
+          options: taskData.metadata
+        })
 
       default:
         throw new Error(`Unsupported task type: ${taskData.type}`)
@@ -536,9 +564,9 @@ export function createAITaskQueueProcessor(
   config?: Partial<QueueProcessorConfig>
 ): AITaskQueueProcessor {
   const defaultConfig: QueueProcessorConfig = {
-    taskQueue: 'ai.tasks',
-    batchQueue: 'ai.batch',
-    resultExchange: 'sker.ai.results',
+    taskQueue: QUEUE_NAMES.AI_TASKS,
+    batchQueue: QUEUE_NAMES.AI_BATCH,
+    resultExchange: EXCHANGE_NAMES.AI_RESULTS,
     highPriorityWorkers: 2,
     normalPriorityWorkers: 3,
     lowPriorityWorkers: 1,

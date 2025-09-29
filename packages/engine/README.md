@@ -89,9 +89,9 @@ const engine = new AIEngine({
   }
 })
 
-// 处理AI任务
+// 处理AI任务 - 使用统一的任务类型
 const result = await engine.processTask({
-  type: 'generate',
+  type: 'generate',  // 统一任务类型: 'generate' | 'optimize' | 'fusion' | 'analyze' | 'expand'
   inputs: ['用户输入内容'],
   context: '上下文信息'
 })
@@ -128,6 +128,8 @@ const analysis = await analyzer.analyze(content, {
 
 ## 🔧 处理类型
 
+> **重要**: 从 v2.0 开始，所有任务类型已统一为 `@sker/models` 包中的定义，确保与broker服务的完全兼容。
+
 ### 内容生成 (Generate)
 - **创意写作**: 基于主题生成创意内容
 - **技术文档**: 生成技术说明和文档
@@ -145,6 +147,12 @@ const analysis = await analyzer.analyze(content, {
 - **观点整合**: 整合不同角度的观点
 - **数据汇总**: 汇总多源数据的洞察
 - **决策支持**: 基于多输入提供决策建议
+
+### 语义分析 (Analyze)
+- **内容理解**: 深度分析内容的语义结构
+- **关键词提取**: 识别和提取核心概念
+- **情感分析**: 分析文本的情感倾向
+- **主题识别**: 识别文本的主要主题
 
 ### 内容扩展 (Expand)
 - **深度挖掘**: 深入探讨特定主题

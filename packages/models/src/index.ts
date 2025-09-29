@@ -83,6 +83,7 @@ export interface Node {
   user_id: string
   content: string
   title?: string
+  type?: string
   importance: ImportanceLevel
   confidence: number
   status: NodeStatus
@@ -133,6 +134,11 @@ export type SemanticType =
   | 'question'
   | 'answer'
   | 'decision'
+  | 'fusion'
+  | 'summary'
+  | 'synthesis'
+  | 'comparison'
+  | 'fusion-error'
 
 export interface ProcessingRecord {
   timestamp: Date
@@ -187,6 +193,20 @@ export interface NodeVersion {
 }
 
 export type VersionChangeType = 'create' | 'edit' | 'optimize' | 'ai_enhance' | 'merge' | 'rollback'
+
+// 节点更新数据类型
+export interface NodeUpdateData {
+  content?: string
+  title?: string
+  type?: string
+  importance?: ImportanceLevel
+  confidence?: number
+  status?: NodeStatus
+  tags?: string[]
+  position?: Position
+  size?: Size
+  metadata?: Partial<NodeMetadata>
+}
 
 // AI任务记录
 export interface AITask {
@@ -424,7 +444,12 @@ export const SEMANTIC_TYPE = {
   IDEA: 'idea' as const,
   QUESTION: 'question' as const,
   ANSWER: 'answer' as const,
-  DECISION: 'decision' as const
+  DECISION: 'decision' as const,
+  FUSION: 'fusion' as const,
+  SUMMARY: 'summary' as const,
+  SYNTHESIS: 'synthesis' as const,
+  COMPARISON: 'comparison' as const,
+  FUSION_ERROR: 'fusion-error' as const
 }
 
 export const IMPORTANCE_LEVEL = {
@@ -434,6 +459,39 @@ export const IMPORTANCE_LEVEL = {
   HIGH: 4 as const,
   VERY_HIGH: 5 as const
 }
+
+// AI生成请求和响应类型
+export interface AIGenerateRequest {
+  inputs: string[]
+  instruction?: string
+  context?: string
+  style?: string
+  length?: 'short' | 'medium' | 'long'
+  model?: string
+  temperature?: number
+  maxTokens?: number
+}
+
+export interface AIGenerateResponse {
+  content: string
+  title?: string
+  confidence: number
+  tags: string[]
+  reasoning?: string
+  semantic_type?: SemanticType
+  metadata: {
+    requestId: string
+    model: string
+    processingTime: number
+    tokenCount: number
+    cached: boolean
+  }
+  improvements?: string[]
+}
+
+// 消息传递类型导出
+export * from './messaging/AITaskTypes.js'
+export * from './messaging/QueueContracts.js'
 
 // 默认导出
 export default {

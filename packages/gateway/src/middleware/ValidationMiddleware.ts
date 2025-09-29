@@ -15,7 +15,7 @@ export class ValidationMiddleware {
       if (!errors.isEmpty()) {
         const apiReq = req as ApiRequest
 
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
@@ -25,6 +25,7 @@ export class ValidationMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       next()
@@ -304,7 +305,7 @@ export class ValidationMiddleware {
       if (contentLength > maxSizeBytes) {
         const apiReq = req as ApiRequest
 
-        return res.status(413).json({
+        res.status(413).json({
           success: false,
           error: {
             code: 'FILE_TOO_LARGE',
@@ -313,6 +314,7 @@ export class ValidationMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       next()

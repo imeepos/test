@@ -17,6 +17,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@sker/models": "workspace:*",
     "amqplib": "^0.10.0",
     "uuid": "^9.0.0"
   },

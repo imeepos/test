@@ -29,14 +29,7 @@ export const DEFAULT_CONFIG: GatewayConfig = {
   rateLimit: {
     windowMs: 15 * 60 * 1000, // 15分钟
     max: 100, // 每个IP每15分钟最多100个请求
-    message: {
-      success: false,
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Too many requests, please try again later',
-        timestamp: new Date()
-      }
-    },
+    message: 'Too many requests, please try again later',
     standardHeaders: true,
     legacyHeaders: false
   },

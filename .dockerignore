@@ -149,3 +149,8 @@ tests/
 tmp/
 temp/
 .tmp/
+
+# Allow dist directories for built packages that need to be included
+!packages/models/dist/
+!packages/config/dist/
+!packages/store/dist/

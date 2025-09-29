@@ -25,6 +25,7 @@ import { ResponseMapper } from '../adapters/ResponseMapper'
 import { QueueManager } from '../messaging/QueueManager'
 import { AIEngine } from '@sker/engine'
 import { StoreService } from '@sker/store'
+import type { ImportanceLevel } from '@sker/models'
 
 /**
  * API路由器 - 管理所有API端点的路由
@@ -229,7 +230,7 @@ export class ApiRouter {
         parent_id: parent_id || null,
         type,
         position: position || { x: 0, y: 0 },
-        importance: Math.max(0, Math.min(100, importance)),
+        importance: Math.max(1, Math.min(5, Math.round(importance / 20))) as ImportanceLevel,
         tags: tags || [],
         status: 'active',
         confidence: 100,
