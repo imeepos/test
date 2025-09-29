@@ -1,7 +1,7 @@
 {
-  "name": "@sker/data-models",
+  "name": "@sker/version",
   "version": "1.0.0",
-  "description": "数据模型与验证 - 统一的数据结构定义、类型声明、验证逻辑",
+  "description": "版本管理系统 - 语义化版本控制、历史记录、回滚机制",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -17,15 +17,19 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "zod": "^3.22.0",
-    "@sker/config": "workspace:*"
+    "diff": "^5.0.0",
+    "@sker/models": "workspace:*",
+    "@sker/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.0.0"
   },
   "keywords": [
-    "models",
-    "validation",
-    "types",
-    "schema",
-    "data"
+    "version",
+    "control",
+    "history",
+    "diff",
+    "rollback"
   ],
   "author": "SKER Team",
   "license": "MIT"

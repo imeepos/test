@@ -1,7 +1,7 @@
 {
-  "name": "@sker/version-control",
+  "name": "@sker/api",
   "version": "1.0.0",
-  "description": "版本管理系统 - 语义化版本控制、历史记录、回滚机制",
+  "description": "API客户端 - 统一的HTTP客户端、WebSocket连接、状态同步",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -17,19 +17,20 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "diff": "^5.0.0",
-    "@sker/data-models": "workspace:*",
-    "@sker/utils": "workspace:*"
+    "axios": "^1.6.0",
+    "socket.io-client": "^4.7.0",
+    "@sker/models": "workspace:*",
+    "@sker/config": "workspace:*"
   },
   "devDependencies": {
-    "@types/diff": "^5.0.0"
+    "@types/socket.io-client": "^4.7.0"
   },
   "keywords": [
-    "version",
-    "control",
-    "history",
-    "diff",
-    "rollback"
+    "api",
+    "client",
+    "http",
+    "websocket",
+    "sync"
   ],
   "author": "SKER Team",
   "license": "MIT"

@@ -1,7 +1,7 @@
 {
-  "name": "@sker/api-client",
+  "name": "@sker/models",
   "version": "1.0.0",
-  "description": "API客户端 - 统一的HTTP客户端、WebSocket连接、状态同步",
+  "description": "数据模型与验证 - 统一的数据结构定义、类型声明、验证逻辑",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -17,20 +17,15 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "axios": "^1.6.0",
-    "socket.io-client": "^4.7.0",
-    "@sker/data-models": "workspace:*",
+    "zod": "^3.22.0",
     "@sker/config": "workspace:*"
   },
-  "devDependencies": {
-    "@types/socket.io-client": "^4.7.0"
-  },
   "keywords": [
-    "api",
-    "client",
-    "http",
-    "websocket",
-    "sync"
+    "models",
+    "validation",
+    "types",
+    "schema",
+    "data"
   ],
   "author": "SKER Team",
   "license": "MIT"

@@ -1,7 +1,7 @@
 {
-  "name": "@sker/canvas-core",
+  "name": "@sker/components",
   "version": "1.0.0",
-  "description": "画布核心引擎 - React Flow画布的核心抽象层和通用功能",
+  "description": "智能组件库 - 可复用的智能UI组件和业务组件",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -17,8 +17,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "reactflow": "^11.0.0",
-    "zustand": "^4.0.0"
+    "framer-motion": "^10.0.0",
+    "@headlessui/react": "^1.7.0",
+    "@sker/models": "workspace:*",
+    "@sker/utils": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0",
@@ -29,10 +31,11 @@
     "@types/react-dom": "^18.0.0"
   },
   "keywords": [
-    "canvas",
-    "reactflow",
-    "ai",
-    "collaboration"
+    "react",
+    "components",
+    "ui",
+    "smart",
+    "ai"
   ],
   "author": "SKER Team",
   "license": "MIT"

@@ -1,7 +1,7 @@
 {
-  "name": "@sker/state-management",
+  "name": "@sker/canvas",
   "version": "1.0.0",
-  "description": "状态管理 - Zustand store定义、状态同步、持久化",
+  "description": "画布核心引擎 - React Flow画布的核心抽象层和通用功能",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -13,27 +13,26 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src --ext .ts,.tsx",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "zustand": "^4.4.0",
-    "immer": "^10.0.0",
-    "@sker/data-models": "workspace:*",
-    "@sker/utils": "workspace:*"
+    "reactflow": "^11.0.0",
+    "zustand": "^4.0.0"
   },
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0"
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
   },
   "keywords": [
-    "state",
-    "management",
-    "zustand",
-    "store",
-    "persistence"
+    "canvas",
+    "reactflow",
+    "ai",
+    "collaboration"
   ],
   "author": "SKER Team",
   "license": "MIT"

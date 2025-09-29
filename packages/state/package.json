@@ -1,7 +1,7 @@
 {
-  "name": "@sker/smart-components",
+  "name": "@sker/state",
   "version": "1.0.0",
-  "description": "智能组件库 - 可复用的智能UI组件和业务组件",
+  "description": "状态管理 - Zustand store定义、状态同步、持久化",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -13,29 +13,27 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src --ext .ts",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "framer-motion": "^10.0.0",
-    "@headlessui/react": "^1.7.0",
-    "@sker/data-models": "workspace:*",
+    "zustand": "^4.4.0",
+    "immer": "^10.0.0",
+    "@sker/models": "workspace:*",
     "@sker/utils": "workspace:*"
   },
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^18.0.0"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
+    "@types/react": "^18.0.0"
   },
   "keywords": [
-    "react",
-    "components",
-    "ui",
-    "smart",
-    "ai"
+    "state",
+    "management",
+    "zustand",
+    "store",
+    "persistence"
   ],
   "author": "SKER Team",
   "license": "MIT"

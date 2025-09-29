@@ -14,7 +14,7 @@
 
 ## 📦 核心包架构
 
-### 1. **@sker/canvas-core** - 画布核心引擎
+### 1. **@sker/canvas** - 画布核心引擎
 **作用**: React Flow画布的核心抽象层和通用功能  
 **场景**: 所有画布操作、节点管理、连线逻辑  
 **依据**: 画布是整个应用的核心，需要独立的引擎层
@@ -27,7 +27,7 @@ export {
   ConnectionManager, // 连线管理器  
   ViewportController,// 视口控制
   EventBus          // 事件总线
-} from '@sker/canvas-core';
+} from '@sker/canvas';
 
 // 使用示例
 const canvas = new CanvasEngine({
@@ -37,7 +37,7 @@ const canvas = new CanvasEngine({
 });
 ```
 
-### 2. **@sker/ai-integration** - AI服务集成
+### 2. **@sker/ai** - AI服务集成
 **作用**: LLM调用、消息队列、AI响应处理的统一接口  
 **场景**: 所有AI生成内容、优化请求、智能分析  
 **依据**: AI是核心能力，需要统一的集成层避免重复实现
@@ -50,7 +50,7 @@ export {
   PromptBuilder,    // 提示词构建器
   ResponseParser,   // 响应解析器
   AITaskManager     // AI任务管理
-} from '@sker/ai-integration';
+} from '@sker/ai';
 
 // 使用示例
 const ai = new LLMClient({
@@ -66,7 +66,7 @@ const result = await ai.generate({
 });
 ```
 
-### 3. **@sker/smart-components** - 智能组件库
+### 3. **@sker/components** - 智能组件库
 **作用**: 可复用的智能UI组件和业务组件  
 **场景**: 组件渲染、交互状态管理、版本显示  
 **依据**: 组件系统复杂，包含多种状态和交互模式
@@ -79,7 +79,7 @@ export {
   DisplayModes,       // 显示模式
   InteractionHandlers,// 交互处理
   ComponentMetadata   // 元信息管理
-} from '@sker/smart-components';
+} from '@sker/components';
 
 // 使用示例
 <SmartComponent
@@ -91,7 +91,7 @@ export {
 />
 ```
 
-### 4. **@sker/version-control** - 版本管理系统
+### 4. **@sker/version** - 版本管理系统
 **作用**: 语义化版本控制、历史记录、回滚机制  
 **场景**: 内容优化、版本历史、差异对比  
 **依据**: 版本管理是独立的复杂子系统，可复用性高
@@ -104,7 +104,7 @@ export {
   DiffEngine,       // 差异引擎
   RollbackHandler,  // 回滚处理
   ChangeLogger      // 变更记录
-} from '@sker/version-control';
+} from '@sker/version';
 
 // 使用示例
 const versionManager = new VersionManager(componentId);
@@ -115,7 +115,7 @@ await versionManager.createVersion({
 });
 ```
 
-### 5. **@sker/data-models** - 数据模型与验证
+### 5. **@sker/models** - 数据模型与验证
 **作用**: 统一的数据结构定义、类型声明、验证逻辑  
 **场景**: 前后端数据交互、API接口、数据库操作  
 **依据**: 类型安全和数据一致性的保障，多端共享
@@ -128,7 +128,7 @@ export {
   VersionModel,       // 版本数据模型
   ValidationSchemas,  // 验证模式
   TypeDefinitions     // 类型定义
-} from '@sker/data-models';
+} from '@sker/models';
 
 // 类型定义示例
 interface ComponentData {
@@ -143,7 +143,7 @@ interface ComponentData {
 }
 ```
 
-### 6. **@sker/api-client** - API客户端
+### 6. **@sker/api** - API客户端
 **作用**: 统一的HTTP客户端、WebSocket连接、状态同步  
 **场景**: 前端与后端通信、实时更新、离线同步  
 **依据**: 网络层抽象，支持不同的通信模式
@@ -156,7 +156,7 @@ export {
   SyncManager,     // 同步管理器
   CacheManager,    // 缓存管理
   OfflineHandler   // 离线处理
-} from '@sker/api-client';
+} from '@sker/api';
 
 // 使用示例
 const api = new RestClient('/api');
@@ -186,7 +186,7 @@ const formattedDate = DateUtils.formatRelative(component.updated_at);
 const isValid = ValidationUtils.isValidEmail(userEmail);
 ```
 
-### 8. **@sker/state-management** - 状态管理
+### 8. **@sker/state** - 状态管理
 **作用**: Zustand store定义、状态同步、持久化  
 **场景**: 全局状态管理、画布状态、用户偏好  
 **依据**: 状态管理逻辑复杂，需要统一的管理方案
@@ -199,7 +199,7 @@ export {
   UIStore,          // 界面状态
   UserStore,        // 用户状态
   PersistenceLayer  // 持久化层
-} from '@sker/state-management';
+} from '@sker/state';
 
 // 使用示例
 const useCanvasStore = create<CanvasState>((set, get) => ({
@@ -214,7 +214,7 @@ const useCanvasStore = create<CanvasState>((set, get) => ({
 }));
 ```
 
-### 9. **@sker/backend-core** - 后端核心
+### 9. **@sker/backend** - 后端核心
 **作用**: Express中间件、数据库连接、基础服务  
 **场景**: 后端服务的通用基础设施  
 **依据**: 后端通用逻辑抽象，支持微服务架构
@@ -227,7 +227,7 @@ export {
   ServiceBase,       // 服务基类
   ErrorHandler,      // 错误处理
   Logger            // 日志系统
-} from '@sker/backend-core';
+} from '@sker/backend';
 
 // 使用示例
 class ComponentService extends ServiceBase {
@@ -262,17 +262,17 @@ const isAIEnabled = FeatureFlags.isEnabled('ai-optimization');
 ```mermaid
 graph TD
     A[@sker/config] --> B[@sker/utils]
-    A --> C[@sker/data-models]
-    B --> D[@sker/api-client]
+    A --> C[@sker/models]
+    B --> D[@sker/api]
     C --> D
-    C --> E[@sker/state-management]
-    C --> F[@sker/version-control]
-    D --> G[@sker/ai-integration]
-    E --> H[@sker/canvas-core]
+    C --> E[@sker/state]
+    C --> F[@sker/version]
+    D --> G[@sker/ai]
+    E --> H[@sker/canvas]
     F --> H
-    G --> I[@sker/smart-components]
+    G --> I[@sker/components]
     H --> I
-    C --> J[@sker/backend-core]
+    C --> J[@sker/backend]
     B --> J
 ```
 
@@ -343,7 +343,7 @@ packages/
 npm install
 
 # 安装特定包的依赖
-npm install --workspace=@sker/canvas-core
+npm install --workspace=@sker/canvas
 ```
 
 ### 构建包
@@ -352,7 +352,7 @@ npm install --workspace=@sker/canvas-core
 npm run build
 
 # 构建特定包
-npm run build --workspace=@sker/canvas-core
+npm run build --workspace=@sker/canvas
 ```
 
 ### 运行测试
@@ -361,7 +361,7 @@ npm run build --workspace=@sker/canvas-core
 npm test
 
 # 运行特定包的测试
-npm test --workspace=@sker/canvas-core
+npm test --workspace=@sker/canvas
 ```
 
 ### 发布包
@@ -370,17 +370,17 @@ npm test --workspace=@sker/canvas-core
 npm run publish:all
 
 # 发布特定包
-npm publish --workspace=@sker/canvas-core
+npm publish --workspace=@sker/canvas
 ```
 
 ## 🎯 使用场景
 
 ### 前端应用开发
 ```typescript
-import { CanvasEngine } from '@sker/canvas-core';
-import { SmartComponent } from '@sker/smart-components';
-import { useCanvasStore } from '@sker/state-management';
-import { LLMClient } from '@sker/ai-integration';
+import { CanvasEngine } from '@sker/canvas';
+import { SmartComponent } from '@sker/components';
+import { useCanvasStore } from '@sker/state';
+import { LLMClient } from '@sker/ai';
 
 // 构建完整的前端应用
 const App = () => {
@@ -397,9 +397,9 @@ const App = () => {
 
 ### 后端服务开发
 ```typescript
-import { ServiceBase, DatabaseConnector } from '@sker/backend-core';
-import { ComponentModel, ValidationSchemas } from '@sker/data-models';
-import { LLMClient } from '@sker/ai-integration';
+import { ServiceBase, DatabaseConnector } from '@sker/backend';
+import { ComponentModel, ValidationSchemas } from '@sker/models';
+import { LLMClient } from '@sker/ai';
 
 // 构建后端服务
 class ComponentService extends ServiceBase {
