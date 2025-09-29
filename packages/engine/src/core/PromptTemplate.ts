@@ -1,4 +1,4 @@
-import type { TemplateConfig, TemplateVariable, CompiledTemplate } from '@/types'
+import type { TemplateConfig, TemplateVariable, CompiledTemplate } from '../types/index.js'
 
 /**
  * 提示词模板类

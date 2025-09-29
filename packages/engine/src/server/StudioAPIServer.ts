@@ -3,8 +3,8 @@ import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
 import rateLimit from 'express-rate-limit'
-import { AIEngine } from '../core/AIEngine'
-import { createStudioAPIRouter } from './StudioAPIRouter'
+import { AIEngine } from '../core/AIEngine.js'
+import { createStudioAPIRouter } from './StudioAPIRouter.js'
 
 /**
  * Studio API 服务器配置

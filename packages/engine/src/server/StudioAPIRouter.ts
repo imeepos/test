@@ -1,11 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import { AIEngine } from '../core/AIEngine'
-import { StudioAPIAdapter } from '../adapters/StudioAPIAdapter'
+import { AIEngine } from '../core/AIEngine.js'
+import { StudioAPIAdapter } from '../adapters/StudioAPIAdapter.js'
 import type {
   StudioAIGenerateRequest,
   StudioAIGenerateResponse,
   StudioAIOptimizeRequest
-} from '../adapters/StudioAPIAdapter'
+} from '../adapters/StudioAPIAdapter.js'
 
 /**
  * Express 请求接口扩展

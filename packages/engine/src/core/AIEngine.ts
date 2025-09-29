@@ -22,6 +22,7 @@ import type {
   CacheEntry
 } from '../types/index.js'
 import { OpenAIProvider } from '../providers/OpenAIProvider.js'
+import { AnthropicProvider } from '../providers/AnthropicProvider.js'
 import { ContentGenerator } from './ContentGenerator.js'
 import { SemanticAnalyzer } from './SemanticAnalyzer.js'
 import { PromptTemplate } from './PromptTemplate.js'
@@ -94,7 +95,13 @@ export class AIEngine extends EventEmitter {
         })
         break
       case 'anthropic':
-        throw new Error('Anthropic provider not implemented yet')
+        this.provider = new AnthropicProvider({
+          apiKey: this.config.apiKey,
+          baseURL: this.config.baseURL,
+          defaultModel: this.config.defaultModel,
+          timeout: this.config.timeout
+        })
+        break
       case 'custom':
         throw new Error('Custom provider must be provided')
       default:

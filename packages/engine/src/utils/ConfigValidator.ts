@@ -1,4 +1,4 @@
-import type { EngineConfig } from '@/types'
+import type { EngineConfig } from '../types/index.js'
 
 /**
  * 配置验证错误

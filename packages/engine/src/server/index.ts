@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import dotenv from 'dotenv'
-import { AIEngine } from '../core/AIEngine'
-import { StudioAPIServer } from './StudioAPIServer'
+import { AIEngine } from '../core/AIEngine.js'
+import { StudioAPIServer } from './StudioAPIServer.js'
 
 // 加载环境变量
 dotenv.config()

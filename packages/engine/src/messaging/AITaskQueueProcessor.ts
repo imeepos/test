@@ -1,12 +1,12 @@
 import { MessageBroker } from '@sker/broker'
-import { AIEngine } from '../core/AIEngine'
+import { AIEngine } from '../core/AIEngine.js'
 import { EventEmitter } from 'events'
 import type {
   AITaskMessage,
   TaskProcessingResult,
   QueueProcessorConfig,
   TaskQueueStats
-} from '../types/messaging'
+} from '../types/messaging.js'
 
 /**
  * AI 任务队列处理器 - 处理来自消息队列的 AI 任务

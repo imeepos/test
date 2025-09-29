@@ -424,7 +424,7 @@ export class StudioAPIAdapter {
       'expand': '请扩展以下内容，添加更多细节和深度'
     }
 
-    return instructions[type || 'generate'] || instructions.generate
+    return instructions[type || 'generate'] || instructions['generate']
   }
 
   /**

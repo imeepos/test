@@ -4,7 +4,7 @@ import type {
   SemanticAnalysis,
   GenerateRequest,
   ProcessingMetadata
-} from '@/types'
+} from '../types/index.js'
 
 /**
  * 语义分析器类

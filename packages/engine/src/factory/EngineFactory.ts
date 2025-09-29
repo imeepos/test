@@ -1,7 +1,7 @@
-import type { EngineConfig } from '@/types'
-import { AIEngine } from '@/core/AIEngine'
-import { PromptTemplate } from '@/core/PromptTemplate'
-import { validateConfig } from '@/utils/ConfigValidator'
+import type { EngineConfig } from '../types/index.js'
+import { AIEngine } from '../core/AIEngine.js'
+import { PromptTemplate } from '../core/PromptTemplate.js'
+import { validateConfig } from '../utils/ConfigValidator.js'
 
 /**
  * 引擎创建选项
