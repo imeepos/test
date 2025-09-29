@@ -726,4 +726,25 @@ export class AIEngine extends EventEmitter {
       metadata: result.metadata
     }
   }
+
+  /**
+   * 语义分析（别名方法）
+   */
+  async analyzeSemantics(content: string, options?: SemanticOptions): Promise<SemanticAnalysis> {
+    return this.analyzeContent(content, options)
+  }
+
+  /**
+   * 融合内容
+   */
+  async fuseContent(request: FusionRequest): Promise<FusionResult> {
+    return this.fusionGenerate(request)
+  }
+
+  /**
+   * 增强节点内容
+   */
+  async enhanceNode(request: ExpandRequest): Promise<ExpandResult> {
+    return this.expandContent(request)
+  }
 }
