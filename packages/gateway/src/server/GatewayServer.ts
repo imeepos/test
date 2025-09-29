@@ -53,7 +53,8 @@ export class GatewayServer {
         queues: {
           aiTaskResults: 'result.notify.queue',
           websocketBroadcast: 'events.websocket.queue',
-          systemNotifications: 'events.notification.queue'
+          systemNotifications: 'events.notification.queue',
+          deadLetterQueue: 'dlx.queue'
         }
       })
     }
@@ -114,7 +115,7 @@ export class GatewayServer {
 
     // 限流中间件
     const limiter = rateLimit(this.config.rateLimit)
-    this.app.use('/api', limiter)
+    this.app.use(limiter)
 
     // 请求增强中间件（添加requestId等）
     this.app.use(RequestEnhancer.enhance())
@@ -330,7 +331,7 @@ export class GatewayServer {
     return new Promise((resolve, reject) => {
       const { port, host = '0.0.0.0' } = this.config
 
-      this.server.listen(port, host, (error?: Error) => {
+      this.server.listen(port, host, async (error?: Error) => {
         if (error) {
           reject(error)
           return

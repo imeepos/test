@@ -70,6 +70,7 @@ export interface NodeOperationEvent {
 
 // 画布状态事件
 export interface CanvasStateEvent {
+  projectId: string
   viewport: { x: number; y: number; zoom: number }
   selectedNodes: string[]
   displayMode: 'overview' | 'preview' | 'detail'

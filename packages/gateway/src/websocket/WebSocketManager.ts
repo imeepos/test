@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
+import { EventEmitter } from 'events'
 import jwt from 'jsonwebtoken'
 import type {
   WebSocketConfig,
@@ -8,17 +9,17 @@ import type {
 import type {
   WebSocketEvent,
   WebSocketConnection,
-  WebSocketEventType,
   WebSocketAuthPayload,
   AIProgressEvent,
   NodeOperationEvent,
   CanvasStateEvent
 } from '../types/WebSocketTypes'
+import { WebSocketEventType } from '../types/WebSocketTypes'
 
 /**
  * WebSocket管理器 - 处理实时通信和连接管理
  */
-export class WebSocketManager {
+export class WebSocketManager extends EventEmitter {
   private io: SocketIOServer
   private connections: Map<string, WebSocketConnection> = new Map()
   private userConnections: Map<string, Set<string>> = new Map()
@@ -27,6 +28,7 @@ export class WebSocketManager {
   private isStarted: boolean = false
 
   constructor(httpServer: HTTPServer, config: WebSocketConfig, authConfig?: AuthConfig) {
+    super()
     this.config = config
     this.authConfig = authConfig
 
@@ -37,7 +39,6 @@ export class WebSocketManager {
         origin: '*', // 在生产环境中应该设置具体的域名
         methods: ['GET', 'POST']
       },
-      compression: config.compression !== false,
       maxHttpBufferSize: 1e6, // 1MB
       pingTimeout: config.timeout,
       pingInterval: config.heartbeatInterval

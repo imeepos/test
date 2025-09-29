@@ -1,10 +1,19 @@
-# @sker/data-models - 数据模型与验证
+# @sker/models - 统一数据模型与消息类型
 
-> 扩展式AI协作画布系统的统一数据结构定义和验证体系
+> SKER系统的统一数据结构定义、消息类型和验证体系，确保broker-engine-gateway服务间的类型一致性
 
 ## 📋 概述
 
-@sker/data-models 提供整个系统的数据模型定义、类型声明和验证逻辑。作为数据层的基础，它依赖 @sker/config 获取配置信息，为前后端提供一致的数据结构和类型安全保障。
+`@sker/models` 是SKER系统的**统一类型定义包**，提供整个系统的数据模型定义、消息类型声明和验证逻辑。
+
+### ✨ v2.0 重大更新
+
+从 v2.0 开始，`@sker/models` 引入了**统一消息类型系统**，确保broker、engine、gateway服务间的完全类型一致性：
+
+- 🔄 **统一AI任务类型**: 所有服务使用相同的任务类型定义
+- 📨 **标准化消息格式**: 统一的消息结构和接口
+- 🔧 **集中常量管理**: 队列名、交换机名等常量统一定义
+- ✅ **类型安全保证**: 确保服务间通信的类型安全
 
 ## 🎯 设计原理
 
@@ -52,32 +61,38 @@ graph TD
 
 ## 🚀 核心功能
 
-### 1. 数据模型定义
+### 1. 统一消息类型系统 ⭐
+- **AI任务消息类型**: 统一的任务消息接口和类型定义
+- **队列和交换机常量**: 所有服务使用相同的队列命名
+- **任务状态管理**: 标准化的任务状态枚举
+- **优先级系统**: 统一的任务优先级定义
+
+### 2. 数据模型定义
 - 组件数据模型 (ComponentModel)
 - 项目数据模型 (ProjectModel)
 - 版本数据模型 (VersionModel)
 - 用户数据模型 (UserModel)
 - 系统配置模型 (SystemModel)
 
-### 2. 数据验证体系
+### 3. 数据验证体系
 - Runtime验证 (使用Zod)
 - 编译时类型检查
 - 自定义验证规则
 - 批量数据验证
 
-### 3. 数据转换器
+### 4. 数据转换器
 - 前端展示格式转换
 - API请求格式转换
 - 数据库存储格式转换
 - 导入导出格式转换
 
-### 4. Schema生成
+### 5. Schema生成
 - JSON Schema生成
 - OpenAPI Schema生成
 - 数据库Schema生成
 - GraphQL Schema生成
 
-### 5. 类型工具
+### 6. 类型工具
 - 联合类型工具
 - 条件类型工具
 - 映射类型工具
@@ -90,6 +105,199 @@ npm install @sker/data-models @sker/config
 ```
 
 ## 📖 API文档
+
+### 统一消息类型系统 ⭐
+
+#### AI任务消息类型
+
+```typescript
+import {
+  UnifiedAITaskMessage,
+  UnifiedAITaskType,
+  TaskPriority,
+  UnifiedTaskStatus,
+  UNIFIED_TASK_TYPE,
+  TASK_PRIORITY
+} from '@sker/models'
+
+// 统一的AI任务类型 - 所有服务使用相同定义
+type UnifiedAITaskType = 'generate' | 'optimize' | 'fusion' | 'analyze' | 'expand'
+
+// 统一的任务消息格式
+interface UnifiedAITaskMessage {
+  taskId: string
+  type: UnifiedAITaskType
+  inputs: string[]
+  context?: string
+  instruction?: string
+  nodeId: string
+  projectId: string
+  userId: string
+  priority: TaskPriority
+  timestamp: Date
+  metadata?: TaskMetadata
+  status?: UnifiedTaskStatus
+}
+
+// 任务优先级 - 支持4个级别
+type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+// 任务状态
+type UnifiedTaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+
+// 使用示例
+const aiTask: UnifiedAITaskMessage = {
+  taskId: 'task_123',
+  type: UNIFIED_TASK_TYPE.GENERATE,
+  inputs: ['用户输入内容'],
+  context: '项目上下文',
+  instruction: '生成高质量内容',
+  nodeId: 'node_456',
+  projectId: 'proj_789',
+  userId: 'user_101',
+  priority: TASK_PRIORITY.HIGH,
+  timestamp: new Date(),
+  metadata: {
+    model: 'gpt-4',
+    temperature: 0.7,
+    maxTokens: 2000
+  }
+}
+```
+
+#### 队列和交换机常量
+
+```typescript
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES,
+  ROUTING_KEYS
+} from '@sker/models'
+
+// 队列名称 - 所有服务使用统一常量
+const queueNames = {
+  AI_TASKS: 'llm.process.queue',              // AI任务处理队列
+  AI_RESULTS: 'result.notify.queue',          // 处理结果通知队列
+  AI_BATCH: 'llm.batch.process.queue',        // 批处理任务队列
+  EVENTS_WEBSOCKET: 'events.websocket.queue', // WebSocket事件队列
+  EVENTS_STORAGE: 'events.storage.queue'      // 存储事件队列
+}
+
+// 交换机名称
+const exchangeNames = {
+  LLM_DIRECT: 'llm.direct',           // AI处理任务直接交换机
+  EVENTS_TOPIC: 'events.topic',       // 系统事件主题交换机
+  REALTIME_FANOUT: 'realtime.fanout', // 实时消息扇出交换机
+  AI_RESULTS: 'ai.results'            // AI结果交换机
+}
+
+// 路由键
+const routingKeys = {
+  AI_PROCESS: 'ai.process',     // AI处理路由键
+  AI_RESULT: 'ai.result',       // AI结果路由键
+  AI_BATCH: 'ai.batch',         // 批处理路由键
+  TASK_CANCEL: 'task.cancel'    // 任务取消路由键
+}
+
+// 使用示例 - Broker服务
+await broker.publish(
+  EXCHANGE_NAMES.LLM_DIRECT,
+  ROUTING_KEYS.AI_PROCESS,
+  aiTask
+)
+
+// 使用示例 - Engine服务
+await broker.consume(
+  QUEUE_NAMES.AI_TASKS,
+  processTaskHandler
+)
+```
+
+#### 类型映射和转换
+
+```typescript
+import {
+  mapToUnifiedType,
+  mapFromUnifiedType,
+  isValidUnifiedTaskType
+} from '@sker/models'
+
+// 从旧版本类型映射到统一类型（向后兼容）
+const legacyType = 'content_generation'
+const unifiedType = mapToUnifiedType(legacyType) // 'generate'
+
+// 验证任务类型
+if (isValidUnifiedTaskType('generate')) {
+  // 类型安全的处理逻辑
+}
+
+// 任务状态检查
+if (task.status === 'completed') {
+  // 处理已完成的任务
+}
+```
+
+#### 服务集成示例
+
+```typescript
+// Broker服务 - 发布任务
+import { UnifiedAITaskMessage, EXCHANGE_NAMES, ROUTING_KEYS } from '@sker/models'
+
+class AITaskScheduler {
+  async scheduleTask(task: UnifiedAITaskMessage): Promise<string> {
+    await this.broker.publishWithConfirm(
+      EXCHANGE_NAMES.LLM_DIRECT,
+      ROUTING_KEYS.AI_PROCESS,
+      task,
+      { persistent: true }
+    )
+    return task.taskId
+  }
+}
+
+// Engine服务 - 处理任务
+import { UnifiedAITaskMessage, QUEUE_NAMES } from '@sker/models'
+
+class AITaskProcessor {
+  async processTask(task: UnifiedAITaskMessage): Promise<any> {
+    switch (task.type) {
+      case 'generate':
+        return await this.aiEngine.generateContent(task)
+      case 'optimize':
+        return await this.aiEngine.optimizeContent(task)
+      case 'fusion':
+        return await this.aiEngine.fuseContent(task)
+      case 'analyze':
+        return await this.aiEngine.analyzeSemantics(task)
+      case 'expand':
+        return await this.aiEngine.enhanceNode(task)
+      default:
+        throw new Error(`Unsupported task type: ${task.type}`)
+    }
+  }
+}
+
+// Gateway服务 - API端点
+import { UnifiedAITaskMessage, UNIFIED_TASK_TYPE } from '@sker/models'
+
+app.post('/api/ai/generate', async (req, res) => {
+  const task: UnifiedAITaskMessage = {
+    taskId: generateTaskId(),
+    type: UNIFIED_TASK_TYPE.GENERATE,
+    inputs: req.body.inputs,
+    context: req.body.context,
+    instruction: req.body.instruction,
+    nodeId: req.body.nodeId,
+    projectId: req.body.projectId,
+    userId: req.user.id,
+    priority: req.body.priority || 'normal',
+    timestamp: new Date()
+  }
+
+  const result = await aiScheduler.scheduleTask(task)
+  res.json({ taskId: result })
+})
+```
 
 ### ComponentModel - 组件数据模型
 

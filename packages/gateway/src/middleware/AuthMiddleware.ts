@@ -24,7 +24,7 @@ export class AuthMiddleware {
       // 获取Token
       const token = this.extractToken(req)
       if (!token) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: {
             code: 'MISSING_TOKEN',
@@ -33,6 +33,7 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       // 验证Token
@@ -54,7 +55,7 @@ export class AuthMiddleware {
         next()
       } catch (error) {
         if (error instanceof jwt.TokenExpiredError) {
-          return res.status(401).json({
+          res.status(401).json({
             success: false,
             error: {
               code: 'TOKEN_EXPIRED',
@@ -63,10 +64,11 @@ export class AuthMiddleware {
               requestId: apiReq.requestId
             }
           })
+          return
         }
 
         if (error instanceof jwt.JsonWebTokenError) {
-          return res.status(401).json({
+          res.status(401).json({
             success: false,
             error: {
               code: 'INVALID_TOKEN',
@@ -75,9 +77,10 @@ export class AuthMiddleware {
               requestId: apiReq.requestId
             }
           })
+          return
         }
 
-        return res.status(500).json({
+        res.status(500).json({
           success: false,
           error: {
             code: 'AUTH_ERROR',
@@ -86,6 +89,7 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
     }
   }
@@ -98,7 +102,7 @@ export class AuthMiddleware {
       const apiReq = req as ApiRequest
 
       if (!apiReq.user) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
@@ -107,10 +111,11 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       if (!apiReq.user.permissions.includes(permission)) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: {
             code: 'INSUFFICIENT_PERMISSIONS',
@@ -119,6 +124,7 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       next()
@@ -133,7 +139,7 @@ export class AuthMiddleware {
       const apiReq = req as ApiRequest
 
       if (!apiReq.user) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
@@ -142,10 +148,11 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       if (apiReq.user.role !== role) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: {
             code: 'INSUFFICIENT_ROLE',
@@ -154,6 +161,7 @@ export class AuthMiddleware {
             requestId: apiReq.requestId
           }
         })
+        return
       }
 
       next()

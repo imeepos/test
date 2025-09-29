@@ -109,15 +109,18 @@ await publisher.publish('node.created', {
 ## 🔧 队列架构
 
 ### 交换机设计
-- `llm.direct` - AI处理任务的直接交换机
-- `events.topic` - 系统事件的主题交换机
-- `realtime.fanout` - 实时消息的扇出交换机
+使用统一的消息队列常量 (`@sker/models`):
+- `llm.direct` - AI处理任务的直接交换机 (`EXCHANGE_NAMES.LLM_DIRECT`)
+- `events.topic` - 系统事件的主题交换机 (`EXCHANGE_NAMES.EVENTS_TOPIC`)
+- `realtime.fanout` - 实时消息的扇出交换机 (`EXCHANGE_NAMES.REALTIME_FANOUT`)
+- `ai.results` - AI结果交换机 (`EXCHANGE_NAMES.AI_RESULTS`)
 
 ### 队列设计
-- `llm.process.queue` - AI处理任务队列
-- `result.notify.queue` - 处理结果通知队列
-- `events.websocket.queue` - WebSocket事件队列
-- `events.storage.queue` - 存储事件队列
+- `llm.process.queue` - AI处理任务队列 (`QUEUE_NAMES.AI_TASKS`)
+- `result.notify.queue` - 处理结果通知队列 (`QUEUE_NAMES.AI_RESULTS`)
+- `llm.batch.process.queue` - 批处理任务队列 (`QUEUE_NAMES.AI_BATCH`)
+- `events.websocket.queue` - WebSocket事件队列 (`QUEUE_NAMES.EVENTS_WEBSOCKET`)
+- `events.storage.queue` - 存储事件队列 (`QUEUE_NAMES.EVENTS_STORAGE`)
 
 ### 消息流转
 ```
@@ -187,6 +190,22 @@ const fusionTask = await scheduler.scheduleFusion({
   nodeId: 'node-789',
   priority: 'high'
 })
+
+// 语义分析任务
+const analyzeTask = await scheduler.scheduleAnalyze({
+  inputs: ['需要分析的文本内容'],
+  context: '分析上下文',
+  nodeId: 'node-abc',
+  priority: 'normal'
+})
+
+// 内容扩展任务
+const expandTask = await scheduler.scheduleExpand({
+  inputs: ['基础内容'],
+  instruction: '请扩展和丰富这个内容',
+  nodeId: 'node-def',
+  priority: 'normal'
+})
 ```
 
 ### 事件处理
@@ -220,20 +239,25 @@ subscriber.subscribe('ai.*', async (event) => {
 
 ## 📋 消息格式
 
+> **重要**: 从 v2.0 开始，所有消息类型已统一为 `@sker/models` 包中的定义，确保broker和engine服务间的类型一致性。
+
 ### AI处理消息
 ```typescript
-interface AIProcessMessage {
+// 使用统一的消息类型 (@sker/models)
+import type { UnifiedAITaskMessage } from '@sker/models'
+
+interface AIProcessMessage extends UnifiedAITaskMessage {
   taskId: string
-  type: 'generate' | 'optimize' | 'fusion'
+  type: 'generate' | 'optimize' | 'fusion' | 'analyze' | 'expand'  // 支持全部5种任务类型
   inputs: string[]
   context?: string
   instruction?: string
   nodeId: string
   projectId: string
   userId: string
-  priority: 'low' | 'normal' | 'high'
+  priority: 'low' | 'normal' | 'high' | 'urgent'  // 增加urgent优先级
   timestamp: Date
-  metadata?: Record<string, any>
+  metadata?: TaskMetadata
 }
 ```
 

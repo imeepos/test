@@ -11,6 +11,11 @@ import type {
   AIBatchTaskMessage,
   AIBatchResultMessage
 } from '../types/AITypes'
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES,
+  ROUTING_KEYS
+} from '@sker/models'
 
 // 外部依赖接口
 interface AIEngine {
@@ -85,7 +90,7 @@ export class AITaskScheduler extends EventEmitter {
     try {
       // 消费AI处理结果
       await this.broker.consume(
-        'result.notify.queue',
+        QUEUE_NAMES.AI_RESULTS,
         async (message) => {
           if (!message) return
 
@@ -246,8 +251,8 @@ export class AITaskScheduler extends EventEmitter {
     try {
       // 发布任务到处理队列
       await this.broker.publishWithConfirm(
-        'llm.direct',
-        'llm.process',
+        EXCHANGE_NAMES.LLM_DIRECT,
+        ROUTING_KEYS.AI_PROCESS,
         taskMessage,
         {
           priority: this.getPriorityNumber(request.priority || 'normal'),
@@ -319,8 +324,8 @@ export class AITaskScheduler extends EventEmitter {
 
     try {
       await this.broker.publishWithConfirm(
-        'llm.direct',
-        'llm.batch.process',
+        EXCHANGE_NAMES.LLM_DIRECT,
+        ROUTING_KEYS.AI_BATCH,
         batchMessage,
         {
           priority: 5, // 批处理任务优先级较低
@@ -362,8 +367,8 @@ export class AITaskScheduler extends EventEmitter {
     try {
       // 发布取消消息
       await this.broker.publish(
-        'llm.direct',
-        'llm.cancel',
+        EXCHANGE_NAMES.LLM_DIRECT,
+        ROUTING_KEYS.TASK_CANCEL,
         {
           taskId,
           timestamp: new Date(),

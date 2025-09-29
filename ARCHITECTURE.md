@@ -136,12 +136,13 @@ WebSocket Events - 实时事件通信
 
 #### 处理能力
 ```typescript
-// AI任务类型
-- generate: 内容生成
-- optimize: 内容优化
-- fusion: 多输入融合
-- analyze: 语义分析
-- batch: 批量处理
+// 统一AI任务类型 (@sker/models v2.0+)
+- generate: 内容生成        // 基于输入生成新内容
+- optimize: 内容优化        // 改进现有内容质量
+- fusion: 多输入融合        // 整合多个输入源
+- analyze: 语义分析        // 深度语义理解
+- expand: 内容扩展         // 扩展和丰富内容
+- batch: 批量处理          // 批量任务处理
 ```
 
 #### 技术栈
@@ -164,16 +165,18 @@ WebSocket Events - 实时事件通信
 
 #### 消息队列架构
 ```
-Exchanges:
-├── llm.direct      - AI处理任务直接交换
-├── events.topic    - 系统事件主题交换
-└── realtime.fanout - 实时消息扇出交换
+Exchanges (统一常量 @sker/models):
+├── llm.direct      - AI处理任务直接交换 (EXCHANGE_NAMES.LLM_DIRECT)
+├── events.topic    - 系统事件主题交换 (EXCHANGE_NAMES.EVENTS_TOPIC)
+├── realtime.fanout - 实时消息扇出交换 (EXCHANGE_NAMES.REALTIME_FANOUT)
+└── ai.results      - AI结果交换机 (EXCHANGE_NAMES.AI_RESULTS)
 
-Queues:
-├── llm.process.queue     - AI处理任务队列
-├── result.notify.queue   - 处理结果通知队列
-├── events.websocket.queue - WebSocket事件队列
-└── events.storage.queue  - 存储事件队列
+Queues (统一命名):
+├── llm.process.queue       - AI处理任务队列 (QUEUE_NAMES.AI_TASKS)
+├── result.notify.queue     - 处理结果通知队列 (QUEUE_NAMES.AI_RESULTS)
+├── llm.batch.process.queue - 批处理任务队列 (QUEUE_NAMES.AI_BATCH)
+├── events.websocket.queue  - WebSocket事件队列 (QUEUE_NAMES.EVENTS_WEBSOCKET)
+└── events.storage.queue    - 存储事件队列 (QUEUE_NAMES.EVENTS_STORAGE)
 ```
 
 #### 技术栈
@@ -226,7 +229,7 @@ interface AITask {
   id: string
   project_id: string
   user_id: string
-  type: 'content_generation' | 'optimization' | 'fusion'
+  type: 'generate' | 'optimize' | 'fusion' | 'analyze' | 'expand'  // 统一任务类型
   status: 'pending' | 'processing' | 'completed' | 'failed'
   input_data: any
   output_data?: any

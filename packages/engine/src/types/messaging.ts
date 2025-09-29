@@ -1,64 +1,39 @@
 /**
- * AI 引擎消息队列相关类型定义
+ * AI 引擎消息队列相关类型定义 - 使用统一的消息类型
  */
 
-/**
- * AI 任务消息
- */
-export interface AITaskMessage {
-  taskId: string
-  type: AITaskType
-  status: AITaskStatus
-  userId: string
-  projectId: string
-  nodeId?: string
-  priority?: TaskPriority
-  data: any
-  result?: any
-  error?: AITaskError
-  progress?: TaskProgress
-  metadata?: AITaskMetadata
-  timestamp: Date
+import type {
+  UnifiedAITaskMessage,
+  UnifiedAITaskType,
+  UnifiedTaskStatus,
+  TaskPriority,
+  UnifiedAIResultMessage,
+  AIProcessingError,
+  UnifiedBatchTaskMessage,
+  UnifiedBatchResultMessage,
+  TaskMetadata,
+  dbToUnifiedTaskType,
+  unifiedToDbTaskType
+} from '@sker/models'
+
+// 重新导出统一类型以保持向后兼容
+export type AITaskMessage = UnifiedAITaskMessage
+export type AITaskType = UnifiedAITaskType
+export type AITaskStatus = UnifiedTaskStatus
+export { TaskPriority }
+
+// 兼容旧的任务类型映射
+export const LEGACY_TASK_TYPE_MAP = {
+  'content_generation': 'generate' as const,
+  'content_optimization': 'optimize' as const,
+  'semantic_analysis': 'analyze' as const,
+  'content_fusion': 'fusion' as const,
+  'node_enhancement': 'expand' as const,
+  'batch_processing': 'fusion' as const
 }
 
-/**
- * AI 任务类型
- */
-export type AITaskType =
-  | 'content_generation'
-  | 'content_optimization'
-  | 'semantic_analysis'
-  | 'content_fusion'
-  | 'batch_processing'
-  | 'node_enhancement'
-
-/**
- * AI 任务状态
- */
-export type AITaskStatus =
-  | 'pending'
-  | 'queued'
-  | 'processing'
-  | 'progress'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-
-/**
- * 任务优先级
- */
-export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
-
-/**
- * AI 任务错误
- */
-export interface AITaskError {
-  code: string
-  message: string
-  details?: any
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  retryable: boolean
-}
+// 重新导出错误类型
+export type AITaskError = AIProcessingError
 
 /**
  * 任务进度

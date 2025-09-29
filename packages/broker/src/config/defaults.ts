@@ -1,4 +1,11 @@
 import type { BrokerConfig } from '../types/BrokerConfig'
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES,
+  ROUTING_KEYS,
+  DEFAULT_EXCHANGE_CONFIGS,
+  DEFAULT_QUEUE_CONFIGS
+} from '@sker/models'
 
 /**
  * 默认Broker配置
@@ -11,64 +18,52 @@ export const DEFAULT_BROKER_CONFIG: BrokerConfig = {
     locale: 'en_US'
   },
 
-  // 交换机配置
+  // 交换机配置 - 使用统一常量
   exchanges: {
-    'llm.direct': {
-      type: 'direct',
-      durable: true,
-      autoDelete: false
-    },
-    'events.topic': {
-      type: 'topic',
-      durable: true,
-      autoDelete: false
-    },
-    'realtime.fanout': {
-      type: 'fanout',
-      durable: false,
-      autoDelete: false
-    }
+    [EXCHANGE_NAMES.LLM_DIRECT]: DEFAULT_EXCHANGE_CONFIGS[EXCHANGE_NAMES.LLM_DIRECT],
+    [EXCHANGE_NAMES.EVENTS_TOPIC]: DEFAULT_EXCHANGE_CONFIGS[EXCHANGE_NAMES.EVENTS_TOPIC],
+    [EXCHANGE_NAMES.REALTIME_FANOUT]: DEFAULT_EXCHANGE_CONFIGS[EXCHANGE_NAMES.REALTIME_FANOUT]
   },
 
-  // 队列配置
+  // 队列配置 - 使用统一常量
   queues: {
-    'llm.process.queue': {
+    [QUEUE_NAMES.AI_TASKS]: {
       durable: true,
       exclusive: false,
       autoDelete: false,
-      exchange: 'llm.direct',
-      routingKey: 'llm.process',
+      exchange: EXCHANGE_NAMES.LLM_DIRECT,
+      routingKey: ROUTING_KEYS.AI_PROCESS,
       maxPriority: 10,
       arguments: {
         'x-queue-type': 'classic'
       }
     },
-    'result.notify.queue': {
+    [QUEUE_NAMES.AI_RESULTS]: {
       durable: true,
       exclusive: false,
       autoDelete: false,
-      exchange: 'llm.direct',
-      routingKey: 'result.notify'
+      exchange: EXCHANGE_NAMES.LLM_DIRECT,
+      routingKey: ROUTING_KEYS.AI_RESULT
     },
-    'events.websocket.queue': {
+    [QUEUE_NAMES.EVENTS_WEBSOCKET]: {
       durable: false,
       exclusive: false,
       autoDelete: true,
-      exchange: 'events.topic',
+      exchange: EXCHANGE_NAMES.EVENTS_TOPIC,
       routingKey: 'websocket.*'
     },
-    'events.storage.queue': {
+    [QUEUE_NAMES.EVENTS_STORAGE]: {
       durable: true,
       exclusive: false,
       autoDelete: false,
-      exchange: 'events.topic',
+      exchange: EXCHANGE_NAMES.EVENTS_TOPIC,
       routingKey: ['node.*', 'project.*', 'user.*']
     },
     'realtime.broadcast.queue': {
       durable: false,
       exclusive: false,
       autoDelete: true,
-      exchange: 'realtime.fanout',
+      exchange: EXCHANGE_NAMES.REALTIME_FANOUT,
       routingKey: ''
     }
   },
