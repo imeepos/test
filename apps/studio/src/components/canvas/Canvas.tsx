@@ -23,6 +23,7 @@ import 'reactflow/dist/style.css'
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
 import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
+import { ShortcutHandler } from '../interactions/ShortcutHandler'
 import { nodeService } from '@/services'
 import type { Position, AINodeData } from '@/types'
 
@@ -676,6 +677,46 @@ const Canvas: React.FC<CanvasProps> = ({
         }}
         onFusionCreate={onFusionCreate || handleFusionCreate}
         selectedNodeIds={selectedNodeIds}
+      />
+
+      {/* 全局快捷键处理器 */}
+      <ShortcutHandler
+        onCreateNode={() => {
+          // 在画布中央创建节点
+          if (reactFlowInstance && reactFlowWrapper.current) {
+            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
+            const centerPosition = reactFlowInstance.project({
+              x: reactFlowBounds.width / 2,
+              y: reactFlowBounds.height / 2
+            })
+            handleCreateNodeFromMenu(centerPosition)
+          }
+        }}
+        onPaste={() => {
+          // 粘贴功能通过右键菜单实现
+          if (reactFlowInstance && reactFlowWrapper.current) {
+            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
+            const centerPosition = reactFlowInstance.project({
+              x: reactFlowBounds.width / 2,
+              y: reactFlowBounds.height / 2
+            })
+            // 触发粘贴逻辑
+          }
+        }}
+        onSelectAll={() => {
+          const allNodeIds = getNodes().map(node => node.id)
+          setSelectedNodes(allNodeIds)
+        }}
+        onOptimize={() => {
+          if (selectedNodeIds.length === 1) {
+            handleOptimizeNodeFromMenu(selectedNodeIds[0])
+          }
+        }}
+        onEdit={() => {
+          if (selectedNodeIds.length === 1) {
+            handleEditNodeFromMenu(selectedNodeIds[0])
+          }
+        }}
       />
     </div>
   )

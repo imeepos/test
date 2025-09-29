@@ -2,10 +2,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -20,7 +21,8 @@
       "@/repositories/*": ["./repositories/*"],
       "@/services/*": ["./services/*"],
       "@/config/*": ["./config/*"]
-    }
+    },
+    "types": ["node"]
   },
   "include": [
     "src/**/*"

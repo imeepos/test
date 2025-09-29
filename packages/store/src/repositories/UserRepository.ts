@@ -160,7 +160,7 @@ export class UserRepository extends BaseRepository<User> {
       )
 
       return {
-        user: { ...user, password_hash: undefined } as User, // 移除密码哈希
+        user: { ...user, password_hash: '' } as User, // 清空密码哈希
         token
       }
     } catch (error) {
@@ -509,7 +509,7 @@ export class UserRepository extends BaseRepository<User> {
         // 最后删除用户账号
         const result = await client.query(`DELETE FROM ${this.tableName} WHERE id = $1`, [userId])
 
-        return result.rowCount > 0
+        return (result.rowCount || 0) > 0
       } catch (error) {
         throw new DatabaseError(
           `删除用户账号失败: ${error instanceof Error ? error.message : error}`,

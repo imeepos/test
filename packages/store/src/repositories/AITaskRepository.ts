@@ -268,9 +268,9 @@ export class AITaskRepository extends BaseRepository<AITask> {
 
       return this.update(taskId, {
         status: 'pending',
-        error_info: null,
-        started_at: null,
-        completed_at: null,
+        error_info: undefined,
+        started_at: undefined,
+        completed_at: undefined,
         updated_at: new Date()
       } as Partial<AITask>)
     } catch (error) {
@@ -367,7 +367,7 @@ export class AITaskRepository extends BaseRepository<AITask> {
     successRate: number
   }> {
     try {
-      let whereConditions = []
+      let whereConditions: string[] = []
       let params: any[] = []
 
       if (projectId) {
@@ -653,7 +653,7 @@ export class AITaskRepository extends BaseRepository<AITask> {
       `
 
       const result = await this.pool.query(query)
-      return result.rowCount
+      return result.rowCount || 0
     } catch (error) {
       throw new DatabaseError(
         `清理旧任务记录失败: ${error instanceof Error ? error.message : error}`,

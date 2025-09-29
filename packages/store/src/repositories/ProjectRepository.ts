@@ -41,7 +41,7 @@ export class ProjectRepository extends BaseRepository<Project> {
    * 查找活跃项目（非归档状态）
    */
   async findActive(userId?: string, options: QueryOptions = {}): Promise<Project[]> {
-    const filters = {
+    const filters: any = {
       is_archived: false,
       status: ['active', 'paused'],
       ...options.filters
@@ -56,7 +56,7 @@ export class ProjectRepository extends BaseRepository<Project> {
    * 查找归档项目
    */
   async findArchived(userId?: string, options: QueryOptions = {}): Promise<Project[]> {
-    const filters = {
+    const filters: any = {
       is_archived: true,
       ...options.filters
     }
@@ -427,7 +427,7 @@ export class ProjectRepository extends BaseRepository<Project> {
       `
 
       const result = await this.pool.query(query, [userId, daysOld])
-      return result.rowCount
+      return result.rowCount || 0
     } catch (error) {
       throw new DatabaseError(
         `清理旧归档项目失败: ${error instanceof Error ? error.message : error}`,

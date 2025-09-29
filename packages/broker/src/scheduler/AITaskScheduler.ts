@@ -12,19 +12,57 @@ import type {
   AIBatchResultMessage
 } from '../types/AITypes'
 
+// 外部依赖接口
+interface AIEngine {
+  processTask(request: any): Promise<any>
+  getHealthStatus(): Promise<any>
+}
+
+interface StoreService {
+  aiTasks: {
+    create(task: any): Promise<any>
+    update(id: string, updates: any): Promise<any>
+    findById(id: string): Promise<any>
+  }
+}
+
 /**
  * AI任务调度器 - 管理AI处理任务的调度和协调
  */
 export class AITaskScheduler extends EventEmitter {
   private broker: MessageBroker
+  private aiEngine?: AIEngine
+  private storeService?: StoreService
   private activeTasks: Map<string, AITaskStatus> = new Map()
   private taskTimeouts: Map<string, NodeJS.Timeout> = new Map()
   private defaultTimeout: number = 300000 // 5分钟默认超时
+  private isInitialized = false
 
-  constructor(broker: MessageBroker) {
+  constructor(config: {
+    messageBroker: MessageBroker
+    aiEngine?: AIEngine
+    storeService?: StoreService
+    defaultTimeout?: number
+  }) {
     super()
-    this.broker = broker
+    this.broker = config.messageBroker
+    this.aiEngine = config.aiEngine
+    this.storeService = config.storeService
+    if (config.defaultTimeout) {
+      this.defaultTimeout = config.defaultTimeout
+    }
     this.setupEventHandlers()
+  }
+
+  /**
+   * 初始化调度器
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return
+
+    await this.setupResultConsumer()
+    this.isInitialized = true
+    console.log('✅ AI任务调度器初始化完成')
   }
 
   /**

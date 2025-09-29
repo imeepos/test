@@ -5,6 +5,15 @@ import { NodeRepository } from '../repositories/NodeRepository'
 import { ConnectionRepository } from '../repositories/ConnectionRepository'
 import { AITaskRepository } from '../repositories/AITaskRepository'
 import { DatabaseError } from '../models'
+// import { MessageBroker } from '@sker/broker'
+// 临时类型定义，直到 @sker/broker 包可用
+interface MessageBroker {
+  connect(): Promise<void>
+  disconnect(): Promise<void>
+  isConnected(): boolean
+  on(event: string, callback: (...args: any[]) => void): void
+}
+import { DataEventPublisher, createDataEventPublisher } from '../messaging/DataEventPublisher'
 
 /**
  * 存储服务 - 提供统一的数据访问接口
@@ -16,6 +25,8 @@ export class StoreService {
   private connectionRepo: ConnectionRepository
   private aiTaskRepo: AITaskRepository
   private isInitialized: boolean = false
+  private eventPublisher?: DataEventPublisher
+  private messageBroker?: MessageBroker
 
   constructor() {
     this.userRepo = new UserRepository()
@@ -28,15 +39,58 @@ export class StoreService {
   /**
    * 初始化服务
    */
-  async initialize(): Promise<void> {
+  async initialize(brokerUrl?: string): Promise<void> {
     try {
       await databaseManager.initialize()
+
+      // 初始化消息代理和事件发布器（可选）
+      if (brokerUrl) {
+        try {
+          // MessageBroker 暂时不可用，跳过消息代理初始化
+          console.log('⚠️ MessageBroker 包不可用，跳过消息代理初始化')
+        } catch (error) {
+          console.warn('消息代理初始化失败，继续运行不包含事件发布功能:', error)
+        }
+        console.log('🎉 StoreService 初始化成功（不包含事件发布）')
+      } else {
+        console.log('🎉 StoreService 初始化成功（不包含事件发布）')
+      }
+
       this.isInitialized = true
-      console.log('🎉 StoreService 初始化成功')
     } catch (error) {
       console.error('❌ StoreService 初始化失败:', error)
       throw error
     }
+  }
+
+  /**
+   * 设置数据库事件监听器
+   */
+  private setupDatabaseEventListeners(): void {
+    if (!this.eventPublisher) return
+
+    // 监听数据库连接事件
+    databaseManager.on('connected', () => {
+      this.eventPublisher?.publishConnectionEvent('connected', {
+        service: 'store',
+        timestamp: new Date()
+      })
+    })
+
+    databaseManager.on('disconnected', () => {
+      this.eventPublisher?.publishConnectionEvent('disconnected', {
+        service: 'store',
+        timestamp: new Date()
+      })
+    })
+
+    databaseManager.on('error', (error) => {
+      this.eventPublisher?.publishConnectionEvent('error', {
+        service: 'store',
+        error: error.message,
+        timestamp: new Date()
+      })
+    })
   }
 
   /**
@@ -86,6 +140,14 @@ export class StoreService {
   get aiTasks(): AITaskRepository {
     this.ensureInitialized()
     return this.aiTaskRepo
+  }
+
+  /**
+   * 获取事件发布器
+   */
+  get events(): DataEventPublisher | undefined {
+    this.ensureInitialized()
+    return this.eventPublisher
   }
 
   /**
@@ -322,10 +384,56 @@ export class StoreService {
   }
 
   /**
+   * 发布实体变更事件
+   */
+  async publishEntityChange(params: {
+    entityType: string
+    entityId: string
+    operation: 'create' | 'update' | 'delete'
+    data: any
+    oldData?: any
+    userId?: string
+    projectId?: string
+    metadata?: Record<string, any>
+  }): Promise<void> {
+    if (!this.eventPublisher) return
+
+    await this.eventPublisher.publishEntityChange(params)
+  }
+
+  /**
+   * 发布批量变更事件
+   */
+  async publishBulkChange(params: {
+    entityType: string
+    operation: 'create' | 'update' | 'delete'
+    affectedCount: number
+    filter: Record<string, any>
+    changes?: any
+    userId?: string
+    projectId?: string
+    metadata?: Record<string, any>
+  }): Promise<void> {
+    if (!this.eventPublisher) return
+
+    await this.eventPublisher.publishBulkChange(params)
+  }
+
+  /**
    * 关闭服务
    */
   async close(): Promise<void> {
     try {
+      // 清理事件发布器
+      if (this.eventPublisher) {
+        await this.eventPublisher.cleanup()
+      }
+
+      // 关闭消息代理
+      if (this.messageBroker) {
+        await this.messageBroker.disconnect()
+      }
+
       await databaseManager.close()
       this.isInitialized = false
       console.log('👋 StoreService 已关闭')

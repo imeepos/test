@@ -306,7 +306,7 @@ export abstract class BaseRepository<T> {
     try {
       const query = `DELETE FROM ${this.tableName} WHERE id = $1`
       const result = await this.pool.query(query, [id])
-      return result.rowCount > 0
+      return (result.rowCount || 0) > 0
     } catch (error) {
       throw new DatabaseError(
         `删除记录失败: ${error instanceof Error ? error.message : error}`,
@@ -328,7 +328,7 @@ export abstract class BaseRepository<T> {
 
       const query = `DELETE FROM ${this.tableName} ${whereClause}`
       const result = await this.pool.query(query, values)
-      return result.rowCount
+      return result.rowCount || 0
     } catch (error) {
       throw new DatabaseError(
         `批量删除记录失败: ${error instanceof Error ? error.message : error}`,

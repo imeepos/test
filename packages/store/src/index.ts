@@ -78,10 +78,28 @@ export type {
 // 迁移工具
 export { MigrationManager } from './migrations/migrate'
 
+// 消息和事件
+export { DataEventPublisher, createDataEventPublisher } from './messaging/DataEventPublisher'
+export type {
+  DataEvent,
+  DataEventType,
+  DataOperation,
+  DataEventMetadata,
+  EntityChangeEvent,
+  BulkChangeEvent,
+  EventPublisherConfig,
+  EventFilter,
+  EventAggregation
+} from './types/messaging'
+
 // 工具函数
-export const createStoreService = async (config?: any): Promise<StoreService> => {
+export const createStoreService = async (config?: {
+  brokerUrl?: string
+  databaseConfig?: any
+}) => {
+  const { StoreService } = await import('./services/StoreService')
   const service = new StoreService()
-  await service.initialize()
+  await service.initialize(config?.brokerUrl)
   return service
 }
 
@@ -133,7 +151,8 @@ export const NODE_STATUS = {
   IDLE: 'idle' as const,
   PROCESSING: 'processing' as const,
   COMPLETED: 'completed' as const,
-  ERROR: 'error' as const
+  ERROR: 'error' as const,
+  DELETED: 'deleted' as const
 }
 
 export const PROJECT_STATUS = {
@@ -190,11 +209,7 @@ export const IMPORTANCE_LEVEL = {
 
 // 默认导出
 export default {
-  StoreService,
-  storeService,
   createStoreService,
-  DatabaseManager,
-  databaseManager,
   NODE_STATUS,
   PROJECT_STATUS,
   CONNECTION_TYPE,

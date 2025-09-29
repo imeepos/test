@@ -98,7 +98,7 @@ export interface Node {
 }
 
 export type ImportanceLevel = 1 | 2 | 3 | 4 | 5
-export type NodeStatus = 'idle' | 'processing' | 'completed' | 'error'
+export type NodeStatus = 'idle' | 'processing' | 'completed' | 'error' | 'deleted'
 
 export interface Position {
   x: number

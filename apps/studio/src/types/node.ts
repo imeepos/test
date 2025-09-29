@@ -4,7 +4,7 @@ export interface AINode {
   content: string
   title?: string
   importance: ImportanceLevel
-  confidence: number
+  confidence: number // 0-100 置信度百分比，与后端保持一致
   status: NodeStatus
   tags: string[]
   version: number
@@ -14,6 +14,8 @@ export interface AINode {
   metadata: NodeMetadata
   createdAt: Date
   updatedAt: Date
+  semantic_type?: SemanticType // 语义类型，与后端SemanticType对齐
+  user_rating?: number // 0-5 用户评分
 }
 
 // 节点重要性等级
@@ -47,9 +49,7 @@ export type ConnectionType = 'input' | 'output' | 'bidirectional'
 
 // 节点元数据
 export interface NodeMetadata {
-  semantic: SemanticType[]
-  userRating?: number
-  aiRating?: number
+  semantic: SemanticType[] // 保持兼容性，后续可能迁移到semantic_type字段
   editCount: number
   lastEditReason?: string
   lastModified?: Date
@@ -57,6 +57,14 @@ export interface NodeMetadata {
   fusionSource?: string[]
   fusionType?: 'summary' | 'synthesis' | 'comparison'
   error?: string
+  // 处理历史记录
+  processingHistory?: ProcessingRecord[]
+  // 统计信息
+  statistics?: {
+    viewCount: number
+    editDurationTotal: number
+    aiInteractions: number
+  }
 }
 
 // 语义类型
@@ -75,15 +83,43 @@ export type SemanticType =
   | 'comparison'
   | 'fusion-error'
 
+// 处理记录类型
+export interface ProcessingRecord {
+  timestamp: Date
+  operation: string
+  modelUsed?: string
+  tokenCount?: number
+  processingTime: number
+  confidenceBefore?: number
+  confidenceAfter?: number
+}
+
 // 节点版本历史
 export interface NodeVersion {
+  id: string
+  nodeId: string
   version: number
   content: string
-  confidence: number
+  confidence: number // 0-100 置信度百分比
+  changeReason?: string
+  changeType: VersionChangeType
   createdAt: Date
-  reason?: string
-  type: 'experiment' | 'improvement' | 'detail'
+  createdBy: string // user_id 或 'ai'
+  metadata: {
+    diffSummary?: string
+    processingInfo?: any
+    rollbackPoint: boolean
+  }
 }
+
+// 版本变更类型
+export type VersionChangeType =
+  | 'create'
+  | 'edit'
+  | 'optimize'
+  | 'ai_enhance'
+  | 'merge'
+  | 'rollback'
 
 // 节点编辑操作
 export interface NodeEdit {

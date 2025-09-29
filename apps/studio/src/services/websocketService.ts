@@ -317,7 +317,7 @@ class WebSocketService {
 
 // 默认配置
 const defaultConfig: WebSocketConfig = {
-  url: import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws',
+  url: import.meta.env.VITE_WS_URL || 'ws://localhost:8000/socket.io',
   reconnectInterval: 2000, // 2秒
   maxReconnectAttempts: 10,
   heartbeatInterval: 30000, // 30秒

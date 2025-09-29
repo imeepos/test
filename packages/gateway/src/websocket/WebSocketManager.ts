@@ -230,6 +230,19 @@ export class WebSocketManager {
    * 处理AI生成请求
    */
   private async handleAIGenerateRequest(socket: any, data: any): Promise<void> {
+    const connection = this.connections.get(socket.id)
+    if (!connection) {
+      socket.emit(WebSocketEventType.AI_GENERATE_ERROR, {
+        requestId: data.requestId,
+        error: {
+          code: 'CONNECTION_NOT_FOUND',
+          message: 'WebSocket connection not found',
+          timestamp: new Date()
+        }
+      })
+      return
+    }
+
     try {
       // 发送处理中状态
       socket.emit(WebSocketEventType.AI_GENERATE_PROGRESS, {
@@ -239,34 +252,31 @@ export class WebSocketManager {
         message: 'Request queued for processing'
       } as AIProgressEvent)
 
-      // TODO: 集成@sker/broker服务，将请求发送到消息队列
-      // 这里暂时模拟异步处理
-      setTimeout(() => {
-        socket.emit(WebSocketEventType.AI_GENERATE_PROGRESS, {
-          requestId: data.requestId,
-          stage: 'processing',
-          progress: 50,
-          message: 'Processing with AI model'
-        } as AIProgressEvent)
+      // 构造AI任务消息
+      const taskMessage = {
+        taskId: data.requestId || this.generateEventId(),
+        type: data.type || 'generate',
+        inputs: data.inputs || [],
+        context: data.context,
+        instruction: data.instruction,
+        nodeId: data.nodeId,
+        projectId: data.projectId,
+        userId: connection.userId,
+        priority: data.priority || 'normal',
+        timestamp: new Date(),
+        metadata: {
+          socketId: socket.id,
+          originalData: data
+        }
+      }
 
-        setTimeout(() => {
-          socket.emit(WebSocketEventType.AI_GENERATE_RESPONSE, {
-            requestId: data.requestId,
-            content: 'Generated content based on inputs',
-            title: 'AI Generated Title',
-            confidence: 0.85,
-            tags: ['ai-generated'],
-            metadata: {
-              requestId: data.requestId,
-              model: 'gpt-4',
-              processingTime: 2000,
-              tokenCount: 150
-            }
-          })
-        }, 1000)
-      }, 500)
+      // 触发AI任务发布事件，让Gateway的QueueManager处理
+      this.emit('aiTaskRequest', taskMessage)
+
+      console.log(`AI任务请求已接收: ${taskMessage.taskId}, 用户: ${connection.userId}`)
 
     } catch (error) {
+      console.error('处理AI生成请求失败:', error)
       socket.emit(WebSocketEventType.AI_GENERATE_ERROR, {
         requestId: data.requestId,
         error: {
@@ -363,15 +373,16 @@ export class WebSocketManager {
   /**
    * 发送消息给特定用户
    */
-  sendToUser(userId: string, type: string, payload: any): void {
+  sendToUser(userId: string, message: { type: string, data?: any }): void {
     const userConnections = this.userConnections.get(userId)
     if (!userConnections) {
+      console.warn(`用户 ${userId} 没有活跃连接`)
       return
     }
 
     const event: WebSocketEvent = {
-      type,
-      payload,
+      type: message.type,
+      payload: message.data,
       id: this.generateEventId(),
       timestamp: new Date()
     }
@@ -379,23 +390,33 @@ export class WebSocketManager {
     userConnections.forEach(socketId => {
       const connection = this.connections.get(socketId)
       if (connection && connection.connected) {
-        connection.socket.emit(type, payload)
+        connection.socket.emit(message.type, message.data || {})
       }
     })
+
+    console.log(`消息已发送给用户 ${userId}: ${message.type}`)
+  }
+
+  /**
+   * 发送消息给项目成员
+   */
+  sendToProject(projectId: string, message: { type: string, data?: any }): void {
+    this.broadcastToRoom(`project:${projectId}`, message.type, message.data)
   }
 
   /**
    * 广播消息给所有连接
    */
-  broadcast(type: string, payload: any): void {
+  broadcast(message: { type: string, data?: any }): void {
     const event: WebSocketEvent = {
-      type,
-      payload,
+      type: message.type,
+      payload: message.data,
       id: this.generateEventId(),
       timestamp: new Date()
     }
 
-    this.io.emit(type, payload)
+    this.io.emit(message.type, message.data || {})
+    console.log(`广播消息: ${message.type}`)
   }
 
   /**

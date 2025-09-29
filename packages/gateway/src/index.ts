@@ -13,7 +13,16 @@ export type { ApiRequest, ApiResponse } from './types/ApiTypes'
 export type { WebSocketEvent } from './types/WebSocketTypes'
 
 // 便捷创建函数
-export { createGateway } from './factory/createGateway'
+export {
+  createGateway,
+  createDevelopmentGateway,
+  createProductionGateway,
+  createTestGateway,
+  startGateway,
+  startDevelopmentGateway,
+  startProductionGateway,
+  type GatewayDependencies
+} from './factory/createGateway'
 
 // 常量和配置
 export { DEFAULT_CONFIG } from './config/defaults'

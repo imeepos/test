@@ -1,11 +1,13 @@
-import type { 
-  AINode, 
-  Position, 
-  CreateNodeOptions, 
+import type {
+  AINode,
+  Position,
+  CreateNodeOptions,
   NodeEdit,
   AIGenerateRequest,
-  AIGenerateResponse
+  AIGenerateResponse,
+  SemanticType
 } from '@/types'
+import { NodeDataConverter } from '@/types/converter'
 import { aiService } from './aiService'
 import { websocketService } from './websocketService'
 
@@ -66,7 +68,7 @@ class NodeService {
         nodeContent = aiResponse.content || content
         nodeTitle = aiResponse.title || title
         nodeTags = aiResponse.tags || []
-        confidence = aiResponse.confidence || 0.5
+        confidence = aiResponse.confidence || 80 // 默认80%置信度
 
       } catch (error) {
         console.error('AI生成失败，使用默认内容:', error)
@@ -83,6 +85,12 @@ class NodeService {
       }
     }
 
+    // 自动检测语义类型
+    let semantic_type: SemanticType | undefined
+    if (nodeContent) {
+      semantic_type = this.detectSemanticType(nodeContent)
+    }
+
     const node: AINode = {
       id: nodeId,
       content: nodeContent,
@@ -91,14 +99,22 @@ class NodeService {
       confidence,
       status: 'idle',
       tags: nodeTags,
+      version: 1,
       position,
       connections: [],
-      version: 1,
+      semantic_type,
+      user_rating: undefined, // 初始无用户评分
       createdAt: now,
       updatedAt: now,
       metadata: {
-        semantic: [],
+        semantic: semantic_type ? [semantic_type] : [],
         editCount: 0,
+        processingHistory: [],
+        statistics: {
+          viewCount: 0,
+          editDurationTotal: 0,
+          aiInteractions: useAI ? 1 : 0
+        }
       }
     }
 
@@ -384,20 +400,29 @@ class NodeService {
   }
 
   /**
-   * 使用AI生成内容
+   * 使用AI生成内容（通过WebSocket到Gateway）
+   * 按照正确架构：WebSocket → Gateway → Broker → Engine
    */
   private async generateContentWithAI(request: AIGenerateRequest): Promise<AIGenerateResponse> {
-    // 优先使用WebSocket，如果不可用则使用HTTP API
-    if (websocketService.getStatus() === 'connected') {
-      try {
-        return await websocketService.generateContent(request)
-      } catch (error) {
-        console.warn('WebSocket AI生成失败，回退到HTTP API:', error)
-      }
-    }
+    try {
+      // 通过WebSocket发送到Gateway，由Gateway路由到消息队列
+      const response = await websocketService.generateContent(request)
+      return response
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      console.error('AI内容生成失败:', errorMessage)
 
-    return await aiService.generateContent(request)
+      throw new Error(
+        'AI内容生成失败: ' + errorMessage +
+        '\n\n这通常是由于以下原因:\n' +
+        '1. WebSocket连接不可用\n' +
+        '2. Gateway服务异常\n' +
+        '3. 后端消息队列或AI引擎服务异常\n\n' +
+        '请检查网络连接和服务状态后重试'
+      )
+    }
   }
+
 
   /**
    * 使用AI优化内容
@@ -418,6 +443,64 @@ class NodeService {
    */
   private generateNodeId(): string {
     return `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  /**
+   * 自动检测内容的语义类型
+   */
+  private detectSemanticType(content: string): SemanticType | undefined {
+    const lowerContent = content.toLowerCase()
+
+    // 关键词匹配规则
+    const semanticRules: Record<SemanticType, string[]> = {
+      'requirement': ['需求', '要求', '必须', 'requirement', 'need', 'should', 'must'],
+      'solution': ['方案', '解决', '实现', 'solution', 'approach', 'implement'],
+      'plan': ['计划', '安排', '步骤', 'plan', 'schedule', 'roadmap', 'timeline'],
+      'analysis': ['分析', '评估', '研究', 'analysis', 'evaluate', 'research', 'study'],
+      'idea': ['想法', '创意', '点子', 'idea', 'concept', 'brainstorm'],
+      'question': ['问题', '疑问', '？', 'question', 'why', 'how', 'what', '?'],
+      'answer': ['答案', '回答', '解答', 'answer', 'response', 'reply'],
+      'decision': ['决定', '选择', '确定', 'decision', 'choose', 'select', 'decide'],
+      'fusion': ['融合', '合并', '整合', 'fusion', 'merge', 'integrate'],
+      'summary': ['总结', '概述', '摘要', 'summary', 'overview', 'abstract'],
+      'synthesis': ['综合', '合成', 'synthesis', 'combine', 'comprehensive'],
+      'comparison': ['对比', '比较', '比较', 'comparison', 'compare', 'versus', 'vs'],
+      'fusion-error': ['错误', '失败', 'error', 'failed', 'failure']
+    }
+
+    // 计算每种类型的匹配分数
+    let maxScore = 0
+    let bestType: SemanticType | undefined
+
+    for (const [type, keywords] of Object.entries(semanticRules)) {
+      let score = 0
+      keywords.forEach(keyword => {
+        const matches = (lowerContent.match(new RegExp(keyword, 'g')) || []).length
+        score += matches
+      })
+
+      if (score > maxScore) {
+        maxScore = score
+        bestType = type as SemanticType
+      }
+    }
+
+    // 如果没有明确匹配，返回undefined让系统或AI来决定
+    return maxScore > 0 ? bestType : undefined
+  }
+
+  /**
+   * 数据转换辅助方法：转换为后端格式
+   */
+  toBackendFormat(node: AINode) {
+    return NodeDataConverter.toBackend(node)
+  }
+
+  /**
+   * 数据转换辅助方法：从后端格式转换
+   */
+  fromBackendFormat(backendNode: any): AINode {
+    return NodeDataConverter.fromBackend(backendNode)
   }
 }
 

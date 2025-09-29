@@ -12,6 +12,10 @@ import { ErrorHandler } from '../middleware/ErrorHandler'
 import { AuthMiddleware } from '../middleware/AuthMiddleware'
 import { ValidationMiddleware } from '../middleware/ValidationMiddleware'
 import { RequestEnhancer } from '../middleware/RequestEnhancer'
+import { QueueManager } from '../messaging/QueueManager'
+import { AIEngine } from '@sker/engine'
+import { StoreService } from '@sker/store'
+import { MessageBroker } from '@sker/broker'
 
 /**
  * Gateway服务器 - 统一的API网关和WebSocket管理
@@ -21,20 +25,50 @@ export class GatewayServer {
   private server: any
   private apiRouter: ApiRouter
   private wsManager: WebSocketManager
+  private queueManager?: QueueManager
   private config: GatewayConfig
   private isRunning: boolean = false
 
-  constructor(config: GatewayConfig) {
+  constructor(
+    config: GatewayConfig,
+    dependencies?: {
+      aiEngine?: AIEngine
+      storeService?: StoreService
+      messageBroker?: MessageBroker
+    }
+  ) {
     this.config = config
     this.app = express()
     this.server = createServer(this.app)
 
-    this.apiRouter = new ApiRouter()
+    // 初始化队列管理器
+    if (dependencies?.messageBroker) {
+      this.queueManager = new QueueManager(dependencies.messageBroker, {
+        exchanges: {
+          aiTasks: 'llm.direct',
+          websocket: 'realtime.fanout',
+          system: 'events.topic',
+          deadLetter: 'dlx.direct'
+        },
+        queues: {
+          aiTaskResults: 'result.notify.queue',
+          websocketBroadcast: 'events.websocket.queue',
+          systemNotifications: 'events.notification.queue'
+        }
+      })
+    }
+
+    this.apiRouter = new ApiRouter({
+      ...dependencies,
+      queueManager: this.queueManager
+    })
     this.wsManager = new WebSocketManager(this.server, config.websocket)
 
     this.setupMiddleware()
     this.setupRoutes()
     this.setupErrorHandling()
+    this.setupQueueEventHandlers()
+    this.setupWebSocketEventHandlers()
   }
 
   /**
@@ -137,6 +171,155 @@ export class GatewayServer {
   }
 
   /**
+   * 设置队列事件处理器
+   */
+  private setupQueueEventHandlers(): void {
+    if (!this.queueManager) return
+
+    // 处理AI任务结果
+    this.queueManager.on('aiTaskResult', (taskResult, metadata) => {
+      console.log(`转发AI任务结果到WebSocket: ${taskResult.taskId}`)
+
+      // 根据任务状态发送不同的WebSocket消息
+      if (taskResult.status === 'completed' && taskResult.result) {
+        // 发送成功的AI生成结果
+        this.wsManager.sendToUser(taskResult.userId, {
+          type: 'AI_GENERATE_RESPONSE',
+          data: {
+            requestId: taskResult.taskId,
+            ...taskResult.result
+          }
+        })
+      } else if (taskResult.status === 'failed') {
+        // 发送AI处理错误
+        this.wsManager.sendToUser(taskResult.userId, {
+          type: 'AI_GENERATE_ERROR',
+          data: {
+            requestId: taskResult.taskId,
+            error: taskResult.error || {
+              code: 'AI_PROCESSING_FAILED',
+              message: 'AI processing failed',
+              timestamp: new Date()
+            }
+          }
+        })
+      } else if (taskResult.status === 'progress') {
+        // 发送处理进度
+        this.wsManager.sendToUser(taskResult.userId, {
+          type: 'AI_GENERATE_PROGRESS',
+          data: {
+            requestId: taskResult.taskId,
+            stage: 'processing',
+            progress: taskResult.progress || 50,
+            message: taskResult.message || 'Processing...'
+          }
+        })
+      }
+
+      // 同时发送通用的任务结果消息（供queueService使用）
+      this.wsManager.sendToUser(taskResult.userId, {
+        type: 'ai_task_result',
+        data: taskResult
+      })
+    })
+
+    // 处理WebSocket广播消息
+    this.queueManager.on('websocketBroadcast', (message, metadata) => {
+      console.log(`处理WebSocket广播消息: ${message.type}`)
+
+      // 根据消息目标进行广播
+      if (message.target === 'all') {
+        this.wsManager.broadcast(message)
+      } else if (message.target.startsWith('user:')) {
+        const userId = message.target.replace('user:', '')
+        this.wsManager.sendToUser(userId, message)
+      } else if (message.target.startsWith('project:')) {
+        const projectId = message.target.replace('project:', '')
+        this.wsManager.sendToProject(projectId, message)
+      }
+    })
+
+    // 处理系统通知
+    this.queueManager.on('systemNotification', (notification, metadata) => {
+      console.log(`处理系统通知: ${notification.type}`)
+
+      // 发送系统通知给管理员或相关用户
+      if (notification.recipients) {
+        notification.recipients.forEach((recipient: string) => {
+          this.wsManager.sendToUser(recipient, {
+            type: 'system_notification',
+            data: notification
+          })
+        })
+      }
+    })
+
+    // 处理broker连接事件
+    this.queueManager.on('brokerConnected', () => {
+      console.log('消息代理已连接')
+    })
+
+    this.queueManager.on('brokerDisconnected', () => {
+      console.log('消息代理已断开')
+    })
+
+    this.queueManager.on('brokerError', (error) => {
+      console.error('消息代理错误:', error)
+    })
+  }
+
+  /**
+   * 设置WebSocket事件处理器
+   */
+  private setupWebSocketEventHandlers(): void {
+    if (!this.queueManager) {
+      console.warn('QueueManager未初始化，跳过WebSocket事件处理器设置')
+      return
+    }
+
+    // 处理来自WebSocket的AI任务请求
+    this.wsManager.on('aiTaskRequest', async (taskMessage) => {
+      try {
+        console.log(`处理来自WebSocket的AI任务请求: ${taskMessage.taskId}`)
+
+        // 发送任务到消息队列
+        await this.queueManager!.publishAITask(taskMessage)
+
+        console.log(`AI任务已发布到队列: ${taskMessage.taskId}`)
+
+        // 发送确认消息给WebSocket客户端
+        if (taskMessage.userId) {
+          this.wsManager.sendToUser(taskMessage.userId, {
+            type: 'ai_task_queued',
+            data: {
+              taskId: taskMessage.taskId,
+              status: 'queued',
+              message: 'Task successfully queued for processing'
+            }
+          })
+        }
+      } catch (error) {
+        console.error('处理AI任务请求失败:', error)
+
+        // 发送错误消息给WebSocket客户端
+        if (taskMessage.userId) {
+          this.wsManager.sendToUser(taskMessage.userId, {
+            type: 'ai_task_error',
+            data: {
+              taskId: taskMessage.taskId,
+              error: {
+                code: 'QUEUE_PUBLISH_ERROR',
+                message: error instanceof Error ? error.message : 'Failed to queue task',
+                timestamp: new Date()
+              }
+            }
+          })
+        }
+      }
+    })
+  }
+
+  /**
    * 启动服务器
    */
   async start(): Promise<void> {
@@ -160,6 +343,16 @@ export class GatewayServer {
         // 启动WebSocket管理器
         this.wsManager.start()
 
+        // 初始化队列管理器
+        if (this.queueManager) {
+          try {
+            await this.queueManager.initialize()
+            console.log('📡 队列管理器已初始化')
+          } catch (queueError) {
+            console.warn('⚠️ 队列管理器初始化失败，但服务器仍将继续运行:', queueError)
+          }
+        }
+
         resolve()
       })
 
@@ -181,7 +374,17 @@ export class GatewayServer {
       return
     }
 
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+      // 清理队列管理器
+      if (this.queueManager) {
+        try {
+          await this.queueManager.cleanup()
+          console.log('队列管理器已清理')
+        } catch (error) {
+          console.error('队列管理器清理失败:', error)
+        }
+      }
+
       // 停止WebSocket管理器
       this.wsManager.stop()
 
@@ -209,6 +412,13 @@ export class GatewayServer {
   }
 
   /**
+   * 获取队列管理器
+   */
+  getQueueManager(): QueueManager | undefined {
+    return this.queueManager
+  }
+
+  /**
    * 获取Express应用实例
    */
   getApp(): express.Application {
@@ -226,11 +436,14 @@ export class GatewayServer {
    * 获取服务器统计信息
    */
   getStats() {
+    const queueStats = this.queueManager?.getStats()
+
     return {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       connections: this.wsManager.getConnectionCount(),
       isRunning: this.isRunning,
+      queue: queueStats || { isInitialized: false, brokerConnected: false },
       config: {
         port: this.config.port,
         cors: this.config.cors.origin,

@@ -306,7 +306,7 @@ export class ConnectionRepository extends BaseRepository<Connection> {
       `
 
       const result = await this.pool.query(query, [nodeId])
-      return result.rowCount
+      return result.rowCount || 0
     } catch (error) {
       throw new DatabaseError(
         `删除节点连接失败: ${error instanceof Error ? error.message : error}`,
@@ -541,7 +541,7 @@ export class ConnectionRepository extends BaseRepository<Connection> {
       const connections = row.connections
 
       // 构建路径结果
-      const pathResult = []
+      const pathResult: Array<{nodeId: any, connectionId: any}> = []
       for (let i = 0; i < path.length; i++) {
         pathResult.push({
           nodeId: path[i],
@@ -569,7 +569,7 @@ export class ConnectionRepository extends BaseRepository<Connection> {
   ): Promise<Connection[]> {
     try {
       const sourceConnections = await this.findByProject(sourceProjectId)
-      const newConnections = []
+      const newConnections: Connection[] = []
 
       for (const connection of sourceConnections) {
         const newSourceId = nodeIdMapping[connection.source_node_id]

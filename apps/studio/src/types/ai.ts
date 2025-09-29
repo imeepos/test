@@ -25,11 +25,13 @@ export type AIModel = 'gpt-3.5-turbo' | 'gpt-4' | 'claude-3' | 'local'
 export interface AIGenerateResponse {
   content: string
   title?: string
-  confidence: number
+  confidence: number // 0-100 置信度百分比
   reasoning?: string
   suggestions?: string[]
   tags: string[]
   importance?: number
+  semantic_type?: string // 语义类型
+  user_rating?: number // 用户评分 0-5
   metadata?: {
     requestId?: string
     model?: AIModel

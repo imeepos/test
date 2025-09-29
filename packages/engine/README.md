@@ -2,6 +2,51 @@
 
 AI处理引擎服务包 - 为@sker/studio提供强大的AI内容生成和语义分析能力。
 
+## 系统架构位置
+
+`@sker/engine` 是SKER系统的**AI处理引擎层**，负责所有AI相关的智能处理任务：
+
+```
+API网关 (@sker/gateway)
+        ↓ HTTP调用
+消息代理 (@sker/broker)
+        ↓ 任务调度
+📍 AI引擎 (@sker/engine) ← 当前模块
+        ↓ 结果存储
+数据存储 (@sker/store)
+```
+
+### 服务运行模式
+
+**双模式运行**: @sker/engine 支持两种运行模式：
+
+1. **独立API服务器模式**:
+   ```bash
+   # 独立运行，直接为前端提供AI服务
+   npm run server:dev  # 默认端口: 8000
+   ```
+
+2. **消息队列集成模式**:
+   ```
+   Gateway → Broker → Engine → Store
+   ```
+
+### 服务间集成关系
+
+- **任务接收**: 通过以下方式接收AI处理请求：
+  - `@sker/broker`: 消息队列任务调度 (推荐生产环境)
+  - HTTP API: 直接API调用 (开发和测试)
+- **数据交互**:
+  - `@sker/store`: 读取节点数据、存储处理结果
+- **依赖关系**:
+  ```json
+  {
+    "@sker/models": "workspace:*",
+    "@sker/config": "workspace:*",
+    "@sker/ai": "workspace:*"
+  }
+  ```
+
 ## 🎯 核心功能
 
 ### LLM集成管理

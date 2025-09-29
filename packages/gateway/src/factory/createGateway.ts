@@ -1,11 +1,23 @@
 import { GatewayServer } from '../server/GatewayServer'
 import { DEFAULT_CONFIG, getConfigForEnvironment, mergeConfig } from '../config/defaults'
 import type { GatewayConfig } from '../types/GatewayConfig'
+import { AIEngine } from '@sker/engine'
+import { StoreService } from '@sker/store'
+import { MessageBroker } from '@sker/broker'
+
+export interface GatewayDependencies {
+  aiEngine?: AIEngine
+  storeService?: StoreService
+  messageBroker?: MessageBroker
+}
 
 /**
  * 创建Gateway服务器的工厂函数
  */
-export function createGateway(userConfig: Partial<GatewayConfig> = {}): GatewayServer {
+export function createGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): GatewayServer {
   // 获取环境特定配置
   const envConfig = getConfigForEnvironment()
 
@@ -19,43 +31,52 @@ export function createGateway(userConfig: Partial<GatewayConfig> = {}): GatewayS
   validateConfig(finalConfig)
 
   // 创建Gateway服务器实例
-  return new GatewayServer(finalConfig)
+  return new GatewayServer(finalConfig, dependencies)
 }
 
 /**
  * 创建开发环境Gateway
  */
-export function createDevelopmentGateway(userConfig: Partial<GatewayConfig> = {}): GatewayServer {
+export function createDevelopmentGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): GatewayServer {
   const devConfig: Partial<GatewayConfig> = {
     ...getConfigForEnvironment('development'),
     ...userConfig
   }
 
-  return createGateway(devConfig)
+  return createGateway(devConfig, dependencies)
 }
 
 /**
  * 创建生产环境Gateway
  */
-export function createProductionGateway(userConfig: Partial<GatewayConfig> = {}): GatewayServer {
+export function createProductionGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): GatewayServer {
   const prodConfig: Partial<GatewayConfig> = {
     ...getConfigForEnvironment('production'),
     ...userConfig
   }
 
-  return createGateway(prodConfig)
+  return createGateway(prodConfig, dependencies)
 }
 
 /**
  * 创建测试环境Gateway
  */
-export function createTestGateway(userConfig: Partial<GatewayConfig> = {}): GatewayServer {
+export function createTestGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): GatewayServer {
   const testConfig: Partial<GatewayConfig> = {
     ...getConfigForEnvironment('test'),
     ...userConfig
   }
 
-  return createGateway(testConfig)
+  return createGateway(testConfig, dependencies)
 }
 
 /**
@@ -99,6 +120,11 @@ function validateConfig(config: GatewayConfig): void {
 
   if (config.websocket.timeout < config.websocket.heartbeatInterval * 2) {
     errors.push('WebSocket timeout must be at least 2x heartbeat interval')
+  }
+
+  // 在生产环境中建议配置消息队列
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('建议在生产环境中配置MessageBroker以获得更好的性能和可靠性')
   }
 
   // 如果有错误，抛出异常
@@ -181,8 +207,11 @@ export function createConfigFromEnv(): Partial<GatewayConfig> {
 /**
  * 快速启动Gateway
  */
-export async function startGateway(userConfig: Partial<GatewayConfig> = {}): Promise<GatewayServer> {
-  const gateway = createGateway(userConfig)
+export async function startGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): Promise<GatewayServer> {
+  const gateway = createGateway(userConfig, dependencies)
   await gateway.start()
   return gateway
 }
@@ -190,8 +219,11 @@ export async function startGateway(userConfig: Partial<GatewayConfig> = {}): Pro
 /**
  * 快速启动开发环境Gateway
  */
-export async function startDevelopmentGateway(userConfig: Partial<GatewayConfig> = {}): Promise<GatewayServer> {
-  const gateway = createDevelopmentGateway(userConfig)
+export async function startDevelopmentGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): Promise<GatewayServer> {
+  const gateway = createDevelopmentGateway(userConfig, dependencies)
   await gateway.start()
   return gateway
 }
@@ -199,8 +231,11 @@ export async function startDevelopmentGateway(userConfig: Partial<GatewayConfig>
 /**
  * 快速启动生产环境Gateway
  */
-export async function startProductionGateway(userConfig: Partial<GatewayConfig> = {}): Promise<GatewayServer> {
-  const gateway = createProductionGateway(userConfig)
+export async function startProductionGateway(
+  userConfig: Partial<GatewayConfig> = {},
+  dependencies?: GatewayDependencies
+): Promise<GatewayServer> {
+  const gateway = createProductionGateway(userConfig, dependencies)
   await gateway.start()
   return gateway
 }

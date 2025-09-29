@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sker_db
+      POSTGRES_USER: sker_user
+      POSTGRES_PASSWORD: sker_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/store/src/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sker_user -d sker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: sker_user
+      RABBITMQ_DEFAULT_PASS: sker_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Application Services
+  store:
+    build:
+      context: .
+      dockerfile: packages/store/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://sker_user:sker_password@postgres:5432/sker_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sker-network
+    volumes:
+      - ./packages/store/.env:/app/packages/store/.env:ro
+    restart: unless-stopped
+
+  broker:
+    build:
+      context: .
+      dockerfile: packages/broker/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
+    ports:
+      - "3002:3002"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sker-network
+    volumes:
+      - ./packages/broker/.env:/app/packages/broker/.env:ro
+    restart: unless-stopped
+
+  engine:
+    build:
+      context: .
+      dockerfile: packages/engine/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
+    ports:
+      - "8001:8001"
+    depends_on:
+      broker:
+        condition: service_started
+    networks:
+      - sker-network
+    volumes:
+      - ./packages/engine/.env:/app/packages/engine/.env:ro
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: packages/gateway/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - STORE_SERVICE_URL=http://store:3001
+      - BROKER_SERVICE_URL=http://broker:3002
+      - ENGINE_SERVICE_URL=http://engine:8001
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - store
+      - broker
+      - engine
+    networks:
+      - sker-network
+    volumes:
+      - ./packages/gateway/.env:/app/packages/gateway/.env:ro
+    restart: unless-stopped
+
+networks:
+  sker-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

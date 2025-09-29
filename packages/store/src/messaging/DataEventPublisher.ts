@@ -1,4 +1,12 @@
-import { MessageBroker } from '@sker/broker'
+// import { MessageBroker } from '@sker/broker'
+// 临时类型定义，直到 @sker/broker 包可用
+interface MessageBroker {
+  connect(): Promise<void>
+  disconnect(): Promise<void>
+  isConnected(): boolean
+  on(event: string, callback: (...args: any[]) => void): void
+  publishWithConfirm(exchange: string, routingKey: string, data: any, options?: any): Promise<void>
+}
 import { EventEmitter } from 'events'
 import type {
   DataEvent,

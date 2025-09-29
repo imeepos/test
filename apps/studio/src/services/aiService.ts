@@ -35,9 +35,10 @@ class AIService {
       return {
         content: response.content,
         title: response.title,
-        confidence: response.confidence || 0.8,
+        confidence: this.normalizeConfidence(response.confidence || 80), // 默认80%置信度
         tags: response.tags || [],
         reasoning: response.reasoning,
+        semantic_type: response.semantic_type,
         metadata: {
           requestId,
           model: this.config.model,
@@ -239,6 +240,18 @@ class AIService {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * 规范化置信度值为0-100范围
+   */
+  private normalizeConfidence(confidence: number): number {
+    // 如果是0-1范围的值，转换为0-100
+    if (confidence >= 0 && confidence <= 1) {
+      return Math.round(confidence * 100)
+    }
+    // 如果已经是0-100范围，确保在有效范围内
+    return Math.max(0, Math.min(100, Math.round(confidence)))
   }
 }
 

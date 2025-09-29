@@ -2,6 +2,30 @@
 
 SKER 数据存储服务 - 提供 PostgreSQL 数据管理和 Redis 缓存的统一接口。
 
+## 系统架构位置
+
+`@sker/store` 是SKER系统的**数据存储层**，位于整个架构的底层，为上层服务提供数据持久化支持：
+
+```
+Frontend (@sker/studio)
+        ↓
+API网关 (@sker/gateway) ──┐
+        ↓                 │
+消息代理 (@sker/broker)    │ 依赖调用
+        ↓                 │
+AI引擎 (@sker/engine) ────┘
+        ↓
+📍 数据存储 (@sker/store) ← 当前模块
+```
+
+### 服务间集成关系
+
+- **被调用者**: 作为基础数据服务，被以下模块调用：
+  - `@sker/gateway`: 用户认证、项目数据访问
+  - `@sker/engine`: AI任务结果存储、节点数据读写
+- **无依赖**: 作为底层服务，不依赖其他业务模块
+- **外部依赖**: PostgreSQL数据库、Redis缓存服务
+
 ## 功能特性
 
 - 🗄️ **PostgreSQL 数据管理** - 完整的关系型数据库操作

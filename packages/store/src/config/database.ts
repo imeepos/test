@@ -1,5 +1,6 @@
 import { Pool, PoolConfig } from 'pg'
 import { createClient, RedisClientType } from 'redis'
+import { EventEmitter } from 'events'
 
 /**
  * 数据库配置接口
@@ -48,12 +49,13 @@ export const defaultDatabaseConfig: DatabaseConfig = {
 /**
  * 数据库连接管理器
  */
-export class DatabaseManager {
+export class DatabaseManager extends EventEmitter {
   private pgPool?: Pool
   private redisClient?: RedisClientType
   private config: DatabaseConfig
 
   constructor(config: DatabaseConfig = defaultDatabaseConfig) {
+    super()
     this.config = config
   }
 
@@ -91,8 +93,12 @@ export class DatabaseManager {
 
       await this.redisClient.connect()
 
+      // 发射连接成功事件
+      this.emit('connected')
+
     } catch (error) {
       console.error('数据库初始化失败:', error)
+      this.emit('error', error)
       throw error
     }
   }
@@ -254,6 +260,9 @@ export class DatabaseManager {
         await this.redisClient.disconnect()
         console.log('Redis 连接已关闭')
       }
+
+      // 发射断开连接事件
+      this.emit('disconnected')
     } catch (error) {
       console.error('关闭数据库连接时出错:', error)
     }
@@ -266,9 +275,12 @@ export class DatabaseManager {
     postgres: { status: 'healthy' | 'unhealthy'; latency?: number; error?: string }
     redis: { status: 'healthy' | 'unhealthy'; latency?: number; error?: string }
   }> {
-    const result = {
-      postgres: { status: 'unhealthy' as const, latency: undefined, error: undefined },
-      redis: { status: 'unhealthy' as const, latency: undefined, error: undefined }
+    const result: {
+      postgres: { status: 'healthy' | 'unhealthy'; latency?: number; error?: string }
+      redis: { status: 'healthy' | 'unhealthy'; latency?: number; error?: string }
+    } = {
+      postgres: { status: 'unhealthy' },
+      redis: { status: 'unhealthy' }
     }
 
     // 检查 PostgreSQL
