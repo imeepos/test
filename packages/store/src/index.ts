@@ -13,7 +13,7 @@ export { NodeRepository } from './repositories/NodeRepository'
 export { ConnectionRepository } from './repositories/ConnectionRepository'
 export { AITaskRepository } from './repositories/AITaskRepository'
 
-// 模型和类型
+// 模型和类型 - 从外部包导入
 export type {
   // 用户相关
   User,
@@ -73,7 +73,7 @@ export type {
   ValidationError,
   NotFoundError,
   UnauthorizedError
-} from './models'
+} from '@sker/models'
 
 // 迁移工具
 export { MigrationManager } from './migrations/migrate'
@@ -146,66 +146,16 @@ export const validatePassword = (password: string): {
   }
 }
 
-// 常量
-export const NODE_STATUS = {
-  IDLE: 'idle' as const,
-  PROCESSING: 'processing' as const,
-  COMPLETED: 'completed' as const,
-  ERROR: 'error' as const,
-  DELETED: 'deleted' as const
-}
-
-export const PROJECT_STATUS = {
-  ACTIVE: 'active' as const,
-  PAUSED: 'paused' as const,
-  COMPLETED: 'completed' as const,
-  ARCHIVED: 'archived' as const
-}
-
-export const CONNECTION_TYPE = {
-  INPUT: 'input' as const,
-  OUTPUT: 'output' as const,
-  BIDIRECTIONAL: 'bidirectional' as const,
-  DEPENDENCY: 'dependency' as const,
-  REFERENCE: 'reference' as const
-}
-
-export const AI_TASK_STATUS = {
-  PENDING: 'pending' as const,
-  QUEUED: 'queued' as const,
-  PROCESSING: 'processing' as const,
-  COMPLETED: 'completed' as const,
-  FAILED: 'failed' as const,
-  CANCELLED: 'cancelled' as const
-}
-
-export const AI_TASK_TYPE = {
-  CONTENT_GENERATION: 'content_generation' as const,
-  CONTENT_OPTIMIZATION: 'content_optimization' as const,
-  SEMANTIC_ANALYSIS: 'semantic_analysis' as const,
-  CONTENT_FUSION: 'content_fusion' as const,
-  BATCH_PROCESSING: 'batch_processing' as const,
-  NODE_ENHANCEMENT: 'node_enhancement' as const
-}
-
-export const SEMANTIC_TYPE = {
-  REQUIREMENT: 'requirement' as const,
-  SOLUTION: 'solution' as const,
-  PLAN: 'plan' as const,
-  ANALYSIS: 'analysis' as const,
-  IDEA: 'idea' as const,
-  QUESTION: 'question' as const,
-  ANSWER: 'answer' as const,
-  DECISION: 'decision' as const
-}
-
-export const IMPORTANCE_LEVEL = {
-  VERY_LOW: 1 as const,
-  LOW: 2 as const,
-  MEDIUM: 3 as const,
-  HIGH: 4 as const,
-  VERY_HIGH: 5 as const
-}
+// 常量 - 从外部包导入
+export {
+  NODE_STATUS,
+  PROJECT_STATUS,
+  CONNECTION_TYPE,
+  AI_TASK_STATUS,
+  AI_TASK_TYPE,
+  SEMANTIC_TYPE,
+  IMPORTANCE_LEVEL
+} from '@sker/models'
 
 // 默认导出
 export default {
