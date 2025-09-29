@@ -1,19 +1,19 @@
 // AI处理引擎主入口文件
 
-export { AIEngine } from '@/core/AIEngine'
-export { ContentGenerator } from '@/core/ContentGenerator'
-export { SemanticAnalyzer } from '@/core/SemanticAnalyzer'
-export { PromptTemplate } from '@/core/PromptTemplate'
-export { BatchProcessor } from '@/core/BatchProcessor'
+export { AIEngine } from './core/AIEngine.js'
+export { ContentGenerator } from './core/ContentGenerator.js'
+export { SemanticAnalyzer } from './core/SemanticAnalyzer.js'
+export { PromptTemplate } from './core/PromptTemplate.js'
+export { BatchProcessor } from './core/BatchProcessor.js'
 
-export { OpenAIProvider } from '@/providers/OpenAIProvider'
+export { OpenAIProvider } from './providers/OpenAIProvider.js'
 
-export { TokenCounter } from '@/utils/TokenCounter'
+export { TokenCounter } from './utils/TokenCounter.js'
 
 // Studio API 服务器相关
-export { StudioAPIServer, createAndStartStudioAPIServer } from '@/server/StudioAPIServer'
-export { StudioAPIAdapter, createStudioAPIAdapter } from '@/adapters/StudioAPIAdapter'
-export { createStudioAPIRouter } from '@/server/StudioAPIRouter'
+export { StudioAPIServer, createAndStartStudioAPIServer } from './server/StudioAPIServer.js'
+export { StudioAPIAdapter, createStudioAPIAdapter } from './adapters/StudioAPIAdapter.js'
+export { createStudioAPIRouter } from './server/StudioAPIRouter.js'
 
 // 类型定义导出
 export type {
@@ -54,7 +54,7 @@ export type {
   // 错误处理
   AIEngineError,
   ErrorDetails
-} from '@/types'
+} from './types/index.js'
 
 // Studio API 类型导出
 export type {
@@ -65,12 +65,12 @@ export type {
   StudioAIOptimizeRequest,
   StudioOptimizationFocus,
   StudioAIProcessingState
-} from '@/adapters/StudioAPIAdapter'
+} from './adapters/StudioAPIAdapter.js'
 
 export type {
   StudioAPIServerConfig
-} from '@/server/StudioAPIServer'
+} from './server/StudioAPIServer.js'
 
 // 便利函数导出
-export { createEngine } from '@/factory/EngineFactory'
-export { validateConfig } from '@/utils/ConfigValidator'
+export { createEngine } from './factory/EngineFactory.js'
+export { validateConfig } from './utils/ConfigValidator.js'

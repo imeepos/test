@@ -20,20 +20,20 @@ import type {
   UsageStats,
   CacheConfig,
   CacheEntry
-} from '@/types'
-import { OpenAIProvider } from '@/providers/OpenAIProvider'
-import { ContentGenerator } from './ContentGenerator'
-import { SemanticAnalyzer } from './SemanticAnalyzer'
-import { PromptTemplate } from './PromptTemplate'
+} from '../types/index.js'
+import { OpenAIProvider } from '../providers/OpenAIProvider.js'
+import { ContentGenerator } from './ContentGenerator.js'
+import { SemanticAnalyzer } from './SemanticAnalyzer.js'
+import { PromptTemplate } from './PromptTemplate.js'
 
 /**
  * AI引擎核心类
  * 提供统一的AI处理接口，支持内容生成、优化、融合和语义分析
  */
 export class AIEngine extends EventEmitter {
-  private provider: AIProvider
-  private contentGenerator: ContentGenerator
-  private semanticAnalyzer: SemanticAnalyzer
+  private provider!: AIProvider
+  private contentGenerator!: ContentGenerator
+  private semanticAnalyzer!: SemanticAnalyzer
   private templates: Map<string, PromptTemplate>
   private config: EngineConfig
   private stats: UsageStats

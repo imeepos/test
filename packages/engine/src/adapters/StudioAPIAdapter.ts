@@ -1,4 +1,4 @@
-import { AIEngine } from '../core/AIEngine'
+import { AIEngine } from '../core/AIEngine.js'
 import type {
   GenerateRequest,
   GenerateResult,
@@ -7,17 +7,17 @@ import type {
   BatchProcessRequest,
   SemanticAnalysisRequest,
   SemanticAnalysisResult
-} from '../types'
+} from '../types/index.js'
 
 /**
  * 前端 Studio 接口类型定义（对应前端类型）
  */
 export interface StudioAIGenerateRequest {
   inputs: string[]
-  context: string
+  context?: string
   nodeId?: string
   type?: string
-  instruction: string
+  instruction?: string
   options?: StudioAIGenerateOptions
 }
 
@@ -32,7 +32,7 @@ export type StudioAIModel = 'gpt-3.5-turbo' | 'gpt-4' | 'claude-3' | 'local'
 
 export interface StudioAIGenerateResponse {
   content: string
-  title: string
+  title?: string
   confidence: number
   reasoning?: string
   suggestions?: string[]
