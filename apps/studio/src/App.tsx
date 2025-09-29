@@ -1,5 +1,7 @@
 import React from 'react'
 import { CanvasPage } from '@/pages/CanvasPage'
+import { ToastContainer } from '@/components/ui'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import { useUIStore, useAIStore } from '@/stores'
 import { initializeServices, cleanupServices } from '@/services'
 
@@ -102,9 +104,23 @@ function App() {
   }, [])
 
   return (
-    <div className="App">
-      <CanvasPage />
-    </div>
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        // 记录错误到控制台
+        console.error('应用错误:', error)
+        console.error('错误信息:', errorInfo)
+        
+        // 在生产环境中，这里可以发送错误到监控服务
+        if (!import.meta.env.DEV) {
+          // 例如: sendErrorToMonitoring(error, errorInfo)
+        }
+      }}
+    >
+      <div className="App">
+        <CanvasPage />
+        <ToastContainer />
+      </div>
+    </ErrorBoundary>
   )
 }
 
