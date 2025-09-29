@@ -945,7 +945,7 @@ export class ApiRouter {
 
       try {
         // 通过存储服务的数据库连接执行查询
-        const pool = (this.storeService as any).nodeRepo?.pool
+        const pool = (this.storeService as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
         if (!pool) {
           throw new Error('Database connection not available')
         }
@@ -1069,7 +1069,7 @@ export class ApiRouter {
 
       try {
         // 获取指定版本的数据
-        const pool = (this.storeService as any).nodeRepo?.pool
+        const pool = (this.storeService as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
         if (!pool) {
           throw new Error('Database connection not available')
         }
@@ -1456,9 +1456,9 @@ export class ApiRouter {
       const models: string[] = []
 
       // 从配置中提取可用模型
-      Object.values(providers).forEach((provider: any) => {
+      Object.values(providers).forEach((provider: Record<string, unknown>) => {
         if (provider.models && Array.isArray(provider.models)) {
-          models.push(...provider.models)
+          models.push(...(provider.models as string[]))
         }
       })
 
@@ -1473,7 +1473,7 @@ export class ApiRouter {
     }
   }
 
-  private async batchGenerate(req: ApiRequest, res: ApiResponse): Promise<void> {
+  private async batchGenerate(req: ApiRequest<BatchGenerateRequest>, res: ApiResponse): Promise<void> {
     try {
       const { requests, options = {} } = req.body
       const userId = req.user?.id
@@ -1554,7 +1554,7 @@ export class ApiRouter {
   // 项目管理处理器
   // =================
 
-  private async createProject(req: ApiRequest, res: ApiResponse): Promise<void> {
+  private async createProject(req: ApiRequest<ProjectCreateData>, res: ApiResponse): Promise<void> {
     try {
       if (!this.storeService) {
         res.error({
@@ -1753,7 +1753,7 @@ export class ApiRouter {
       }
 
       // 准备更新数据
-      const updateData: any = {}
+      const updateData: Partial<ProjectUpdateData> = {}
       const {
         name,
         description,
@@ -1956,14 +1956,14 @@ export class ApiRouter {
         pageSize = 20,
         sortBy = 'updated_at',
         sortDirection = 'DESC'
-      } = req.query as any
+      } = req.query as ProjectSearchQuery
 
       // 构建查询选项
-      const options: any = {
-        limit: Math.min(parseInt(pageSize), 100),
-        offset: (parseInt(page) - 1) * parseInt(pageSize),
+      const options: QueryOptions = {
+        limit: Math.min(parseInt(pageSize as string), 100),
+        offset: (parseInt(page as string) - 1) * parseInt(pageSize as string),
         orderBy: sortBy,
-        orderDirection: sortDirection.toUpperCase(),
+        orderDirection: (sortDirection as string).toUpperCase() as 'ASC' | 'DESC',
         filters: {}
       }
 
@@ -1999,7 +1999,17 @@ export class ApiRouter {
       const hasPrev = currentPage > 1
 
       // 格式化响应数据
-      const formattedResults = results.map((project: any) => ({
+      const formattedResults = results.map((project: {
+        id: string;
+        name: string;
+        description: string;
+        status: string;
+        is_archived: boolean;
+        user_id: string;
+        created_at: Date;
+        updated_at: Date;
+        last_accessed_at: Date;
+      }) => ({
         id: project.id,
         name: project.name,
         description: project.description,
@@ -2208,7 +2218,7 @@ export class ApiRouter {
   // 用户管理处理器
   // =================
 
-  private async login(req: ApiRequest, res: ApiResponse): Promise<void> {
+  private async login(req: ApiRequest<LoginRequest>, res: ApiResponse): Promise<void> {
     try {
       if (!this.storeService) {
         res.error({
@@ -2362,7 +2372,7 @@ export class ApiRouter {
     }
   }
 
-  private async refreshToken(req: ApiRequest, res: ApiResponse): Promise<void> {
+  private async refreshToken(req: ApiRequest<RefreshTokenRequest>, res: ApiResponse): Promise<void> {
     try {
       if (!this.storeService) {
         res.error({
@@ -2527,7 +2537,7 @@ export class ApiRouter {
     }
   }
 
-  private async updateProfile(req: ApiRequest, res: ApiResponse): Promise<void> {
+  private async updateProfile(req: ApiRequest<ProfileUpdateRequest>, res: ApiResponse): Promise<void> {
     try {
       if (!this.storeService) {
         res.error({
@@ -2564,7 +2574,7 @@ export class ApiRouter {
         }
 
         // 准备更新数据（只允许更新某些字段）
-        const updateData: any = {}
+        const updateData: Record<string, unknown> = {}
         const {
           name,
           bio,
@@ -2762,7 +2772,7 @@ export class ApiRouter {
   /**
    * 生成JWT Token（简化版）
    */
-  private generateJWTToken(payload: any): string {
+  private generateJWTToken(payload: JWTPayload): string {
     try {
       // 这里是简化实现，实际应使用jsonwebtoken库
       // const jwt = require('jsonwebtoken')
@@ -2807,7 +2817,7 @@ export class ApiRouter {
   /**
    * 验证刷新令牌
    */
-  private verifyRefreshToken(refreshToken: string): any {
+  private verifyRefreshToken(refreshToken: string): RefreshTokenPayload | null {
     try {
       // 简化实现：解析刷新令牌
       const parts = refreshToken.split('.')

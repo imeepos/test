@@ -1,0 +1,71 @@
+{
+  "name": "@sker/plugin-sdk",
+  "version": "1.0.0",
+  "description": "SKER 插件开发 SDK - 为第三方开发者提供完整的插件开发接口",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.esm.js",
+  "scripts": {
+    "build": "rollup -c rollup.config.js",
+    "dev": "rollup -c rollup.config.js --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "docs": "typedoc src/index.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "sker",
+    "plugin",
+    "sdk",
+    "canvas",
+    "ai",
+    "collaboration",
+    "typescript"
+  ],
+  "author": "SKER Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sker/plugin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/sker/plugin-sdk/issues"
+  },
+  "homepage": "https://developer.sker.com",
+  "dependencies": {
+    "eventemitter3": "^5.0.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "rollup": "^4.6.1",
+    "rollup-plugin-dts": "^6.1.0",
+    "ts-jest": "^29.1.1",
+    "typedoc": "^0.25.4",
+    "typescript": "^5.3.2"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  }
+}

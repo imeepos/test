@@ -1,6 +1,7 @@
 {
   "name": "@sker/engine",
   "version": "1.0.0",
+  "type": "module",
   "description": "AI处理引擎 - LLM调用、智能内容生成、语义分析、提示词管理",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

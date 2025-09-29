@@ -23,7 +23,7 @@
     "@sker/config": "workspace:*"
   },
   "devDependencies": {
-    "@types/socket.io-client": "^4.7.0"
+    "@types/socket.io-client": "^3.0.0"
   },
   "keywords": [
     "api",

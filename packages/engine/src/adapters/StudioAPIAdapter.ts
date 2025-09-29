@@ -14,10 +14,10 @@ import type {
  */
 export interface StudioAIGenerateRequest {
   inputs: string[]
-  context?: string
+  context: string
   nodeId?: string
   type?: string
-  instruction?: string
+  instruction: string
   options?: StudioAIGenerateOptions
 }
 
@@ -32,7 +32,7 @@ export type StudioAIModel = 'gpt-3.5-turbo' | 'gpt-4' | 'claude-3' | 'local'
 
 export interface StudioAIGenerateResponse {
   content: string
-  title?: string
+  title: string
   confidence: number
   reasoning?: string
   suggestions?: string[]

@@ -1,0 +1,174 @@
+# Docker Compose configuration for @sker/research
+# Extends the main docker-compose.yml with research-specific services
+
+version: '3.8'
+
+services:
+  # Research Application
+  research:
+    build:
+      context: ../..
+      dockerfile: apps/research/Dockerfile
+    container_name: sker-research
+    ports:
+      - "3000:80"  # Research app on port 3000
+    depends_on:
+      - gateway
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - sker-network
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://gateway:8000
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+    volumes:
+      - research_uploads:/var/www/uploads
+      - research_data:/var/www/data
+      - ./apps/research/.env:/etc/nginx/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Academic Database Service (for external academic APIs)
+  academic-api:
+    image: node:18-alpine
+    container_name: sker-academic-api
+    working_dir: /app
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        npm install -g pnpm &&
+        pnpm install &&
+        pnpm run start:academic
+      "
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PUBMED_API_KEY=${PUBMED_API_KEY}
+      - CROSSREF_MAILTO=${CROSSREF_MAILTO}
+      - ARXIV_API_ENDPOINT=http://export.arxiv.org/api
+      - DATABASE_URL=postgresql://sker_user:sker_password@postgres:5432/sker_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sker-network
+    volumes:
+      - ../..:/app:ro
+      - academic_cache:/app/cache
+    restart: unless-stopped
+
+  # Statistical Computing Service (R + Python)
+  stats-compute:
+    image: rocker/r-base:latest
+    container_name: sker-stats-compute
+    working_dir: /app
+    command: >
+      sh -c "
+        apt-get update &&
+        apt-get install -y python3 python3-pip nodejs npm curl &&
+        pip3 install numpy pandas scipy matplotlib seaborn scikit-learn &&
+        R -e 'install.packages(c(\"ggplot2\", \"dplyr\", \"tidyr\", \"readr\", \"jsonlite\"), repos=\"https://cran.r-project.org\")' &&
+        npm install -g pnpm &&
+        pnpm install &&
+        pnpm run start:stats
+      "
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - R_SCRIPT_PATH=/usr/bin/Rscript
+      - PYTHON_PATH=/usr/bin/python3
+      - COMPUTE_TIMEOUT=1800  # 30 minutes
+      - MAX_MEMORY=4g
+    networks:
+      - sker-network
+    volumes:
+      - ../..:/app:ro
+      - stats_data:/app/data
+      - stats_results:/app/results
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: '2.0'
+
+  # Document Processing Service (PDF, OCR)
+  document-processor:
+    image: python:3.11-slim
+    container_name: sker-document-processor
+    working_dir: /app
+    command: >
+      sh -c "
+        apt-get update &&
+        apt-get install -y tesseract-ocr tesseract-ocr-chi-sim tesseract-ocr-eng poppler-utils nodejs npm curl &&
+        pip install pypdf2 pdfplumber pytesseract pillow python-docx fastapi uvicorn &&
+        npm install -g pnpm &&
+        pnpm install &&
+        pnpm run start:document
+      "
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - TESSERACT_CMD=/usr/bin/tesseract
+      - MAX_FILE_SIZE=500MB
+      - SUPPORTED_FORMATS=pdf,docx,tex,txt
+    networks:
+      - sker-network
+    volumes:
+      - ../..:/app:ro
+      - document_storage:/app/documents
+      - document_processed:/app/processed
+    restart: unless-stopped
+    mem_limit: 2g
+
+  # Nginx Load Balancer (optional, for multiple research instances)
+  research-lb:
+    image: nginx:alpine
+    container_name: sker-research-lb
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - research
+    networks:
+      - sker-network
+    volumes:
+      - ./apps/research/nginx-lb.conf:/etc/nginx/nginx.conf:ro
+      - ./apps/research/ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    # Uncomment for SSL
+    # environment:
+    #   - SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
+    #   - SSL_KEY_PATH=/etc/nginx/ssl/key.pem
+
+networks:
+  sker-network:
+    external: true
+
+volumes:
+  # Research specific volumes
+  research_uploads:
+    driver: local
+  research_data:
+    driver: local
+  academic_cache:
+    driver: local
+  stats_data:
+    driver: local
+  stats_results:
+    driver: local
+  document_storage:
+    driver: local
+  document_processed:
+    driver: local

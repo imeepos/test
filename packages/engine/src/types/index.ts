@@ -71,17 +71,20 @@ export interface ProcessingMetadata {
   cost?: number
   requestId: string
   timestamp: Date
+  error?: any
 }
 
 // 内容生成相关
 export interface GenerateRequest {
-  prompt: string
+  prompt?: string
   inputs: string[]
   context?: string
+  instruction?: string
   style?: string
   length?: 'short' | 'medium' | 'long'
   model?: string
   temperature?: number
+  options?: TaskOptions
 }
 
 export interface GenerateResult {
@@ -89,6 +92,9 @@ export interface GenerateResult {
   title?: string
   confidence: number
   tags: string[]
+  reasoning?: string
+  suggestions?: string[]
+  importance?: number
   metadata: ProcessingMetadata
 }
 
