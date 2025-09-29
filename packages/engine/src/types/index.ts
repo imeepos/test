@@ -296,3 +296,67 @@ export interface CacheEntry {
   ttl: number
   hits: number
 }
+
+// 批处理请求接口（StudioAPIAdapter中使用）
+export interface BatchProcessRequest {
+  tasks: Array<{
+    id: string
+    type: string
+    data: any
+  }>
+  concurrency?: number
+  failFast?: boolean
+}
+
+// 语义分析请求接口（StudioAPIAdapter中使用）
+export interface SemanticAnalysisRequest {
+  content: string
+  options: {
+    extractEntities?: boolean
+    extractRelations?: boolean
+    analyzeSentiment?: boolean
+    analysisDepth?: 'basic' | 'deep'
+    includeEmbeddings?: boolean
+  }
+}
+
+// 语义分析结果接口（StudioAPIAdapter中使用）
+export interface SemanticAnalysisResult {
+  semanticTypes: string[]
+  entities: Array<{
+    text: string
+    type: string
+    confidence: number
+  }>
+  relations: Array<{
+    source: string
+    target: string
+    relation: string
+  }>
+  sentiment: {
+    score: number
+    label: string
+  }
+  summary: string
+}
+
+// 增强GenerateResult，添加缺失字段
+export interface EnhancedGenerateResult extends GenerateResult {
+  reasoning?: string
+  suggestions?: string[]
+  importance?: number
+}
+
+// 批处理结果接口
+export interface BatchProcessResult {
+  results: Array<{
+    success: boolean
+    data?: any
+    error?: string
+  }>
+  summary?: {
+    total: number
+    successful: number
+    failed: number
+  }
+}

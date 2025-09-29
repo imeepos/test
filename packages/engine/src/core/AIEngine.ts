@@ -511,10 +511,158 @@ export class AIEngine extends EventEmitter {
   }
 
   /**
+   * 初始化AI引擎
+   */
+  async initialize(): Promise<void> {
+    try {
+      // 初始化服务提供者
+      if (this.provider && typeof this.provider.initialize === 'function') {
+        await this.provider.initialize()
+      }
+
+      // 验证API连接
+      await this.validateConnection()
+
+      // 发送初始化完成事件
+      this.emit('initialized', { timestamp: new Date() })
+
+      console.log('✅ AI引擎初始化完成')
+    } catch (error) {
+      console.error('❌ AI引擎初始化失败:', error)
+      this.emit('initialization_failed', { error })
+      throw error
+    }
+  }
+
+  /**
+   * 验证API连接
+   */
+  private async validateConnection(): Promise<void> {
+    try {
+      // 使用简单的测试请求验证连接
+      const testRequest: GenerateRequest = {
+        prompt: '说"hello"',
+        inputs: ['test'],
+        context: 'connection test',
+        temperature: 0.1
+      }
+
+      // 设置超时时间为10秒
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('连接验证超时')), 10000)
+      )
+
+      const result = await Promise.race([
+        this.contentGenerator.generate(testRequest),
+        timeout
+      ]) as GenerateResult
+
+      if (!result || !result.content) {
+        throw new Error('API连接验证失败：返回结果为空')
+      }
+
+      console.log('✅ API连接验证成功')
+    } catch (error) {
+      console.error('❌ API连接验证失败:', error)
+
+      // 根据错误类型提供更详细的错误信息
+      let errorMessage = 'API连接验证失败'
+
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage += ': 连接超时，请检查网络或API服务状态'
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage += ': API密钥无效或已过期'
+        } else if (error.message.includes('429')) {
+          errorMessage += ': API请求过于频繁，请稍后重试'
+        } else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
+          errorMessage += ': API服务暂时不可用'
+        } else {
+          errorMessage += `: ${error.message}`
+        }
+      }
+
+      throw new Error(errorMessage)
+    }
+  }
+
+  /**
+   * 清理资源
+   */
+  async cleanup(): Promise<void> {
+    try {
+      console.log('🧹 正在清理AI引擎资源...')
+
+      // 清理缓存
+      this.clearCache()
+
+      // 清理提供者资源
+      if (this.provider && typeof this.provider.cleanup === 'function') {
+        await this.provider.cleanup()
+      }
+
+      // 清理定时器
+      this.removeAllListeners()
+
+      // 发送清理完成事件
+      this.emit('cleanup_completed', { timestamp: new Date() })
+
+      console.log('✅ AI引擎资源清理完成')
+    } catch (error) {
+      console.error('❌ AI引擎资源清理失败:', error)
+      throw error
+    }
+  }
+
+  /**
    * 清理缓存
    */
   clearCache(): void {
     this.cache.clear()
+  }
+
+  /**
+   * 批量处理任务
+   */
+  async batchProcess(request: { tasks: any[], concurrency?: number, failFast?: boolean }): Promise<any> {
+    const { tasks, concurrency = 3, failFast = false } = request
+
+    try {
+      // 分批处理任务
+      const results = []
+      for (let i = 0; i < tasks.length; i += concurrency) {
+        const batch = tasks.slice(i, i + concurrency)
+
+        const batchPromises = batch.map(task =>
+          this.processTask(task).catch(error => ({
+            success: false,
+            error: error.message
+          }))
+        )
+
+        const batchResults = await Promise.all(batchPromises)
+
+        // 如果启用了failFast并且有失败的任务，立即停止
+        if (failFast && batchResults.some(result => !result.success)) {
+          const failedResult = batchResults.find(result => !result.success)
+          throw new Error(`批处理失败: ${failedResult.error}`)
+        }
+
+        results.push(...batchResults)
+      }
+
+      return {
+        results,
+        summary: {
+          total: tasks.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length
+        }
+      }
+    } catch (error) {
+      console.error('批处理失败:', error)
+      throw error
+    }
   }
 
   /**
