@@ -9,8 +9,9 @@ RUN npm install -g pnpm
 # 复制工作区配置文件
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# 复制 broker package.json（broker包没有workspace依赖）
+# 复制 broker 和依赖的 models package.json
 COPY packages/broker/package.json ./packages/broker/
+COPY packages/models/package.json ./packages/models/
 
 # 安装所有依赖
 RUN pnpm install --frozen-lockfile
@@ -18,12 +19,20 @@ RUN pnpm install --frozen-lockfile
 # 复制根目录 tsconfig.json
 COPY tsconfig.json ./
 
+# 复制 models 包的源代码和配置文件（broker 依赖）
+COPY packages/models/src/ ./packages/models/src/
+COPY packages/models/vite.config.ts ./packages/models/vite.config.ts
+COPY packages/models/tsconfig.json ./packages/models/tsconfig.json
+
 # 复制 broker 包的源代码和配置文件
 COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/vite.config.ts ./packages/broker/vite.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
 
-# 构建 broker 包
+# 首先构建 models 包（broker 的依赖）
+RUN pnpm --filter @sker/models run build
+
+# 然后构建 broker 包
 RUN pnpm --filter @sker/broker run build
 
 # 生产阶段：运行时镜像
@@ -43,11 +52,13 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # 复制包配置文件
 COPY packages/broker/package.json ./packages/broker/
+COPY packages/models/package.json ./packages/models/
 
 # 仅安装生产依赖
 RUN pnpm install --prod --frozen-lockfile
 
 # 从构建阶段复制构建产物
+COPY --from=builder /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder /app/packages/broker/dist/ ./packages/broker/dist/
 
 # 切换到broker包目录

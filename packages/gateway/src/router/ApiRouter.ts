@@ -24,7 +24,7 @@ import {
 import { ResponseMapper } from '../adapters/ResponseMapper'
 import { QueueManager } from '../messaging/QueueManager'
 import { AIEngine } from '@sker/engine'
-import { StoreService } from '@sker/store'
+import { StoreClient } from '@sker/store'
 import type { ImportanceLevel } from '@sker/models'
 
 /**
@@ -34,17 +34,17 @@ export class ApiRouter {
   private router: Router
   private routes: RouteMap = new Map()
   private aiEngine?: AIEngine
-  private storeService?: StoreService
+  private storeClient?: StoreClient
   private queueManager?: QueueManager
 
   constructor(dependencies?: {
     aiEngine?: AIEngine
-    storeService?: StoreService
+    storeClient?: StoreClient
     queueManager?: QueueManager
   }) {
     this.router = Router()
     this.aiEngine = dependencies?.aiEngine
-    this.storeService = dependencies?.storeService
+    this.storeClient = dependencies?.storeClient
     this.queueManager = dependencies?.queueManager
     this.setupRoutes()
   }
@@ -178,7 +178,7 @@ export class ApiRouter {
 
   private async createNode(req: ApiRequest<NodeCreateData>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -242,10 +242,10 @@ export class ApiRouter {
       }
 
       // 使用存储服务创建节点
-      const createdNode = await this.storeService.nodes.create(nodeData)
+      const createdNode = await this.storeClient.nodes.create(nodeData)
 
       // 发布节点创建事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'node',
         entityId: createdNode.id,
         operation: 'create',
@@ -286,7 +286,7 @@ export class ApiRouter {
 
   private async getNode(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -309,7 +309,7 @@ export class ApiRouter {
       }
 
       // 从数据库获取节点
-      const node = await this.storeService.nodes.findById(id)
+      const node = await this.storeClient.nodes.findById(id)
 
       if (!node) {
         res.error({
@@ -357,7 +357,7 @@ export class ApiRouter {
 
   private async updateNode(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -380,7 +380,7 @@ export class ApiRouter {
       }
 
       // 检查节点是否存在
-      const existingNode = await this.storeService.nodes.findById(id)
+      const existingNode = await this.storeClient.nodes.findById(id)
       if (!existingNode) {
         res.error({
           code: 'NODE_NOT_FOUND',
@@ -429,7 +429,7 @@ export class ApiRouter {
       updateData.updated_at = new Date()
 
       // 执行更新
-      const updatedNode = await this.storeService.nodes.update(id, updateData)
+      const updatedNode = await this.storeClient.nodes.update(id, updateData)
 
       if (!updatedNode) {
         res.error({
@@ -442,7 +442,7 @@ export class ApiRouter {
       }
 
       // 发布节点更新事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'node',
         entityId: id,
         operation: 'update',
@@ -487,7 +487,7 @@ export class ApiRouter {
 
   private async deleteNode(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -511,7 +511,7 @@ export class ApiRouter {
       }
 
       // 检查节点是否存在
-      const existingNode = await this.storeService.nodes.findById(id)
+      const existingNode = await this.storeClient.nodes.findById(id)
       if (!existingNode) {
         res.error({
           code: 'NODE_NOT_FOUND',
@@ -527,12 +527,12 @@ export class ApiRouter {
 
       if (permanent === 'true') {
         // 永久删除
-        result = await this.storeService.nodes.delete(id)
+        result = await this.storeClient.nodes.delete(id)
         message = 'Node permanently deleted successfully'
 
         // 发布节点删除事件
         if (result) {
-          await this.storeService.publishEntityChange({
+          await this.storeClient.publishEntityChange({
             entityType: 'node',
             entityId: id,
             operation: 'delete',
@@ -549,7 +549,7 @@ export class ApiRouter {
         }
       } else {
         // 软删除（标记为删除状态）
-        const updatedNode = await this.storeService.nodes.update(id, {
+        const updatedNode = await this.storeClient.nodes.update(id, {
           status: 'deleted',
           updated_at: new Date(),
           metadata: {
@@ -566,7 +566,7 @@ export class ApiRouter {
 
         // 发布节点软删除事件
         if (result) {
-          await this.storeService.publishEntityChange({
+          await this.storeClient.publishEntityChange({
             entityType: 'node',
             entityId: id,
             operation: 'soft_delete',
@@ -607,7 +607,7 @@ export class ApiRouter {
 
   private async searchNodes(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -661,9 +661,9 @@ export class ApiRouter {
         if (tags) {
           // 如果指定了标签，使用标签搜索
           const tagArray = Array.isArray(tags) ? tags : [tags]
-          results = await this.storeService.nodes.findByTags(tagArray, options)
+          results = await this.storeClient.nodes.findByTags(tagArray, options)
           // 对于标签搜索，需要单独查询总数
-          const allResults = await this.storeService.nodes.findByTags(tagArray, {
+          const allResults = await this.storeClient.nodes.findByTags(tagArray, {
             ...options,
             limit: undefined,
             offset: undefined
@@ -672,7 +672,7 @@ export class ApiRouter {
         } else {
           // 全文搜索（需要实现搜索方法）
           // 这里使用通用查询，然后在应用层过滤
-          const allNodes = await this.storeService.nodes.findMany({
+          const allNodes = await this.storeClient.nodes.findMany({
             filters: options.filters,
             orderBy: options.orderBy,
             orderDirection: options.orderDirection
@@ -695,15 +695,15 @@ export class ApiRouter {
         // 无搜索查询，使用分页查询
         if (tags) {
           const tagArray = Array.isArray(tags) ? tags : [tags]
-          results = await this.storeService.nodes.findByTags(tagArray, options)
-          const allResults = await this.storeService.nodes.findByTags(tagArray, {
+          results = await this.storeClient.nodes.findByTags(tagArray, options)
+          const allResults = await this.storeClient.nodes.findByTags(tagArray, {
             ...options,
             limit: undefined,
             offset: undefined
           })
           totalCount = allResults.length
         } else {
-          const paginatedResult = await this.storeService.nodes.findWithPagination(options)
+          const paginatedResult = await this.storeClient.nodes.findWithPagination(options)
           results = paginatedResult.items
           totalCount = paginatedResult.total
         }
@@ -791,7 +791,7 @@ export class ApiRouter {
       const { id } = req.params
       const { instruction, model } = req.body
 
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -812,7 +812,7 @@ export class ApiRouter {
       }
 
       // 获取节点数据
-      const node = await this.storeService.nodes.findById(id)
+      const node = await this.storeClient.nodes.findById(id)
       if (!node) {
         res.error({
           code: 'NODE_NOT_FOUND',
@@ -838,14 +838,14 @@ export class ApiRouter {
       })
 
       // 更新节点内容
-      const updatedNode = await this.storeService.nodes.update(id, {
+      const updatedNode = await this.storeClient.nodes.update(id, {
         content: result.content,
         title: result.title || node.title,
         updated_at: new Date()
       })
 
       // 发布节点变更事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'node',
         entityId: id,
         operation: 'update',
@@ -885,7 +885,7 @@ export class ApiRouter {
 
   private async getNodeVersions(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -909,7 +909,7 @@ export class ApiRouter {
       }
 
       // 检查节点是否存在
-      const node = await this.storeService.nodes.findById(id)
+      const node = await this.storeClient.nodes.findById(id)
       if (!node) {
         res.error({
           code: 'NODE_NOT_FOUND',
@@ -946,7 +946,7 @@ export class ApiRouter {
 
       try {
         // 通过存储服务的数据库连接执行查询
-        const pool = (this.storeService as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
+        const pool = (this.storeClient as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
         if (!pool) {
           throw new Error('Database connection not available')
         }
@@ -1023,7 +1023,7 @@ export class ApiRouter {
 
   private async rollbackNode(req: ApiRequest<NodeRollbackRequest>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1057,7 +1057,7 @@ export class ApiRouter {
       }
 
       // 检查节点是否存在
-      const currentNode = await this.storeService.nodes.findById(id)
+      const currentNode = await this.storeClient.nodes.findById(id)
       if (!currentNode) {
         res.error({
           code: 'NODE_NOT_FOUND',
@@ -1070,7 +1070,7 @@ export class ApiRouter {
 
       try {
         // 获取指定版本的数据
-        const pool = (this.storeService as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
+        const pool = (this.storeClient as { nodeRepo?: { pool?: unknown } }).nodeRepo?.pool
         if (!pool) {
           throw new Error('Database connection not available')
         }
@@ -1161,7 +1161,7 @@ export class ApiRouter {
           }
         }
 
-        const updatedNode = await this.storeService.nodes.update(id, updateData)
+        const updatedNode = await this.storeClient.nodes.update(id, updateData)
 
         if (!updatedNode) {
           res.error({
@@ -1174,7 +1174,7 @@ export class ApiRouter {
         }
 
         // 发布节点回滚事件
-        await this.storeService.publishEntityChange({
+        await this.storeClient.publishEntityChange({
           entityType: 'node',
           entityId: id,
           operation: 'rollback',
@@ -1557,7 +1557,7 @@ export class ApiRouter {
 
   private async createProject(req: ApiRequest<ProjectCreateData>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1608,10 +1608,10 @@ export class ApiRouter {
       }
 
       // 使用存储服务创建项目
-      const createdProject = await this.storeService.projects.create(projectData)
+      const createdProject = await this.storeClient.projects.create(projectData)
 
       // 发布项目创建事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'project',
         entityId: createdProject.id,
         operation: 'create',
@@ -1651,7 +1651,7 @@ export class ApiRouter {
 
   private async getProject(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1674,7 +1674,7 @@ export class ApiRouter {
       }
 
       // 从数据库获取项目
-      const project = await this.storeService.projects.findById(id)
+      const project = await this.storeClient.projects.findById(id)
 
       if (!project) {
         res.error({
@@ -1688,7 +1688,7 @@ export class ApiRouter {
 
       // 更新最后访问时间
       try {
-        await this.storeService.projects.updateLastAccessed(id)
+        await this.storeClient.projects.updateLastAccessed(id)
       } catch (updateError) {
         console.warn('更新项目访问时间失败:', updateError)
       }
@@ -1719,7 +1719,7 @@ export class ApiRouter {
 
   private async updateProject(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1742,7 +1742,7 @@ export class ApiRouter {
       }
 
       // 检查项目是否存在
-      const existingProject = await this.storeService.projects.findById(id)
+      const existingProject = await this.storeClient.projects.findById(id)
       if (!existingProject) {
         res.error({
           code: 'PROJECT_NOT_FOUND',
@@ -1775,7 +1775,7 @@ export class ApiRouter {
       updateData.updated_at = new Date()
 
       // 执行更新
-      const updatedProject = await this.storeService.projects.update(id, updateData)
+      const updatedProject = await this.storeClient.projects.update(id, updateData)
 
       if (!updatedProject) {
         res.error({
@@ -1788,7 +1788,7 @@ export class ApiRouter {
       }
 
       // 发布项目更新事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'project',
         entityId: id,
         operation: 'update',
@@ -1829,7 +1829,7 @@ export class ApiRouter {
 
   private async deleteProject(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1853,7 +1853,7 @@ export class ApiRouter {
       }
 
       // 检查项目是否存在
-      const existingProject = await this.storeService.projects.findById(id)
+      const existingProject = await this.storeClient.projects.findById(id)
       if (!existingProject) {
         res.error({
           code: 'PROJECT_NOT_FOUND',
@@ -1869,12 +1869,12 @@ export class ApiRouter {
 
       if (permanent === 'true') {
         // 永久删除
-        result = await this.storeService.projects.delete(id)
+        result = await this.storeClient.projects.delete(id)
         message = 'Project permanently deleted successfully'
 
         // 发布项目删除事件
         if (result) {
-          await this.storeService.publishEntityChange({
+          await this.storeClient.publishEntityChange({
             entityType: 'project',
             entityId: id,
             operation: 'delete',
@@ -1891,13 +1891,13 @@ export class ApiRouter {
         }
       } else {
         // 归档项目（软删除）
-        const updatedProject = await this.storeService.projects.archive(id)
+        const updatedProject = await this.storeClient.projects.archive(id)
         result = !!updatedProject
         message = 'Project archived successfully'
 
         // 发布项目归档事件
         if (result) {
-          await this.storeService.publishEntityChange({
+          await this.storeClient.publishEntityChange({
             entityType: 'project',
             entityId: id,
             operation: 'archive',
@@ -1938,7 +1938,7 @@ export class ApiRouter {
 
   private async getProjects(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -1979,7 +1979,7 @@ export class ApiRouter {
 
       if (search && search.trim()) {
         // 搜索项目
-        const allProjects = await this.storeService.projects.search(
+        const allProjects = await this.storeClient.projects.search(
           search.trim(),
           user_id,
           { filters: options.filters }
@@ -1988,7 +1988,7 @@ export class ApiRouter {
         results = allProjects.slice(options.offset, options.offset + options.limit)
       } else {
         // 分页查询
-        const paginatedResult = await this.storeService.projects.findWithPagination(options)
+        const paginatedResult = await this.storeClient.projects.findWithPagination(options)
         results = paginatedResult.items
         totalCount = paginatedResult.total
       }
@@ -2057,7 +2057,7 @@ export class ApiRouter {
 
   private async saveCanvasState(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2091,7 +2091,7 @@ export class ApiRouter {
       }
 
       // 检查项目是否存在
-      const existingProject = await this.storeService.projects.findById(id)
+      const existingProject = await this.storeClient.projects.findById(id)
       if (!existingProject) {
         res.error({
           code: 'PROJECT_NOT_FOUND',
@@ -2103,7 +2103,7 @@ export class ApiRouter {
       }
 
       // 更新画布数据
-      const updatedProject = await this.storeService.projects.update(id, {
+      const updatedProject = await this.storeClient.projects.update(id, {
         canvas_data: canvasData,
         updated_at: new Date()
       })
@@ -2119,7 +2119,7 @@ export class ApiRouter {
       }
 
       // 发布画布状态更新事件
-      await this.storeService.publishEntityChange({
+      await this.storeClient.publishEntityChange({
         entityType: 'project',
         entityId: id,
         operation: 'canvas_update',
@@ -2152,7 +2152,7 @@ export class ApiRouter {
 
   private async getCanvasState(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2175,7 +2175,7 @@ export class ApiRouter {
       }
 
       // 获取项目信息
-      const project = await this.storeService.projects.findById(id)
+      const project = await this.storeClient.projects.findById(id)
       if (!project) {
         res.error({
           code: 'PROJECT_NOT_FOUND',
@@ -2221,7 +2221,7 @@ export class ApiRouter {
 
   private async login(req: ApiRequest<LoginRequest>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2246,7 +2246,7 @@ export class ApiRouter {
 
       try {
         // 查找用户
-        const user = await this.storeService.users.findByEmail(email.toLowerCase().trim())
+        const user = await this.storeClient.users.findByEmail(email.toLowerCase().trim())
         if (!user) {
           res.error({
             code: 'INVALID_CREDENTIALS',
@@ -2293,7 +2293,7 @@ export class ApiRouter {
         const refreshToken = this.generateRefreshToken(user.id)
 
         // 更新用户最后登录时间
-        await this.storeService.users.update(user.id, {
+        await this.storeClient.users.update(user.id, {
           last_login_at: new Date(),
           login_count: (user.login_count || 0) + 1
         })
@@ -2347,9 +2347,9 @@ export class ApiRouter {
 
         // 可以在这里添加token黑名单逻辑
         // 或者更新用户最后活动时间
-        if (this.storeService) {
+        if (this.storeClient) {
           try {
-            await this.storeService.users.update(userId, {
+            await this.storeClient.users.update(userId, {
               last_logout_at: new Date()
             })
           } catch (updateError) {
@@ -2375,7 +2375,7 @@ export class ApiRouter {
 
   private async refreshToken(req: ApiRequest<RefreshTokenRequest>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2411,7 +2411,7 @@ export class ApiRouter {
         }
 
         // 获取用户信息
-        const user = await this.storeService.users.findById(tokenData.userId)
+        const user = await this.storeClient.users.findById(tokenData.userId)
         if (!user || user.status !== 'active') {
           res.error({
             code: 'USER_NOT_FOUND',
@@ -2469,7 +2469,7 @@ export class ApiRouter {
 
   private async getProfile(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2492,7 +2492,7 @@ export class ApiRouter {
 
       try {
         // 从数据库获取完整的用户信息
-        const user = await this.storeService.users.findById(userId)
+        const user = await this.storeClient.users.findById(userId)
         if (!user) {
           res.error({
             code: 'USER_NOT_FOUND',
@@ -2540,7 +2540,7 @@ export class ApiRouter {
 
   private async updateProfile(req: ApiRequest<ProfileUpdateRequest>, res: ApiResponse): Promise<void> {
     try {
-      if (!this.storeService) {
+      if (!this.storeClient) {
         res.error({
           code: 'STORE_SERVICE_UNAVAILABLE',
           message: '存储服务不可用',
@@ -2563,7 +2563,7 @@ export class ApiRouter {
 
       try {
         // 检查用户是否存在
-        const existingUser = await this.storeService.users.findById(userId)
+        const existingUser = await this.storeClient.users.findById(userId)
         if (!existingUser) {
           res.error({
             code: 'USER_NOT_FOUND',
@@ -2615,7 +2615,7 @@ export class ApiRouter {
         updateData.updated_at = new Date()
 
         // 执行更新
-        const updatedUser = await this.storeService.users.update(userId, updateData)
+        const updatedUser = await this.storeClient.users.update(userId, updateData)
 
         if (!updatedUser) {
           res.error({
@@ -2628,7 +2628,7 @@ export class ApiRouter {
         }
 
         // 发布用户更新事件
-        await this.storeService.publishEntityChange({
+        await this.storeClient.publishEntityChange({
           entityType: 'user',
           entityId: userId,
           operation: 'update',

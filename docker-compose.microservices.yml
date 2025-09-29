@@ -1,0 +1,239 @@
+# Docker Compose配置 - 微服务架构
+# Store、Gateway、Broker独立部署的配置
+version: '3.8'
+
+services:
+  # Store微服务
+  store:
+    build:
+      context: .
+      dockerfile: packages/store/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      # 数据库配置
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=sker
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      # Redis配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # 安全配置
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,http://gateway:3000
+      # 性能配置
+      - BODY_LIMIT=10mb
+      - RATE_LIMIT_WINDOW=900000
+      - RATE_LIMIT_MAX=100
+      - STRICT_RATE_LIMIT_MAX=10
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - microservices-network
+    volumes:
+      - store-logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Gateway微服务
+  gateway:
+    build:
+      context: .
+      dockerfile: packages/gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      # Store服务配置
+      - STORE_SERVICE_URL=http://store:3001
+      - STORE_TIMEOUT=15000
+      - STORE_RETRIES=5
+      - STORE_RETRY_DELAY=2000
+      # 认证配置
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=24h
+      # CORS配置
+      - FRONTEND_URL=http://localhost:5173,http://localhost:3000
+      # 限流配置
+      - RATE_LIMIT_WINDOW=900000
+      - RATE_LIMIT_MAX=100
+      # WebSocket配置
+      - WS_PATH=/socket.io
+      - WS_HEARTBEAT_INTERVAL=30000
+      - WS_TIMEOUT=60000
+      - WS_MAX_CONNECTIONS=1000
+      # RabbitMQ配置
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      # 安全配置
+      - SECURITY_HELMET=true
+      - SECURITY_COMPRESSION=true
+      - SECURITY_TRUST_PROXY=true
+      - SECURITY_BODY_LIMIT=10mb
+    depends_on:
+      - store
+      - rabbitmq
+    networks:
+      - microservices-network
+    volumes:
+      - gateway-logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Broker微服务
+  broker:
+    build:
+      context: .
+      dockerfile: packages/broker/Dockerfile
+    environment:
+      - NODE_ENV=production
+      # Store服务配置
+      - STORE_SERVICE_URL=http://store:3001
+      - STORE_TIMEOUT=15000
+      - STORE_RETRIES=5
+      - STORE_RETRY_DELAY=2000
+      # RabbitMQ配置
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - RABBITMQ_RECONNECT_DELAY=5000
+      - RABBITMQ_MAX_RECONNECT_ATTEMPTS=10
+      # AI任务配置
+      - AI_TASK_TIMEOUT=600000
+    depends_on:
+      - store
+      - rabbitmq
+    networks:
+      - microservices-network
+    volumes:
+      - broker-logs:/app/logs
+    restart: unless-stopped
+    deploy:
+      replicas: 2  # 部署2个Broker实例处理负载
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=sker
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./packages/store/src/migrations/sql:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # RabbitMQ消息队列
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # 管理界面
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - gateway
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # 监控和日志
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  prometheus-data:
+  grafana-data:
+  store-logs:
+  gateway-logs:
+  broker-logs:
+
+networks:
+  microservices-network:
+    driver: bridge

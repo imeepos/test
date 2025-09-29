@@ -24,5 +24,24 @@ export {
   type GatewayDependencies
 } from './factory/createGateway'
 
+// 集成Store微服务的Gateway工厂函数
+export {
+  createGatewayWithStore,
+  createDevelopmentGatewayWithStore,
+  createProductionGatewayWithStore,
+  startGatewayWithStore,
+  startDevelopmentGatewayWithStore,
+  startProductionGatewayWithStore,
+  startGatewayFromEnvironment,
+  type ExtendedGatewayDependencies
+} from './factory/createGatewayWithStore'
+
+// Store配置
+export {
+  createStoreClientForGateway,
+  createAuthenticatedStoreClient,
+  getStoreConfigForEnvironment
+} from './config/store'
+
 // 常量和配置
 export { DEFAULT_CONFIG } from './config/defaults'

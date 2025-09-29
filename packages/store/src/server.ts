@@ -2,76 +2,139 @@
 
 /**
  * SKER Store Service Server
- * 数据存储服务的独立服务器启动文件
+ * 数据存储微服务的完整HTTP API服务器
  */
 
 import dotenv from 'dotenv'
+import express from 'express'
 import http from 'http'
 import { databaseManager } from './config/database'
+import { createApiRouter, createSystemRouter } from './api/routes'
+import {
+  corsMiddleware,
+  requestLogger,
+  rateLimitMiddleware,
+  strictRateLimitMiddleware,
+  healthCheckBypass,
+  apiVersionMiddleware,
+  validateContentType,
+  errorHandler,
+  bodyLimitConfig
+} from './api/middleware'
 
 // 加载环境变量
 dotenv.config()
 
 /**
- * 创建健康检查服务器
+ * 创建Express应用
  */
-function createHealthCheckServer(storeService: any) {
-  const server = http.createServer(async (req, res) => {
-    // 设置 CORS 头部
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+function createApp(storeService: any): express.Application {
+  const app = express()
 
-    // 处理预检请求
-    if (req.method === 'OPTIONS') {
-      res.writeHead(200)
-      res.end()
-      return
-    }
+  // 信任代理（用于生产环境负载均衡）
+  if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1)
+  }
 
-    // 健康检查端点
-    if (req.url === '/health' && req.method === 'GET') {
-      try {
-        // 执行完整的健康检查
-        const healthCheck = await databaseManager.healthCheck()
-        const connectionStatus = databaseManager.getConnectionStatus()
+  // 全局中间件
+  app.use(corsMiddleware)
+  app.use(requestLogger)
+  app.use(apiVersionMiddleware)
 
-        const isHealthy = healthCheck.postgres.status === 'healthy' &&
-                         healthCheck.redis.status === 'healthy'
+  // 健康检查绕过中间件
+  app.use(healthCheckBypass)
 
-        const healthStatus = {
-          status: isHealthy ? 'healthy' : 'unhealthy',
-          timestamp: new Date().toISOString(),
-          service: 'store',
-          version: '1.0.0',
-          connections: connectionStatus,
-          healthCheck: healthCheck
-        }
+  // 请求体解析
+  app.use(express.json(bodyLimitConfig.json))
+  app.use(express.urlencoded(bodyLimitConfig.urlencoded))
 
-        res.setHeader('Content-Type', 'application/json')
-        res.writeHead(isHealthy ? 200 : 503)
-        res.end(JSON.stringify(healthStatus, null, 2))
-      } catch (error) {
-        const errorStatus = {
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          service: 'store',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
+  // 内容类型验证
+  app.use(validateContentType)
 
-        res.setHeader('Content-Type', 'application/json')
-        res.writeHead(503)
-        res.end(JSON.stringify(errorStatus, null, 2))
+  // 限流中间件
+  app.use('/api/', rateLimitMiddleware)
+  app.use('/api/users/authenticate', strictRateLimitMiddleware)
+  app.use('/api/users/:id/password', strictRateLimitMiddleware)
+
+  // 健康检查端点
+  app.get('/health', async (req, res) => {
+    try {
+      const healthCheck = await databaseManager.healthCheck()
+      const connectionStatus = databaseManager.getConnectionStatus()
+
+      const isHealthy = healthCheck.postgres.status === 'healthy' &&
+                       healthCheck.redis.status === 'healthy'
+
+      const healthStatus = {
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        timestamp: new Date().toISOString(),
+        service: 'store',
+        version: '2.0.0',
+        connections: connectionStatus,
+        healthCheck: healthCheck,
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        env: process.env.NODE_ENV || 'development'
       }
-      return
-    }
 
-    // 404 for other routes
-    res.writeHead(404, { 'Content-Type': 'text/plain' })
-    res.end('Not Found')
+      res.status(isHealthy ? 200 : 503).json(healthStatus)
+    } catch (error) {
+      const errorStatus = {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        service: 'store',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+
+      res.status(503).json(errorStatus)
+    }
   })
 
-  return server
+  // 系统路由
+  app.use('/api/system', createSystemRouter())
+
+  // API路由 (v1)
+  app.use('/api/v1', createApiRouter())
+
+  // 兼容性路由 - 重定向旧版本API到v1
+  app.use('/api', (req, res, next) => {
+    if (!req.path.startsWith('/v1/') && !req.path.startsWith('/system/')) {
+      return res.redirect(301, `/api/v1${req.path}`)
+    }
+    next()
+  })
+
+  // 根路径
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'SKER Store Service',
+      version: '2.0.0',
+      description: 'Microservice for data storage and management',
+      endpoints: {
+        health: '/health',
+        api: '/api/v1',
+        docs: process.env.NODE_ENV === 'development' ? '/api/docs' : undefined
+      },
+      timestamp: new Date().toISOString()
+    })
+  })
+
+  // 404处理
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: `Route ${req.method} ${req.originalUrl} not found`
+      },
+      timestamp: new Date().toISOString()
+    })
+  })
+
+  // 错误处理中间件（必须在最后）
+  app.use(errorHandler)
+
+  return app
 }
 
 /**
@@ -79,39 +142,61 @@ function createHealthCheckServer(storeService: any) {
  */
 async function startServer() {
   try {
-    console.log('🚀 Starting SKER Store Service...')
+    console.log('🚀 Starting SKER Store Microservice...')
 
     // 1. 调试环境变量
-    console.log('🔍 Database config:')
-    console.log(`  Host: ${process.env.PG_HOST}`)
-    console.log(`  Port: ${process.env.PG_PORT}`)
-    console.log(`  Database: ${process.env.PG_DATABASE}`)
-    console.log(`  User: ${process.env.PG_USER}`)
-    console.log(`  Password: ${process.env.PG_PASSWORD ? '***' : 'undefined'}`)
+    console.log('🔍 Configuration:')
+    console.log(`  Node Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`  Port: ${process.env.PORT || 3001}`)
+    console.log(`  Database Host: ${process.env.PG_HOST || 'localhost'}`)
+    console.log(`  Database Port: ${process.env.PG_PORT || 5432}`)
+    console.log(`  Database Name: ${process.env.PG_DATABASE || 'sker'}`)
+    console.log(`  Database User: ${process.env.PG_USER || 'postgres'}`)
+    console.log(`  Redis Host: ${process.env.REDIS_HOST || 'localhost'}`)
+    console.log(`  CORS Origins: ${process.env.CORS_ORIGINS || 'http://localhost:3000'}`)
+    console.log(`  JWT Secret: ${process.env.JWT_SECRET ? '[SET]' : '[USING DEFAULT]'}`)
 
     // 2. 初始化数据库管理器
     console.log('📊 Initializing database manager...')
     await databaseManager.initialize()
     console.log('✅ Database manager initialized')
 
-    // 2. 创建并初始化 Store 服务
+    // 3. 创建并初始化 Store 服务
     console.log('🏪 Creating store service...')
     const { StoreService } = await import('./services/StoreService')
     const storeService = new StoreService()
     await storeService.initialize()
     console.log('✅ Store service initialized')
 
-    // 3. 启动 HTTP 服务器和健康检查端点
-    const port = process.env.PORT || 3001
-    const server = createHealthCheckServer(storeService)
+    // 4. 创建Express应用
+    console.log('🌐 Creating Express application...')
+    const app = createApp(storeService)
+    const server = http.createServer(app)
 
-    server.listen(port, () => {
-      console.log(`✅ SKER Store Service is running on port ${port}`)
-      console.log('🏥 Health check endpoint available at /health')
-      console.log('📈 Store service ready to handle requests')
+    // 5. 启动HTTP服务器
+    const port = parseInt(process.env.PORT || '3001')
+    const host = process.env.HOST || '0.0.0.0'
+
+    server.listen(port, host, () => {
+      console.log('✅ SKER Store Microservice is running')
+      console.log(`🌐 Server: http://${host}:${port}`)
+      console.log(`🏥 Health Check: http://${host}:${port}/health`)
+      console.log(`📚 API Endpoints: http://${host}:${port}/api/v1`)
+      console.log(`📋 System Info: http://${host}:${port}/api/system/version`)
+      console.log('🎯 Ready to handle HTTP requests')
     })
 
-    // 4. 优雅关闭处理
+    // 6. 服务器错误处理
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${port} is already in use`)
+      } else {
+        console.error('❌ Server error:', error)
+      }
+      process.exit(1)
+    })
+
+    // 7. 优雅关闭处理
     process.on('SIGINT', async () => {
       console.log('\n🛑 Received SIGINT. Graceful shutdown...')
       await gracefulShutdown(storeService, server)
@@ -123,7 +208,7 @@ async function startServer() {
     })
 
   } catch (error) {
-    console.error('❌ Failed to start SKER Store Service:', error)
+    console.error('❌ Failed to start SKER Store Microservice:', error)
     process.exit(1)
   }
 }
@@ -131,19 +216,40 @@ async function startServer() {
 /**
  * 优雅关闭
  */
-async function gracefulShutdown(storeService: any, server: http.Server) {
+async function gracefulShutdown(storeService: any, server: http.Server): Promise<void> {
   try {
-    console.log('🛑 Closing HTTP server...')
+    console.log('🛑 Starting graceful shutdown...')
+
+    // 1. 停止接受新连接
+    console.log('📡 Stopping HTTP server...')
     server.close(() => {
-      console.log('✅ HTTP server closed')
+      console.log('✅ HTTP server stopped accepting new connections')
     })
 
+    // 2. 等待现有连接完成（最多30秒）
+    const shutdownTimeout = setTimeout(() => {
+      console.log('⚠️  Forcing shutdown due to timeout')
+      process.exit(1)
+    }, 30000)
+
+    // 3. 清理Store服务资源
+    console.log('🏪 Cleaning up store service...')
+    if (storeService && typeof storeService.cleanup === 'function') {
+      await storeService.cleanup()
+    }
+
+    // 4. 关闭数据库连接
     console.log('📊 Closing database connections...')
     await databaseManager.close()
-    console.log('✅ Store service shut down successfully')
+
+    // 5. 清理完成
+    clearTimeout(shutdownTimeout)
+    console.log('✅ SKER Store Microservice shut down successfully')
     process.exit(0)
+
   } catch (error) {
-    console.error('❌ Error during shutdown:', error)
+    console.error('❌ Error during graceful shutdown:', error)
+    console.log('🔥 Forcing immediate shutdown')
     process.exit(1)
   }
 }
