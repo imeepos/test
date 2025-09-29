@@ -11,6 +11,17 @@ export {
 } from './client'
 export type { StoreClientConfig } from './client'
 
+// 向后兼容性
+export {
+  LegacyStoreFactory,
+  createStore,
+  createMicroserviceStore,
+  createLegacyStore,
+  isMicroserviceStore,
+  isLegacyStore,
+  type StoreCreationOptions
+} from './compatibility/LegacyStoreFactory'
+
 // 数据库配置和管理
 export { DatabaseManager, databaseManager, defaultDatabaseConfig } from './config/database'
 export type { DatabaseConfig } from './config/database'
