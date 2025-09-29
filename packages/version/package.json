@@ -1,0 +1,36 @@
+{
+  "name": "@sker/version",
+  "version": "1.0.0",
+  "description": "版本管理系统 - 语义化版本控制、历史记录、回滚机制",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "diff": "^5.0.0",
+    "@sker/models": "workspace:*",
+    "@sker/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.0.0"
+  },
+  "keywords": [
+    "version",
+    "control",
+    "history",
+    "diff",
+    "rollback"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

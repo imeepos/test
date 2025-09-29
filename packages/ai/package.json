@@ -1,0 +1,37 @@
+{
+  "name": "@sker/ai",
+  "version": "1.0.0",
+  "description": "AI服务集成 - LLM调用、消息队列、AI响应处理的统一接口",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "amqplib": "^0.10.0",
+    "@sker/models": "workspace:*",
+    "@sker/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.0"
+  },
+  "keywords": [
+    "ai",
+    "llm",
+    "openai",
+    "rabbitmq",
+    "integration"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

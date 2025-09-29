@@ -1,0 +1,32 @@
+{
+  "name": "@sker/models",
+  "version": "1.0.0",
+  "description": "数据模型与验证 - 统一的数据结构定义、类型声明、验证逻辑",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.0",
+    "@sker/config": "workspace:*"
+  },
+  "keywords": [
+    "models",
+    "validation",
+    "types",
+    "schema",
+    "data"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

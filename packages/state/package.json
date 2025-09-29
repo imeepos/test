@@ -1,0 +1,40 @@
+{
+  "name": "@sker/state",
+  "version": "1.0.0",
+  "description": "状态管理 - Zustand store定义、状态同步、持久化",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zustand": "^4.4.0",
+    "immer": "^10.0.0",
+    "@sker/models": "workspace:*",
+    "@sker/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0"
+  },
+  "keywords": [
+    "state",
+    "management",
+    "zustand",
+    "store",
+    "persistence"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}
