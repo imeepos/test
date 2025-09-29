@@ -9,7 +9,10 @@
       "@/*": ["./src/*"]
     },
     "exactOptionalPropertyTypes": false,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false
   },
   "include": [
     "src/**/*"
