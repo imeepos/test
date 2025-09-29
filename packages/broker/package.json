@@ -1,6 +1,7 @@
 {
   "name": "@sker/broker",
   "version": "1.0.0",
+  "type": "module",
   "description": "消息代理服务 - RabbitMQ封装、AI任务调度、实时通信协调",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,13 +18,17 @@
   },
   "dependencies": {
     "amqplib": "^0.10.0",
-    "uuid": "^9.0.0",
-    "@sker/models": "workspace:*",
-    "@sker/config": "workspace:*"
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.0",
-    "@types/uuid": "^9.0.0"
+    "@types/uuid": "^9.0.0",
+    "vite": "^4.4.0",
+    "vite-plugin-dts": "^3.6.0",
+    "typescript": "^5.2.0",
+    "rimraf": "^5.0.0",
+    "eslint": "^8.50.0",
+    "vitest": "^0.34.0"
   },
   "keywords": [
     "broker",

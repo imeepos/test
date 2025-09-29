@@ -1,6 +1,7 @@
 import { Pool, PoolConfig } from 'pg'
 import { createClient, RedisClientType } from 'redis'
 import { EventEmitter } from 'events'
+import { getConfig, DatabaseConfig as ConfigDatabaseConfig, RedisConfig, CacheConfig } from '@sker/config'
 
 /**
  * 数据库配置接口
@@ -20,31 +21,40 @@ export interface DatabaseConfig {
 }
 
 /**
- * 默认数据库配置
+ * 将 @sker/config 的配置转换为 DatabaseConfig
  */
-export const defaultDatabaseConfig: DatabaseConfig = {
-  postgres: {
-    host: process.env.PG_HOST || 'localhost',
-    port: parseInt(process.env.PG_PORT || '5432'),
-    database: process.env.PG_DATABASE || 'sker_db',
-    user: process.env.PG_USER || 'sker_user',
-    password: process.env.PG_PASSWORD || 'sker_pass',
-    max: 20, // 最大连接数
-    idleTimeoutMillis: 30000, // 空闲连接超时
-    connectionTimeoutMillis: 2000, // 连接超时
-    ssl: process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
-  },
-  redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-    password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB || '0'),
-    maxRetriesPerRequest: 3
-  },
-  cache: {
-    ttl: parseInt(process.env.CACHE_TTL || '3600'), // 1小时
-    maxKeys: parseInt(process.env.CACHE_MAX_KEYS || '10000')
+function createDatabaseConfig(): DatabaseConfig {
+  const config = getConfig()
+
+  return {
+    postgres: {
+      host: config.database.host,
+      port: config.database.port,
+      database: config.database.database,
+      user: config.database.user,
+      password: config.database.password,
+      max: config.database.maxConnections || 20,
+      idleTimeoutMillis: config.database.idleTimeoutMillis || 30000,
+      connectionTimeoutMillis: config.database.createTimeoutMillis || 2000,
+      ssl: config.database.ssl ? { rejectUnauthorized: false } : false
+    },
+    redis: {
+      url: config.redis.url,
+      password: config.redis.password,
+      db: config.redis.db,
+      maxRetriesPerRequest: config.redis.maxRetriesPerRequest || 3
+    },
+    cache: {
+      ttl: config.cache.ttl,
+      maxKeys: config.cache.maxKeys
+    }
   }
 }
+
+/**
+ * 默认数据库配置
+ */
+export const defaultDatabaseConfig: DatabaseConfig = createDatabaseConfig()
 
 /**
  * 数据库连接管理器

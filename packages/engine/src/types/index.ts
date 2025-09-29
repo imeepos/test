@@ -272,6 +272,8 @@ export interface AIProvider {
   countTokens(text: string): Promise<number>
   validateRequest(request: any): boolean
   getAvailableModels(): string[]
+  initialize?(): Promise<void>
+  cleanup?(): Promise<void>
 }
 
 // 监控和统计
