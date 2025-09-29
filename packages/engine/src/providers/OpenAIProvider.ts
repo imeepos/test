@@ -10,7 +10,7 @@ import type {
   SemanticOptions,
   SemanticAnalysis,
   ProcessingMetadata
-} from '@/types'
+} from '../types/index.js'
 
 /**
  * OpenAI服务提供者配置
