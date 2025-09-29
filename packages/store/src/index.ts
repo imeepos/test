@@ -1,6 +1,16 @@
 // 核心服务
 export { StoreService, storeService } from './services/StoreService'
 
+// HTTP客户端
+export {
+  StoreClient,
+  createStoreClient,
+  createStoreClientFromEnv,
+  getDefaultStoreClient,
+  resetDefaultStoreClient
+} from './client'
+export type { StoreClientConfig } from './client'
+
 // 数据库配置和管理
 export { DatabaseManager, databaseManager, defaultDatabaseConfig } from './config/database'
 export type { DatabaseConfig } from './config/database'

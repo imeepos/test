@@ -14,7 +14,7 @@ import { ValidationMiddleware } from '../middleware/ValidationMiddleware'
 import { RequestEnhancer } from '../middleware/RequestEnhancer'
 import { QueueManager } from '../messaging/QueueManager'
 import { AIEngine } from '@sker/engine'
-import { StoreService } from '@sker/store'
+import { StoreClient } from '@sker/store'
 import { MessageBroker } from '@sker/broker'
 
 /**
@@ -33,7 +33,7 @@ export class GatewayServer {
     config: GatewayConfig,
     dependencies?: {
       aiEngine?: AIEngine
-      storeService?: StoreService
+      storeClient?: StoreClient
       messageBroker?: MessageBroker
     }
   ) {

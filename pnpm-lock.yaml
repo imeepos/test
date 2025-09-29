@@ -265,6 +265,9 @@ importers:
 
   packages/broker:
     dependencies:
+      '@sker/models':
+        specifier: workspace:*
+        version: link:../models
       amqplib:
         specifier: ^0.10.0
         version: 0.10.9
@@ -395,6 +398,9 @@ importers:
       '@sker/broker':
         specifier: workspace:*
         version: link:../broker
+      '@sker/models':
+        specifier: workspace:*
+        version: link:../models
       compression:
         specifier: ^1.7.4
         version: 1.8.1

@@ -28,7 +28,19 @@ interface StoreService {
     create(task: any): Promise<any>
     update(id: string, updates: any): Promise<any>
     findById(id: string): Promise<any>
+    startTask(id: string): Promise<any>
+    completeTask(id: string, result: any, processingTime?: number): Promise<any>
+    failTask(id: string, error: any): Promise<any>
+    getQueuedTasks(limit?: number): Promise<any>
+    cleanupOldTasks(daysOld: number): Promise<number>
   }
+  healthCheck(): Promise<any>
+  getSystemStats(): Promise<any>
+  cache(key: string, value?: any, ttl?: number): Promise<any>
+  deleteCache(keyOrPattern: string, isPattern?: boolean): Promise<boolean>
+  batch<T>(operations: (() => Promise<T>)[]): Promise<T[]>
+  cleanup(options?: any): Promise<any>
+  close(): Promise<void>
 }
 
 /**

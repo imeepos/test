@@ -34,6 +34,10 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['monaco-editor/esm/vs/language/typescript/typescript.worker'],
+    include: [
+      'monaco-editor',
+      '@monaco-editor/react',
+    ],
+    exclude: ['monaco-editor/esm/vs/language/typescript/typescript.worker'],
   },
 })
