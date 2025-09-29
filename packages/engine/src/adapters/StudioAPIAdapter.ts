@@ -436,7 +436,7 @@ export class StudioAPIAdapter {
       synthesis: '请综合以下多个内容，生成统一的整合内容',
       comparison: '请比较分析以下多个内容的异同点'
     }
-    return instructions[type] || instructions.synthesis
+    return instructions[type] || instructions['synthesis']
   }
 
   /**
