@@ -18,10 +18,11 @@
 - Sharp 图片优化
 - AWS S3 文件存储
 
-## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run start
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

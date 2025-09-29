@@ -114,7 +114,7 @@ class NodeService {
       version: currentNode.version + 1,
       metadata: {
         ...currentNode.metadata,
-        editCount: currentNode.metadata.editCount + 1,
+        editCount: (currentNode.metadata?.editCount || 0) + 1,
       }
     }
 
@@ -201,44 +201,7 @@ class NodeService {
     ]
   }
 
-  /**
-   * 多输入融合生成
-   */
-  async fusionGenerate(inputNodes: AINode[], targetPosition: Position): Promise<AINode> {
-    if (inputNodes.length < 2) {
-      throw new Error('融合生成至少需要2个输入节点')
-    }
-
-    const inputs = inputNodes.map(node => node.content)
-    const parentIds = inputNodes.map(node => node.id)
-
-    try {
-      const aiResponse = await aiService.fusionGenerate(inputs, 'synthesis')
-      
-      return this.createNode({
-        position: targetPosition,
-        content: aiResponse.content,
-        title: aiResponse.title,
-        importance: Math.max(...inputNodes.map(n => n.importance)) as 1 | 2 | 3 | 4 | 5,
-        useAI: false, // 已经通过AI生成了
-        context: inputs,
-        parentNodeIds: parentIds,
-      })
-
-    } catch (error) {
-      // 如果AI融合失败，创建包含所有输入的简单合并节点
-      const mergedContent = inputs.join('\n\n---\n\n')
-      
-      return this.createNode({
-        position: targetPosition,
-        content: mergedContent,
-        title: '多输入融合',
-        importance: Math.max(...inputNodes.map(n => n.importance)) as 1 | 2 | 3 | 4 | 5,
-        useAI: false,
-        parentNodeIds: parentIds,
-      })
-    }
-  }
+  // Note: This method was removed to avoid duplication with the enhanced version below
 
   /**
    * 多输入融合生成
@@ -297,7 +260,7 @@ class NodeService {
         id: nodeId,
         content: aiResponse.content,
         title: nodeTitle,
-        importance: Math.max(...inputNodes.map(n => n.importance)),
+        importance: Math.max(...inputNodes.map(n => n.importance)) as 1 | 2 | 3 | 4 | 5,
         confidence: aiResponse.confidence,
         status: 'completed',
         tags: allTags,

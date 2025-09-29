@@ -20,8 +20,10 @@
 
 ## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run plugin:create
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

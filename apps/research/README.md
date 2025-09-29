@@ -18,10 +18,11 @@
 - D3.js 数据可视化
 - LaTeX 公式渲染
 
-## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run test
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

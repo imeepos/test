@@ -27,7 +27,7 @@ import type { Position, AINode } from '@/types'
 interface ContextMenuItem {
   id: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ className?: string }>
   shortcut?: string
   disabled?: boolean
   divider?: boolean
@@ -73,7 +73,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const generateMenuItems = useCallback((): ContextMenuItem[] => {
     switch (targetType) {
       case 'canvas':
-        const items = [
+        const items: ContextMenuItem[] = [
           {
             id: 'create-node',
             label: '创建节点',
@@ -550,7 +550,7 @@ ${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
               whileHover={{ x: 2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <item.icon className="h-4 w-4 flex-shrink-0" />
+              {item.icon && <item.icon className="h-4 w-4 flex-shrink-0" />}
               <span className="flex-1">{item.label}</span>
               {item.shortcut && (
                 <span className="text-xs text-sidebar-text-muted font-mono">

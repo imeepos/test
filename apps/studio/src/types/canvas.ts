@@ -55,4 +55,13 @@ export interface AINodeData {
   version: number
   createdAt: Date
   updatedAt: Date
+  metadata?: {
+    semantic: string[]
+    userRating?: number
+    aiRating?: number
+    editCount: number
+    lastEditReason?: string
+    lastModified?: Date
+    autoSaved?: boolean
+  }
 }

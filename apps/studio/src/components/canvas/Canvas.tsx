@@ -536,7 +536,74 @@ const Canvas: React.FC<CanvasProps> = ({
         })
       }
     },
-    [getNodes, addToast]
+    [getNodes, addToast, updateNode]
+  )
+
+  // 多输入融合处理
+  const handleFusionCreate = useCallback(
+    async (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => {
+      try {
+        // 获取选中的节点
+        const inputNodes = selectedNodeIds.map(id => getNodes().find(node => node.id === id)).filter(Boolean) as AINode[]
+
+        if (inputNodes.length < 2) {
+          addToast({
+            type: 'warning',
+            title: '融合失败',
+            message: '至少需要选择2个节点进行融合'
+          })
+          return
+        }
+
+        addToast({
+          type: 'info',
+          title: 'AI融合中',
+          message: `正在对${inputNodes.length}个节点进行${fusionType === 'synthesis' ? '智能融合' : fusionType === 'summary' ? '总结汇总' : '对比分析'}...`
+        })
+
+        // 使用nodeService的融合生成功能
+        const fusionNode = await nodeService.fusionGenerate(inputNodes, fusionType, position)
+
+        // 添加融合节点到store
+        const newNodeId = addNode({
+          content: fusionNode.content,
+          title: fusionNode.title,
+          importance: fusionNode.importance,
+          confidence: fusionNode.confidence,
+          status: fusionNode.status,
+          tags: fusionNode.tags,
+          position: fusionNode.position,
+          connections: [],
+          version: fusionNode.version,
+          metadata: fusionNode.metadata,
+        })
+
+        if (newNodeId) {
+          // 创建从输入节点到融合节点的连接
+          inputNodes.forEach(inputNode => {
+            connectNodes(inputNode.id, newNodeId)
+          })
+
+          // 清除选择状态
+          setSelectedNodes([])
+
+          addToast({
+            type: 'success',
+            title: '融合成功',
+            message: `已成功融合${inputNodes.length}个节点，生成新的${fusionType === 'synthesis' ? '综合' : fusionType === 'summary' ? '总结' : '对比分析'}节点`
+          })
+        }
+
+      } catch (error) {
+        console.error('融合生成失败:', error)
+        addToast({
+          type: 'error',
+          title: '融合失败',
+          message: error instanceof Error ? error.message : '请稍后重试'
+        })
+      }
+    },
+    [getNodes, addNode, connectNodes, setSelectedNodes, addToast]
   )
 
   return (
@@ -607,7 +674,7 @@ const Canvas: React.FC<CanvasProps> = ({
         onCopyNode={(nodeId) => {
           console.log('Copy node from menu:', nodeId)
         }}
-        onFusionCreate={onFusionCreate}
+        onFusionCreate={onFusionCreate || handleFusionCreate}
         selectedNodeIds={selectedNodeIds}
       />
     </div>

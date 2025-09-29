@@ -18,10 +18,11 @@
 - ClickHouse 时序数据库
 - TensorFlow.js 模式识别
 
-## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run analyze
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

@@ -19,9 +19,9 @@
 - Operational Transform
 
 ## 开发
-
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run test
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Save,
@@ -76,21 +76,8 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     setHasChanges(hasContentChanged || hasTitleChanged || hasImportanceChanged || hasTagsChanged)
   }, [content, title, importance, tags, node])
 
-  // 自动保存功能
-  useEffect(() => {
-    if (!autoSaveEnabled || !hasChanges || isSaving || isOptimizing) return
-
-    const autoSaveTimer = setTimeout(() => {
-      if (content.trim() && hasChanges) {
-        handleAutoSave()
-      }
-    }, 5000) // 5秒后自动保存
-
-    return () => clearTimeout(autoSaveTimer)
-  }, [hasChanges, content, autoSaveEnabled, isSaving, isOptimizing])
-
   // 自动保存
-  const handleAutoSave = async () => {
+  const handleAutoSave = useCallback(async () => {
     if (!node || !hasChanges || !content.trim()) return
 
     try {
@@ -101,7 +88,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
         tags,
         metadata: {
           ...node.metadata,
-          lastModified: new Date().toISOString(),
+          lastModified: new Date(),
           autoSaved: true
         }
       }
@@ -119,7 +106,20 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     } catch (error) {
       console.error('自动保存失败:', error)
     }
-  }
+  }, [node, hasChanges, content, title, importance, tags, onSave, addToast])
+
+  // 自动保存功能
+  useEffect(() => {
+    if (!autoSaveEnabled || !hasChanges || isSaving || isOptimizing) return
+
+    const autoSaveTimer = setTimeout(() => {
+      if (content.trim() && hasChanges) {
+        handleAutoSave()
+      }
+    }, 5000) // 5秒后自动保存
+
+    return () => clearTimeout(autoSaveTimer)
+  }, [hasChanges, content, autoSaveEnabled, isSaving, isOptimizing, handleAutoSave])
 
   // 保存更改
   const handleSave = async () => {
@@ -138,16 +138,16 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     setIsSaving(true)
     try {
       // 创建版本记录
-      const versionRecord = {
-        id: Date.now().toString(),
-        content: content.trim(),
-        title: title.trim() || undefined,
-        timestamp: new Date().toISOString(),
-        type: 'user_edit' as const,
-        reason: '手动编辑保存',
-        importance,
-        tags: [...tags]
-      }
+      // const versionRecord = {
+      //   id: Date.now().toString(),
+      //   content: content.trim(),
+      //   title: title.trim() || undefined,
+      //   timestamp: new Date().toISOString(),
+      //   type: 'user_edit' as const,
+      //   reason: '手动编辑保存',
+      //   importance,
+      //   tags: [...tags]
+      // }
 
       const updates: Partial<AINode> = {
         content: content.trim(),
@@ -157,7 +157,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
         // 更新最后修改时间
         metadata: {
           ...node.metadata,
-          lastModified: new Date().toISOString(),
+          lastModified: new Date(),
           editCount: (node.metadata?.editCount || 0) + 1
         }
       }
@@ -197,14 +197,14 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     setIsOptimizing(true)
     try {
       // 保存当前内容到版本历史
-      const currentVersion = {
-        id: Date.now().toString(),
-        content: content,
-        title: title,
-        timestamp: new Date().toISOString(),
-        type: 'user_edit' as const,
-        reason: 'AI优化前备份'
-      }
+      // const currentVersion = {
+      //   id: Date.now().toString(),
+      //   content: content,
+      //   title: title,
+      //   timestamp: new Date().toISOString(),
+      //   type: 'user_edit' as const,
+      //   reason: 'AI优化前备份'
+      // }
 
       const updates = await nodeService.updateNode(nodeId, node, {
         content: content.trim(),
@@ -223,15 +223,15 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
       if (updates.tags) setTags(updates.tags)
 
       // 添加优化后的版本记录
-      const optimizedVersion = {
-        id: (Date.now() + 1).toString(),
-        content: updates.content || content,
-        title: updates.title || title,
-        timestamp: new Date().toISOString(),
-        type: 'ai_optimize' as const,
-        reason: 'AI内容优化',
-        confidence: updates.confidence || 0.8
-      }
+      // const optimizedVersion = {
+      //   id: (Date.now() + 1).toString(),
+      //   content: updates.content || content,
+      //   title: updates.title || title,
+      //   timestamp: new Date().toISOString(),
+      //   type: 'ai_optimize' as const,
+      //   reason: 'AI内容优化',
+      //   confidence: updates.confidence || 0.8
+      // }
 
       addToast({
         type: 'success',

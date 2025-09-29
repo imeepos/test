@@ -1,0 +1,38 @@
+{
+  "name": "@sker/broker",
+  "version": "1.0.0",
+  "description": "消息代理服务 - RabbitMQ封装、AI任务调度、实时通信协调",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.0",
+    "uuid": "^9.0.0",
+    "@sker/models": "workspace:*",
+    "@sker/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.0",
+    "@types/uuid": "^9.0.0"
+  },
+  "keywords": [
+    "broker",
+    "rabbitmq",
+    "message-queue",
+    "amqp",
+    "ai-coordination",
+    "task-scheduling"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

@@ -52,18 +52,28 @@ export interface NodeMetadata {
   aiRating?: number
   editCount: number
   lastEditReason?: string
+  lastModified?: Date
+  autoSaved?: boolean
+  fusionSource?: string[]
+  fusionType?: 'summary' | 'synthesis' | 'comparison'
+  error?: string
 }
 
 // 语义类型
-export type SemanticType = 
+export type SemanticType =
   | 'requirement'
-  | 'solution' 
+  | 'solution'
   | 'plan'
   | 'analysis'
   | 'idea'
   | 'question'
   | 'answer'
   | 'decision'
+  | 'fusion'
+  | 'summary'
+  | 'synthesis'
+  | 'comparison'
+  | 'fusion-error'
 
 // 节点版本历史
 export interface NodeVersion {

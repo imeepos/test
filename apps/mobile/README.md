@@ -18,10 +18,11 @@
 - AsyncStorage 本地存储
 - WebSocket 实时同步
 
-## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run start
-npm run android
-npm run ios
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```

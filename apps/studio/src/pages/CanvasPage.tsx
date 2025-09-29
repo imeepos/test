@@ -146,7 +146,7 @@ const CanvasPage: React.FC = () => {
         }
 
         // 获取选中的节点
-        const inputNodes = selectedNodeIds.map(id => getNode(id)).filter(Boolean)
+        const inputNodes = selectedNodeIds.map(id => getNode(id)).filter((node): node is NonNullable<typeof node> => Boolean(node))
         if (inputNodes.length < 2) {
           addToast({
             type: 'error',
@@ -255,7 +255,7 @@ const CanvasPage: React.FC = () => {
             if (selectedNodeIds.length > 0) {
               event.preventDefault()
               try {
-                const selectedNodes = selectedNodeIds.map(id => getNode(id)).filter(Boolean)
+                const selectedNodes = selectedNodeIds.map(id => getNode(id)).filter((node): node is NonNullable<typeof node> => Boolean(node))
                 if (selectedNodes.length > 0) {
                   const clipboardData = {
                     type: 'sker-nodes',

@@ -18,10 +18,11 @@
 - WebRTC 视频互动
 - 学习管理系统集成
 
-## 开发
 
+## 开发
+- 包管理工具使用 pnpm
 ```bash
-npm run dev
-npm run build
-npm run test
+pnpm run dev
+pnpm run build
+pnpm run monitor
 ```
