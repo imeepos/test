@@ -51,10 +51,8 @@ function createApp(storeService: any): express.Application {
   // 内容类型验证
   app.use(validateContentType)
 
-  // 限流中间件
-  app.use('/api/', rateLimitMiddleware)
-  app.use('/api/users/authenticate', strictRateLimitMiddleware)
-  app.use('/api/users/:id/password', strictRateLimitMiddleware)
+  // 限流中间件 - 应用到所有API路由
+  app.use(rateLimitMiddleware as any)
 
   // 健康检查端点
   app.get('/health', async (req, res) => {
