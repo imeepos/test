@@ -53,7 +53,7 @@ export interface ServiceEndpoint {
 /**
  * 服务状态
  */
-export type ServiceStatus = 'active' | 'inactive' | 'healthy' | 'unhealthy' | 'unknown'
+export type ServiceStatus = 'active' | 'inactive' | 'healthy' | 'unhealthy' | 'unknown' | 'degraded'
 
 /**
  * 消息处理器

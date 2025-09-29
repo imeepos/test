@@ -129,23 +129,23 @@ export class MessageBroker extends EventEmitter {
     }
 
     // 创建普通通道
-    this.channel = await connection.createChannel()
+    this.channel = await (connection as any).createChannel()
     if (this.config.prefetch) {
       await this.channel.prefetch(this.config.prefetch)
     }
 
     // 创建确认通道
-    this.confirmChannel = await connection.createConfirmChannel()
+    this.confirmChannel = await (connection as any).createConfirmChannel()
     if (this.config.prefetch) {
       await this.confirmChannel.prefetch(this.config.prefetch)
     }
 
     // 设置确认监听器
-    this.confirmChannel.on('ack', (tag: amqp.Replies.Confirm) => {
+    this.confirmChannel.on('ack', (tag: any) => {
       this.handleConfirmation(tag.deliveryTag, true)
     })
 
-    this.confirmChannel.on('nack', (tag: amqp.Replies.Confirm) => {
+    this.confirmChannel.on('nack', (tag: any) => {
       this.handleConfirmation(tag.deliveryTag, false)
     })
 
@@ -174,12 +174,11 @@ export class MessageBroker extends EventEmitter {
       priority: options.priority || 0,
       expiration: options.expiration,
       mandatory: options.mandatory || false,
-      immediate: options.immediate || false,
       headers: options.headers || {},
       correlationId: options.correlationId || uuidv4(),
       replyTo: options.replyTo,
       messageId: options.messageId || uuidv4(),
-      timestamp: options.timestamp || new Date(),
+      timestamp: options.timestamp ? (typeof options.timestamp === 'number' ? options.timestamp : options.timestamp.getTime()) : Date.now(),
       type: options.type,
       userId: options.userId,
       appId: options.appId || '@sker/broker'
@@ -216,12 +215,11 @@ export class MessageBroker extends EventEmitter {
       priority: options.priority || 0,
       expiration: options.expiration,
       mandatory: options.mandatory || false,
-      immediate: options.immediate || false,
       headers: options.headers || {},
       correlationId: options.correlationId || uuidv4(),
       replyTo: options.replyTo,
       messageId: options.messageId || uuidv4(),
-      timestamp: options.timestamp || new Date(),
+      timestamp: options.timestamp ? (typeof options.timestamp === 'number' ? options.timestamp : options.timestamp.getTime()) : Date.now(),
       type: options.type,
       userId: options.userId,
       appId: options.appId || '@sker/broker'
@@ -236,7 +234,7 @@ export class MessageBroker extends EventEmitter {
         }
 
         // 获取下一个序列号
-        const seqNo = this.confirmChannel!.sequenceNumber
+        const seqNo = (this.confirmChannel! as any).ch.nextSeqNum()
 
         // 设置确认超时
         const timer = setTimeout(() => {

@@ -452,7 +452,7 @@ export class ServiceIntegrator extends EventEmitter {
               this.updateServiceActivity(serviceName)
             } catch (error) {
               console.error(`处理消息失败 [${serviceName}.${messageType}]:`, error)
-              this.broker.nack(message, false, false)
+              this.broker.nack(message, false)
             }
           },
           { noAck: false }
@@ -483,7 +483,7 @@ export class ServiceIntegrator extends EventEmitter {
               this.updateServiceActivity(serviceName)
             } catch (error) {
               console.error(`处理广播消息失败 [${serviceName}.${messageType}]:`, error)
-              this.broker.nack(message, false, false)
+              this.broker.nack(message, false)
             }
           },
           { noAck: false }
