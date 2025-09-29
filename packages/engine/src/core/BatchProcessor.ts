@@ -8,8 +8,8 @@ import type {
   BatchSummary,
   AITaskRequest,
   AITaskResult
-} from '@/types'
-import { AIEngine } from './AIEngine'
+} from '../types/index.js'
+import { AIEngine } from './AIEngine.js'
 
 /**
  * 批处理器类

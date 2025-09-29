@@ -8,7 +8,7 @@ import type {
   FusionResult,
   ExpandRequest,
   ExpandResult
-} from '@/types'
+} from '../types/index.js'
 
 /**
  * 内容生成器类
