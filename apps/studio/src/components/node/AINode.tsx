@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
 import { NodeEditor } from './NodeEditor'
-import type { AINodeData, ImportanceLevel, AINode } from '@/types'
+import type { AINodeData, ImportanceLevel, AINode as AINodeType } from '@/types'
 
 export interface AINodeProps extends NodeProps<AINodeData> {}
 
@@ -88,7 +88,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   }
 
   // 处理节点更新
-  const handleNodeUpdate = (updates: Partial<AINode>) => {
+  const handleNodeUpdate = (updates: Partial<AINodeType>) => {
     updateNode(data.id, updates)
     setIsEditorOpen(false)
   }
@@ -249,4 +249,5 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   )
 }
 
+export default AINode
 export { AINode }

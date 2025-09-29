@@ -10,6 +10,11 @@ export type { WebSocketConfig, WebSocketMessage } from './websocketService'
 export { nodeService, NodeService } from './nodeService'
 export type { NodeCreationOptions, NodeUpdateOptions } from './nodeService'
 
+// 导入服务实例
+import { aiService } from './aiService'
+import { websocketService } from './websocketService'
+import { nodeService } from './nodeService'
+
 // 服务组合类型
 export interface Services {
   ai: typeof aiService
