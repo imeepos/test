@@ -1,4 +1,4 @@
-# 🚀 扩展式AI协作画布 - MVP开发计划
+# 🚀 扩展式AI协作画布 - MVP开发计划 V2.0
 
 ## 项目概述
 
@@ -7,6 +7,8 @@
 用户面对空白的无限画布，双击任意位置，输入一句话，AI生成内容，一个组件诞生。连线、运行、扩展，从虚无到万物，构建属于你的AI协作宇宙。
 
 这是一个基于"文字生成文字"的极简AI协作平台，让思维在无限画布上自由流淌。
+
+**V2.0设计理念**：在保持极简创造体验的基础上，通过组件语义化、信息层次管理和智能版本控制，打造真正适合大规模思维协作的平台。
 
 ## 核心交互：从无到有的创造
 
@@ -49,7 +51,7 @@
 ```
 用户输入: "我想做一个电商网站"
 用户按下: Enter键
-系统响应: AI生成第一个组件内容
+系统响应: AI生成第一个组件内容，自动生成组件标题
 ```
 
 **步骤3: 连线扩展 (一生二)**
@@ -60,6 +62,7 @@
 用户确认: 按回车或点击确认
 系统响应: AI基于 [前组件内容] + [用户提示词] 生成新组件
          新组件自动出现在连线末端，连线完成
+         系统自动为新组件生成标题和设置重要性等级
 ```
 
 **步骤4: 融合创造 (二生三)**
@@ -73,6 +76,7 @@
 用户输入: "综合以上分析，制定产品MVP方案"
 系统响应: AI基于 [组件1内容] + [组件2内容] + [用户提示词] 生成融合内容
          空组件填充内容，成为真正的融合组件
+         自动分析并设置组件的重要性等级
 ```
 
 **步骤5: 万物生成 (三生万物)**
@@ -98,30 +102,32 @@
 **步骤6: 内容优化升级 (万物重生)**
 ```
 用户操作: 双击任意已生成内容的组件
-系统响应: 弹出输入框："如何优化这个内容？"
-         同时显示当前组件的内容预览
-用户输入: "增加更详细的技术实现细节" 或 "调整为面向C端用户的方案"
+系统响应: 弹出优化对话框，显示当前组件的内容预览
+         同时显示变更原因输入框："请描述此次修改的原因"
+用户输入优化指令: "增加更详细的技术实现细节"
+用户输入变更原因: "需要更具体的技术指导"
+用户选择变更类型: "确定性改进" (而非实验性尝试)
 系统响应: AI基于 [当前组件内容] + [优化提示词] 重新生成内容
-         组件内容更新，版本号+1
-         保留历史版本供回滚
+         组件内容更新，版本号递增
+         记录完整的变更历史和原因
+         保持原有连线关系不变
          
-优化特性:
-- 支持任意组件的内容优化
-- 保持原有连线关系不变
-- 版本管理和历史回滚
-- 优化后可继续作为输入传递给下游组件
+历史记录: 用户可查看版本历史，了解每次变更的原因和效果
+回滚功能: 支持安全回滚到任意历史版本
 ```
 
-### 画布组件设计
+### 组件设计
 
-**组件类型设计**：
-
-**内容组件 (已生成)**：
-- 📝 **内容区域**：显示AI生成或用户输入的内容
+**智能内容组件 (已生成)**：
+- 📝 **标题区域**：AI自动生成或用户自定义的组件标题
+- ⭐ **重要性指示器**：1-5星等级，影响组件的视觉权重
+- 🎯 **置信度显示**：AI生成内容的可信度评分 (0-100)
+- 👤 **用户评分**：用户对内容质量的反馈评分 (1-5星)
+- 🏷️ **语义标签**：自动识别的内容类型标签
 - 🔗 **输出连接点**：可以拖拽连线到其他组件
 - ✏️ **编辑模式**：支持人工修改内容
 - 🔄 **双击优化**：双击组件可重新生成内容
-- 📋 **版本标识**：显示当前版本号 (v1, v2, v3...)
+- 📋 **版本信息**：显示当前版本和最近变更原因
 
 **空组件 (待生成)**：
 - ⭕ **空白区域**：等待AI生成内容
@@ -131,11 +137,101 @@
 
 **优化组件 (重生中)**：
 - 🔄 **处理状态**：显示"正在优化..."动画
-- 📝 **预览内容**：显示当前内容和优化提示词
-- ↩️ **回滚按钮**：可以回到上一个版本
-- 📈 **版本历史**：显示所有历史版本
+- 📝 **变更对话框**：显示优化指令、变更原因、变更类型选择
+- ↩️ **回滚选项**：提供回到上一个版本的选择
+- 📈 **版本预览**：显示即将发生的变更内容
 
-### 创世画布演进
+### 画布多层次展示系统
+
+**概览模式 (Overview)**：
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 🔍 概览模式 - 整体结构一目了然                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─⭐⭐⭐⭐⭐─┐    ┌─⭐⭐⭐⭐─┐    ┌─⭐⭐⭐─┐                      │
+│  │需求分析     │───►│技术架构    │───►│MVP计划│                     │
+│  │v3          │    │v2         │    │v1     │                     │
+│  └────────────┘    └───────────┘    └───────┘                     │
+│                                         │                        │
+│  ┌─⭐⭐⭐─┐                             ▼                        │
+│  │资源评估│                         ┌─⭐⭐⭐⭐⭐─┐                    │
+│  │v1     │────────────────────────►│执行方案   │                    │
+│  └───────┘                         │v1        │                    │
+│                                     └──────────┘                    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+- 只显示组件标题和重要性星级
+- 连线关系清晰可见，便于理解思维流程
+- 组件大小基于重要性等级，核心组件更突出
+
+**预览模式 (Preview)**：
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 👁️ 预览模式 - 结构与内容平衡展示                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─需求分析 ⭐⭐⭐⭐⭐─┐                                            │
+│  │• 核心用户群体分析    │                                        │
+│  │• 主要功能需求梳理    │───────┐                               │
+│  │• 竞品分析和差异化... │       │                               │
+│  │📊 置信度: 85%       │       ▼                               │
+│  └─────────────────────┘   ┌─技术架构 ⭐⭐⭐⭐─┐                   │
+│                           │• 前端: React + TS │                   │
+│                           │• 后端: Node.js... │                   │
+│  ┌─资源评估 ⭐⭐⭐─┐          │📊 置信度: 78%     │                   │
+│  │• 开发成本: 15万      │          └─────────────────┘                   │
+│  │• 时间周期: 3个月     │                  │                        │
+│  │• 团队配置建议...     │                  ▼                        │
+│  └─────────────────────┘             ┌─MVP计划─┐                   │
+│                                      │...     │                   │
+│                                      └────────┘                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+- 显示标题 + 前2-3行关键内容
+- 保持连线关系可见
+- 平衡结构感知和内容预览
+
+**详细模式 (Detail)**：
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 📋 详细模式 - 完整内容深度阅读                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─需求分析 ⭐⭐⭐⭐⭐ v3 "增加竞品分析" - 确定性改进──────────┐      │
+│  │                                                           │      │
+│  │ 📌 核心用户群体分析：                                     │      │
+│  │ • 小企业主 (50-200人规模)                                │      │
+│  │ • 痛点：缺乏专业的客户管理工具                           │      │
+│  │ • 预算：月均 200-500元                                   │      │
+│  │                                                           │      │
+│  │ 📌 主要功能需求：                                         │      │
+│  │ • 客户信息管理 (联系方式、购买历史、偏好)                │      │
+│  │ • 销售流程跟踪 (线索-商机-成交)                          │      │
+│  │ • 简单的数据分析 (销售趋势、客户价值)                    │      │
+│  │                                                           │      │
+│  │ 📌 竞品分析：                                             │      │
+│  │ • Salesforce: 功能强大但价格高昂，小企业难以负担         │      │
+│  │ • 小满CRM: 价格适中但功能相对简单                        │      │
+│  │ • 差异化策略: 专注小企业场景，提供更简单易用的解决方案   │      │
+│  │                                                           │      │
+│  │ 📊 置信度: 85% | 👤 用户评分: ⭐⭐⭐⭐ | 🏷️ 市场分析       │      │
+│  │ 📋 版本历史 | ✏️ 编辑内容                                │      │
+│  └───────────────────────────────────────────────────────────┘      │
+│                                   │                                │
+│                                   ▼                                │
+│  ┌─技术架构 ⭐⭐⭐⭐ v2 "调整数据库设计" - 实验性尝试─────────┐         │
+│  │ [显示完整的技术架构内容...]                            │         │
+│  └─────────────────────────────────────────────────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+- 显示组件的完整内容
+- 显示详细的版本信息和变更历史
+- 适合深度阅读和内容编辑
+
+### 画布演进示例
 
 **阶段1: 虚无**
 ```
@@ -149,104 +245,73 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**阶段2: 第一个组件诞生**  
+**阶段2: 第一个组件诞生 (道生一)**  
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│                   ┌─────────────┐                               │
-│                   │ 🌱种子思想   │                               │
-│                   │             │                               │
-│                   │"我想做一个电 │                               │
-│                   │商网站，主要  │                               │
-│                   │面向小企业..."│                               │
-│                   │ 📝[编辑]     │                               │
-│                   └─────────────┘                               │
+│                   ┌─电商网站构想 ⭐⭐⭐⭐─┐                        │
+│                   │AI生成标题              │                        │
+│                   │                        │                        │
+│                   │"我想做一个电商网站，主要│                        │
+│                   │面向小企业，帮助他们...  │                        │
+│                   │                        │                        │
+│                   │📊 置信度: 78%          │                        │
+│                   │🏷️ 项目构想              │                        │
+│                   │📝[编辑] 🔄[优化]       │                        │
+│                   └────────────────────────┘                        │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**阶段2.5: 拖拽连线中**
+**阶段3: 连线扩展 (一生二)**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│                   ┌─────────────┐                               │
-│                   │ 🌱种子思想   │                               │
-│                   │             │────────┐                     │
-│                   │"我想做一个电 │        │                     │
-│                   │商网站..."    │        │                     │
-│                   │             │        ↓                     │
-│                   │ 📝[编辑]     │    💭[分析需求]              │
-│                   └─────────────┘    输入框激活                │
+│  ┌─电商网站构想 ⭐⭐⭐⭐─┐                                         │
+│  │初始想法和目标       │                                         │
+│  │📊 置信度: 78%       │─────────┐                              │
+│  │🏷️ 项目构想          │         │                              │
+│  └─────────────────────┘         ▼                              │
+│                              ┌─需求分析 ⭐⭐⭐⭐⭐─┐                 │
+│                              │AI深度分析用户需求│                 │
+│                              │• 目标用户群体    │                 │
+│                              │• 核心功能模块    │                 │
+│                              │• 技术可行性...   │                 │
+│                              │📊 置信度: 85%    │                 │
+│                              │🏷️ 需求分析       │                 │
+│                              └──────────────────┘                 │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**阶段3: 二生三的融合创造**
+**阶段4: 多方融合 (二生三)**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  ┌─────────────┐     ┌─────────────┐                           │
-│  │ 🎯需求分析   │────┐│ 🔧技术选型   │                           │
-│  │             │    ││             │                           │
-│  │• 用户注册登录 │    │• 前端: React │                           │
-│  │• 商品展示   │    │• 后端: Node.js│                           │
-│  │• 购物车     │    │• 数据库: PostgreSQL                      │
-│  │• 订单管理   │    │• 支付: Stripe │                           │
-│  │             │    ││             │                           │
-│  └─────────────┘    │└─────────────┘                           │
-│                     │        │                                │
-│                     └────────┼──────┐                         │
-│                              │      ↓                         │
-│                              │  ⭕ 空组件                      │
-│                              │  等待融合                      │
-│                              │  输入: 2个                     │
-│                              │  ▶️[生成]                      │
-│                              │                                │
-│  右键菜单:                   ↓                                │
-│  ┌─────────────┐         用户点击生成                         │
-│  │ 创建空组件   │         输入: "制定MVP方案"                  │
-│  │ 复制       │                                              │
-│  │ 粘贴       │             ↓ AI融合生成                     │
-│  └─────────────┘         ✨ 融合组件诞生                      │
-│                           包含综合MVP方案                     │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**阶段4: 三生万物的终极整合**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │
-│ │ 🎯需求分析   │  │ 🔧技术选型   │  │ 📋MVP方案   │               │
-│ │• 用户画像   │  │• 前端架构   │  │• 核心功能   │               │
-│ │• 核心需求   │  │• 后端设计   │  │• 开发计划   │               │
-│ └─────────────┘  └─────────────┘  └─────────────┘               │
-│        │                │               │                     │
-│        └────────────────┼───────────────┼──────┐              │
-│                         │               │      │              │
-│ ┌─────────────┐        │               │      │              │
-│ │ 💰资源评估   │────────│               │      │              │
-│ │• 人力成本   │        │               │      │              │
-│ │• 时间预算   │        │               │      │              │
-│ └─────────────┘        │               │      │              │
-│        │               │               │      │              │
-│        └───────────────┼───────────────┼──────┼──────┐       │
-│                        │               │      │      │       │
-│ ┌─────────────┐       │               │      │      │       │
-│ │ 📊市场分析   │───────│               │      │      │       │
-│ │• 竞品分析   │       │               │      │      │       │
-│ │• 用户反馈   │       │               │      │      │       │
-│ └─────────────┘       │               │      │      │       │
-│                       │               │      │      │       │
-│                       └───────────────┼──────┼──────┼───────┐│
-│                                       │      │      │       ││
-│                                       ▼      ▼      ▼       ▼│
-│                                   🌌 万物节点                │
-│                                   终极整合者                │
-│                                   输入: 5个                 │
-│                                   ▶️[开始生成]              │
-│                                                             │
-│   用户输入: "制定完整的产品执行方案"                         │
-│   AI输出: 包含完整开发路线图、团队配置、里程碑计划的终极方案   │
+│  ┌─需求分析 ⭐⭐⭐⭐⭐─┐     ┌─技术方案 ⭐⭐⭐⭐─┐                      │
+│  │用户和功能需求分析   │────┐│前后端技术选型    │                      │
+│  │📊 置信度: 85%       │    ││📊 置信度: 80%     │                      │
+│  │🏷️ 需求分析          │    │└──────────────────┘                      │
+│  └─────────────────────┘    │                                        │
+│                             │        ┌─市场分析 ⭐⭐⭐─┐                │
+│                             │        │竞品和定价策略 │                │
+│                             │        │📊 置信度: 72% │                │
+│                             │        └───────────────┘                │
+│                             │               │                        │
+│                             └───────────────┼──────┐                 │
+│                                             │      ▼                 │
+│                                             │  ⭕ 空组件               │
+│                                             │  等待融合               │
+│                                             │  输入: 3个              │
+│                                             │  ▶️[生成]               │
+│                                             │                        │
+│                                             ▼                        │
+│                                         💭 用户输入                  │
+│                                         "制定完整MVP方案"             │
+│                                             ▼                        │
+│                                     ✨ MVP方案 ⭐⭐⭐⭐⭐              │
+│                                     融合三方分析的综合方案            │
+│                                     📊 置信度: 88%                  │
+│                                     🏷️ 产品方案                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -256,7 +321,7 @@
 - ⏸️ **待运行**：组件内容已准备，等待点击运行
 - 🔄 **运行中**：AI正在处理，显示加载动画
 - 🟢 **已完成**：AI处理完成，内容已更新
-- 🔴 **运行错误**：处理失败，显示错误信息
+- 🔴 **运行错误**：处理失败，显示错误信息和重试选项
 - ✏️ **编辑中**：用户正在手动编辑内容
 - 🔄 **优化中**：AI正在根据优化提示词重新生成内容
 - 📋 **已优化**：内容优化完成，版本号已更新
@@ -272,11 +337,11 @@
                               运行错误 ←─────── 历史回滚
 ```
 
-**版本管理**：
+**版本管理流转**：
 ```
 v1 (初始版本) → v2 (首次优化) → v3 (二次优化) → ...
      ↑              ↑              ↑
-   [回滚]         [回滚]         [回滚]
+   [安全回滚]     [安全回滚]     [安全回滚]
 ```
 
 ## 技术架构设计
@@ -284,9 +349,10 @@ v1 (初始版本) → v2 (首次优化) → v3 (二次优化) → ...
 ### 核心技术栈
 ```yaml
 前端框架: React 18 + TypeScript
-画布引擎: Konva.js + React-Konva
-状态管理: Zustand (轻量级)
+画布引擎: React Flow (替代Konva.js，更好的性能和现代化API)
+状态管理: Zustand (轻量级状态管理)
 动画库: Framer Motion
+UI组件: Tailwind CSS + Headless UI
 实时通信: Socket.io
 构建工具: Vite
 
@@ -301,7 +367,7 @@ AI集成: OpenAI GPT-4 API
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   前端画布应用   │◄──►│   后端API服务    │◄──►│   统一LLM服务    │
-│  React + Konva  │    │ Express + WS    │    │ GPT-4 + 提示词  │
+│ React + Flow    │    │ Express + WS    │    │ GPT-4 + 提示词  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       ▼                       ▼
@@ -309,6 +375,75 @@ AI集成: OpenAI GPT-4 API
     │  浏览器  │         │PostgreSQL│  │ RabbitMQ│  │  Redis  │
     │ 本地存储 │         │ 项目数据 │  │ 2个队列 │  │   缓存  │
     └─────────┘         └─────────┘  └─────────┘  └─────────┘
+```
+
+### React Flow画布引擎优势
+
+**为什么选择React Flow而非Konva.js**：
+- ✅ **虚拟化渲染**：内置虚拟化，轻松处理1000+节点
+- ✅ **现代化API**：TypeScript友好，hooks支持
+- ✅ **内置组件**：MiniMap、Controls、Background等
+- ✅ **性能优化**：自动处理大量节点的性能问题
+- ✅ **社区活跃**：文档完善，持续更新
+
+**React Flow实现示例**：
+```typescript
+import ReactFlow, { 
+  Node, 
+  Edge, 
+  Controls, 
+  MiniMap,
+  Background,
+  useNodesState,
+  useEdgesState 
+} from 'reactflow';
+
+interface ComponentNodeData {
+  title: string;
+  content: string;
+  importance_level: number;
+  confidence_score: number;
+  user_rating: number;
+  semantic_type: string;
+  version: number;
+  display_mode: 'overview' | 'preview' | 'detail';
+}
+
+const AICanvas = () => {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [displayMode, setDisplayMode] = useState('preview');
+
+  return (
+    <div className="ai-canvas-container h-screen">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        nodeTypes={customNodeTypes}
+        fitView
+        minZoom={0.1}
+        maxZoom={4}
+      >
+        <Controls />
+        <MiniMap 
+          nodeColor={(node) => getNodeColorByImportance(node.data.importance_level)}
+          maskColor="rgb(240, 240, 240, 0.6)"
+        />
+        <Background variant="dots" gap={12} size={1} />
+      </ReactFlow>
+      
+      <DisplayModeController 
+        mode={displayMode}
+        onChange={setDisplayMode}
+      />
+      <ComponentFilter />
+      <SearchBox />
+    </div>
+  );
+};
 ```
 
 ## RabbitMQ消息架构设计
@@ -329,6 +464,7 @@ AI集成: OpenAI GPT-4 API
       component_id: string      # 组件唯一ID
       context: string           # 收集的完整上下文内容
       user_prompt: string       # 用户的处理指令
+      metadata: object          # 组件元信息 (V2.0新增)
 ```
 
 ### 消息流转设计
@@ -339,7 +475,7 @@ AI集成: OpenAI GPT-4 API
    → 前端显示悬空连线和输入框
    → 用户输入提示词并确认
    → 前端收集上下文:
-     - 源组件的完整内容
+     - 源组件的完整内容和元信息
      - 用户输入的提示词
    → 发送WebSocket消息到后端
 
@@ -347,11 +483,13 @@ AI集成: OpenAI GPT-4 API
    → 构造完整上下文: [源组件内容] + [用户提示词]
    → 发布到 llm.process.queue  
    → LLM Service基于上下文生成新组件内容
+   → 同时生成组件标题、语义类型、重要性等级
    → 发布结果到 result.notify.queue
-   → 前端创建新组件，显示AI生成的内容，完成连线
+   → 前端创建新组件，显示AI生成的内容和元信息，完成连线
 
 3. 后续交互
-   → 用户可以编辑新组件的内容
+   → 用户可以编辑新组件的标题和内容
+   → 可以调整重要性等级和用户评分
    → 可以从新组件继续拖拽连线扩展
    → 无限递归创造
 ```
@@ -372,75 +510,52 @@ AI集成: OpenAI GPT-4 API
    → 用户输入融合提示词
 
 4. 后端处理多输入融合请求
-   → 收集所有输入组件的内容 (按order_index排序)
+   → 收集所有输入组件的内容和元信息 (按order_index排序)
    → 构造融合上下文: 
-     [组件1内容] + "\n\n---\n\n" + [组件2内容] + "\n\n---\n\n" + [用户提示词]
+     [组件1: 标题+内容+重要性] + "\n\n---\n\n" + [组件2: 标题+内容+重要性] + "\n\n---\n\n" + [用户提示词]
    → 发布到 llm.process.queue
    → LLM Service基于多输入上下文生成融合内容
+   → 同时分析生成组件的重要性等级和置信度
    → 发布结果到 result.notify.queue
    → 空组件填充生成内容，状态变为"已生成"
 
 5. 融合组件完成
    → 空组件变为真正的内容组件
+   → 自动设置合适的重要性等级
    → 可以继续作为输入连接到其他组件
    → 支持继续编辑和扩展
-```
-
-**全局整合组件的消息流 (三生万物)**：
-```
-1. 用户创建万物节点
-   → 右键画布空白处，创建空组件（万物节点）
-   → 前端标识该组件为"全局整合节点"
-
-2. 用户连接所有有价值的组件
-   → 从需求分析组件拖拽连线到万物节点
-   → 从技术方案组件拖拽连线到万物节点
-   → 从MVP方案组件拖拽连线到万物节点
-   → 从资源评估组件拖拽连线到万物节点
-   → 从市场分析组件拖拽连线到万物节点...
-   → 万物节点显示: "输入: 5个" 或更多
-
-3. 用户点击万物节点的开始生成
-   → 弹出输入框："基于所有输入，你希望生成什么？"
-   → 用户输入全局整合提示词: "制定完整的产品执行方案"
-
-4. 后端处理全局整合请求
-   → 收集画布上所有连接的组件内容 (无数量限制)
-   → 构造全局上下文: 
-     [组件1] + "\n\n---\n\n" + [组件2] + "\n\n---\n\n" + ... + [组件N] + "\n\n===最终指令===\n\n" + [用户提示词]
-   → 发布到 llm.process.queue (可能需要更长处理时间)
-   → LLM Service基于完整全局上下文生成终极方案
-   → 发布结果到 result.notify.queue
-   → 万物节点填充完整解决方案
-
-5. 终极组件诞生
-   → 万物节点成为包含完整方案的超级组件
-   → 整合了前期所有分析和思考
-   → 提供可执行的完整解决方案
-   → 用户的思维旅程从虚无到万物完成闭环
 ```
 
 **内容优化重生的消息流 (万物重生)**：
 ```
 1. 用户双击已完成的组件
    → 前端检测到双击事件
-   → 弹出优化输入框："如何优化这个内容？"
-   → 同时显示当前组件内容预览
+   → 弹出优化对话框，包含:
+     - 当前组件内容预览
+     - 优化指令输入框："如何优化这个内容？"
+     - 变更原因输入框："请描述此次修改的原因"
+     - 变更类型选择：实验性尝试 | 确定性改进 | 细节完善
 
-2. 用户输入优化指令
+2. 用户输入优化指令和变更信息
    → 输入优化提示词："增加更详细的技术实现细节"
+   → 输入变更原因："需要更具体的技术指导"
+   → 选择变更类型："确定性改进"
    → 前端发送优化请求到后端
 
 3. 后端处理内容优化请求
-   → 收集当前组件的完整内容
+   → 收集当前组件的完整内容和元信息
    → 构造优化上下文: 
-     "当前内容:\n" + [组件当前内容] + "\n\n优化要求:\n" + [用户优化提示词]
+     "当前内容:\n" + [组件当前标题和内容] + "\n\n优化要求:\n" + [用户优化提示词]
    → 发布到 llm.process.queue (标记为优化类型)
    → LLM Service基于当前内容和优化要求生成新版本
+   → 同时更新置信度评分
    → 发布结果到 result.notify.queue
 
-4. 组件内容更新
-   → 保存当前版本到历史记录
+4. 组件内容更新和版本管理
+   → 保存当前版本到历史记录，包含:
+     - 原始内容和元信息
+     - 变更原因和变更类型
+     - 变更前后的置信度对比
    → 更新组件内容为AI优化后的版本
    → 版本号递增 (v1 → v2)
    → 保持所有连线关系不变
@@ -449,16 +564,16 @@ AI集成: OpenAI GPT-4 API
 5. 持续优化能力
    → 用户可以继续双击进行多轮优化
    → 支持版本回滚到任意历史版本
+   → 版本历史显示每次变更的原因和效果
    → 优化不影响画布布局和连线关系
    → 下游组件可以基于优化后的内容继续工作
 ```
 
 ### 统一LLM服务架构
 
-**极简的LLM处理服务**：
+**增强的LLM处理服务**：
 ```typescript
-
-// 统一LLM处理服务
+// 统一LLM处理服务 (V2.0增强版)
 class LLMProcessingService {
   private connection: amqp.Connection;
   private channel: amqp.Channel;
@@ -480,18 +595,27 @@ class LLMProcessingService {
         component_id: string;
         context: string;
         user_prompt: string;
+        metadata?: any;
+        type?: 'create' | 'optimize' | 'fusion';
       };
       
       const result = await this.processWithLLM(data);
       
+      // V2.0: 增强结果包含组件元信息
+      const enhancedResult = {
+        component_id: data.component_id,
+        content: result.content,
+        title: result.title,
+        semantic_type: result.semantic_type,
+        importance_level: result.importance_level,
+        confidence_score: result.confidence_score,
+        timestamp: Date.now()
+      };
+      
       // 发布处理结果
       await this.channel.sendToQueue(
         'result.notify.queue',
-        Buffer.from(JSON.stringify({
-          component_id: data.component_id,
-          result: result,
-          timestamp: Date.now()
-        }))
+        Buffer.from(JSON.stringify(enhancedResult))
       );
       
       this.channel.ack(msg);
@@ -511,528 +635,618 @@ class LLMProcessingService {
   }
   
   private async processWithLLM(data: any): Promise<any> {
-    // 直接使用收集的上下文 + 用户提示词
-    const prompt = `${data.context}\n\n---\n\n${data.user_prompt}`;
+    // V2.0: 增强的提示词，包含元信息生成
+    const enhancedPrompt = this.buildEnhancedPrompt(data);
     
     // 调用OpenAI API进行处理
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
-        { role: "user", content: prompt }
+        { 
+          role: "system", 
+          content: "你是一个智能内容分析助手。除了生成内容，还需要分析内容的语义类型、重要性等级(1-5)和置信度(0-100)。请以JSON格式返回结果。" 
+        },
+        { role: "user", content: enhancedPrompt }
       ],
       temperature: 0.7
     });
     
-    return response.choices[0].message.content;
+    return this.parseEnhancedResponse(response.choices[0].message.content);
   }
   
-  // 多输入上下文收集逻辑
+  private buildEnhancedPrompt(data: any): string {
+    if (data.type === 'optimize') {
+      return `
+请优化以下内容：
+
+当前内容:
+${data.context}
+
+优化要求:
+${data.user_prompt}
+
+请返回JSON格式：
+{
+  "content": "优化后的内容",
+  "title": "组件标题(如果需要更新)",
+  "semantic_type": "内容的语义类型",
+  "importance_level": 数字1-5,
+  "confidence_score": 数字0-100
+}
+      `;
+    } else {
+      return `
+基于以下上下文生成内容：
+
+${data.context}
+
+用户指令：
+${data.user_prompt}
+
+请返回JSON格式：
+{
+  "content": "生成的内容",
+  "title": "为此组件生成合适的标题",
+  "semantic_type": "内容的语义类型(如：需求分析、技术方案、项目计划等)",
+  "importance_level": 数字1-5,
+  "confidence_score": 数字0-100
+}
+      `;
+    }
+  }
+  
+  private parseEnhancedResponse(response: string): any {
+    try {
+      return JSON.parse(response);
+    } catch (error) {
+      // 如果解析失败，提供默认值
+      return {
+        content: response,
+        title: "AI生成内容",
+        semantic_type: "general",
+        importance_level: 3,
+        confidence_score: 75
+      };
+    }
+  }
+  
+  // 多输入上下文收集逻辑 (V2.0增强)
   private async collectMultiInputContext(componentId: string): Promise<string> {
-    // 获取所有输入组件 (按连线顺序排序)
     const inputComponents = await this.getInputComponents(componentId);
     
-    // 按order_index排序，用分隔符连接内容
+    // V2.0: 包含组件元信息的上下文
     const contextParts = inputComponents
       .sort((a, b) => a.order_index - b.order_index)
-      .map(comp => comp.content)
-      .filter(content => content?.trim())  // 过滤空内容
+      .map(comp => {
+        return `=== ${comp.title} (重要性: ${comp.importance_level}/5, 置信度: ${comp.confidence_score}%) ===\n${comp.content}`;
+      })
+      .filter(content => content?.trim())
       .join('\n\n---\n\n');
       
     return contextParts;
   }
   
-  // 全局上下文收集逻辑 (三生万物)
-  private async collectGlobalContext(componentId: string): Promise<string> {
-    // 获取所有输入组件 (无数量限制)
-    const inputComponents = await this.getInputComponents(componentId);
-    
-    // 如果输入超过一定数量，可能需要智能摘要或分组处理
-    if (inputComponents.length > 10) {
-      console.warn(`万物节点输入数量较多: ${inputComponents.length}个，可能影响处理时间`);
-    }
-    
-    // 按order_index排序，构造全局上下文
-    const contextParts = inputComponents
-      .sort((a, b) => a.order_index - b.order_index)
-      .map((comp, index) => {
-        // 为每个组件添加标识，便于AI理解结构
-        return `=== 组件${index + 1}: ${comp.title || '未命名'} ===\n${comp.content}`;
-      })
-      .filter(content => content?.trim())
-      .join('\n\n');
-      
-    return contextParts;
-  }
-  
-  // 内容优化处理逻辑 (万物重生)
+  // 内容优化处理逻辑 (V2.0增强)
   private async processOptimization(data: any): Promise<any> {
-    // 构造优化上下文：当前内容 + 优化要求
-    const optimizationPrompt = `当前内容:
-${data.current_content}
+    const optimizationPrompt = `
+当前组件信息:
+标题: ${data.current_title}
+内容: ${data.current_content}
+当前重要性: ${data.current_importance}/5
+当前置信度: ${data.current_confidence}%
 
 优化要求:
 ${data.user_prompt}
 
-请基于以上当前内容和优化要求，生成优化后的版本。保持核心逻辑不变，按照优化要求进行改进。`;
+变更原因:
+${data.change_reason}
+
+变更类型:
+${data.change_type}
+
+请基于以上信息优化内容，并返回JSON格式结果，包含优化后的内容和更新的元信息。
+    `;
     
-    // 调用OpenAI API进行优化处理
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
+        { 
+          role: "system", 
+          content: "你是一个内容优化专家。根据用户要求优化内容，同时合理调整重要性等级和置信度。" 
+        },
         { role: "user", content: optimizationPrompt }
       ],
       temperature: 0.7
     });
     
-    return response.choices[0].message.content;
+    return this.parseEnhancedResponse(response.choices[0].message.content);
   }
 }
 ```
 
-### 消息持久化和重试机制
+## 数据模型设计
 
-**可靠性保证**：
-```yaml
-消息持久化:
-  - 队列持久化: durable=true
-  - 消息持久化: persistent=true
-  - 确认机制: 手动ack
-
-重试策略:
-  - 死信队列: DLX for failed messages
-  - 重试次数: max 3 times
-  - 指数退避: 1s, 2s, 4s delays
-  
-监控指标:
-  - 队列长度监控
-  - 消息处理延迟
-  - Agent健康状态
-  - 错误率统计
-```
-
-## 简化数据模型设计
-
-### MVP数据表设计 (无用户系统)
-
-**项目表 (projects)**：
+### 项目表 (projects)
 ```sql
 CREATE TABLE projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL DEFAULT 'Untitled Project',
-  canvas_data JSONB NOT NULL DEFAULT '{}',  -- 画布状态数据
+  canvas_data JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
-**组件表 (components)**：
+### 增强的组件表 (components)
 ```sql
 CREATE TABLE components (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
-  content TEXT,                 -- 组件内容 (用户输入或AI生成)
+  
+  -- 基础信息
+  title VARCHAR(255) NOT NULL DEFAULT '',
+  content TEXT,
   position JSONB NOT NULL DEFAULT '{"x": 0, "y": 0}',
-  status VARCHAR(20) DEFAULT 'pending',  -- pending/running/completed/error/optimizing
-  version INTEGER DEFAULT 1,   -- 版本号，每次优化递增
+  status VARCHAR(20) DEFAULT 'pending',
+  
+  -- V2.0: 语义标识字段
+  semantic_type VARCHAR(50) DEFAULT '',          -- 语义类型：需求分析、技术方案、项目计划等
+  importance_level INTEGER DEFAULT 3 CHECK (importance_level >= 1 AND importance_level <= 5),
+  confidence_score INTEGER DEFAULT 50 CHECK (confidence_score >= 0 AND confidence_score <= 100),
+  user_rating INTEGER DEFAULT 0 CHECK (user_rating >= 0 AND user_rating <= 5),
+  tags TEXT[] DEFAULT '{}',                      -- 用户自定义标签
+  
+  -- 版本管理
+  version INTEGER DEFAULT 1,
+  
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- 为新字段添加索引
+CREATE INDEX idx_components_importance ON components(importance_level);
+CREATE INDEX idx_components_semantic_type ON components(semantic_type);
+CREATE INDEX idx_components_user_rating ON components(user_rating);
+CREATE INDEX idx_components_status ON components(status);
 ```
 
-**连线关系表 (connections)**：
+### 连线关系表 (connections)
 ```sql
 CREATE TABLE connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   source_component_id UUID REFERENCES components(id) ON DELETE CASCADE,
   target_component_id UUID REFERENCES components(id) ON DELETE CASCADE,
-  order_index INTEGER DEFAULT 0,  -- 连线顺序，用于多输入时的排序
+  order_index INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
   
-  -- 确保同一项目内不能有重复连线
   UNIQUE(project_id, source_component_id, target_component_id)
 );
 
--- 连线查询优化索引
 CREATE INDEX idx_connections_target ON connections(target_component_id, order_index);
 CREATE INDEX idx_connections_source ON connections(source_component_id);
 CREATE INDEX idx_connections_project ON connections(project_id);
 ```
 
-**AI处理记录表 (ai_logs)**：
-```sql  
-CREATE TABLE ai_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  component_id UUID REFERENCES components(id) ON DELETE CASCADE,
-  input_context TEXT NOT NULL,    -- 输入的完整上下文
-  output_result TEXT,             -- AI输出结果
-  processing_type VARCHAR(20) DEFAULT 'generate',  -- generate/optimize/fusion/global
-  status VARCHAR(20) DEFAULT 'processing',  -- processing/completed/failed
-  processing_time_ms INTEGER,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-**组件版本历史表 (component_versions)**：
+### 语义化版本历史表 (component_versions)
 ```sql
 CREATE TABLE component_versions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   component_id UUID REFERENCES components(id) ON DELETE CASCADE,
   version_number INTEGER NOT NULL,
-  content TEXT NOT NULL,          -- 该版本的内容
-  optimization_prompt TEXT,       -- 优化时使用的提示词
-  created_at TIMESTAMP DEFAULT NOW(),
   
-  -- 确保同一组件的版本号唯一
+  -- 版本内容
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  semantic_type VARCHAR(50),
+  importance_level INTEGER,
+  confidence_score INTEGER,
+  
+  -- V2.0: 语义化版本管理字段
+  change_reason TEXT NOT NULL,                   -- 用户输入的变更原因
+  change_event TEXT,                            -- 触发变更的事件描述
+  change_type VARCHAR(20) DEFAULT 'refinement'  -- 'experimental' | 'confirmed' | 'refinement'
+    CHECK (change_type IN ('experimental', 'confirmed', 'refinement')),
+  
+  -- 变更前后对比数据
+  original_data JSONB,                          -- 变更前的完整组件数据
+  confidence_before INTEGER,                    -- 变更前的置信度
+  confidence_after INTEGER,                     -- 变更后的置信度
+  
+  created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(component_id, version_number)
 );
 
--- 版本查询优化索引
 CREATE INDEX idx_component_versions_component ON component_versions(component_id, version_number DESC);
+CREATE INDEX idx_component_versions_change_type ON component_versions(change_type);
+CREATE INDEX idx_component_versions_created ON component_versions(created_at DESC);
 ```
 
-### 连线关系查询
+### AI处理记录表 (ai_logs)
+```sql  
+CREATE TABLE ai_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  component_id UUID REFERENCES components(id) ON DELETE CASCADE,
+  input_context TEXT NOT NULL,
+  output_result JSONB,                          -- V2.0: 包含内容和元信息的完整结果
+  processing_type VARCHAR(20) DEFAULT 'generate',
+  status VARCHAR(20) DEFAULT 'processing',
+  processing_time_ms INTEGER,
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
-**获取组件的所有输入**：
-```sql
--- 查询某个组件的所有输入组件 (按连线顺序排序)
-SELECT c.*, conn.order_index
-FROM components c
-JOIN connections conn ON c.id = conn.source_component_id
-WHERE conn.target_component_id = $target_component_id
-ORDER BY conn.order_index;
+CREATE INDEX idx_ai_logs_component ON ai_logs(component_id, created_at DESC);
+CREATE INDEX idx_ai_logs_status ON ai_logs(status);
+CREATE INDEX idx_ai_logs_type ON ai_logs(processing_type);
 ```
 
-**获取组件的所有输出**：
-```sql
--- 查询某个组件的所有输出组件
-SELECT c.*
-FROM components c
-JOIN connections conn ON c.id = conn.target_component_id
-WHERE conn.source_component_id = $source_component_id;
-```
+## API设计
 
-**上下文收集逻辑**：
+### 组件管理API
+
 ```typescript
-// 前端收集上下文的逻辑
-async function collectContext(componentId: string): Promise<string> {
-  // 获取所有输入组件
-  const inputComponents = await getInputComponents(componentId);
-  
-  // 按order_index排序，直接拼接内容
-  const contextParts = inputComponents
-    .sort((a, b) => a.order_index - b.order_index)
-    .map(comp => comp.content)
-    .filter(content => content?.trim())  // 过滤空内容
-    .join('\n\n---\n\n');
-    
-  return contextParts;
+// 组件创建
+POST /api/components
+{
+  "project_id": "uuid",
+  "title"?: string,
+  "content"?: string,
+  "position": { "x": number, "y": number },
+  "semantic_type"?: string,
+  "importance_level"?: number
 }
 
-// 版本管理逻辑
-async function saveComponentVersion(componentId: string, newContent: string, optimizationPrompt?: string): Promise<void> {
-  // 获取当前组件信息
-  const component = await getComponent(componentId);
-  
-  // 保存历史版本
-  await createComponentVersion({
-    component_id: componentId,
-    version_number: component.version,
-    content: component.content,
-    optimization_prompt: optimizationPrompt
-  });
-  
-  // 更新组件内容和版本号
-  await updateComponent(componentId, {
-    content: newContent,
-    version: component.version + 1,
-    updated_at: new Date()
-  });
+// 组件更新
+PUT /api/components/:id
+{
+  "title"?: string,
+  "content"?: string,
+  "importance_level"?: number,
+  "user_rating"?: number,
+  "tags"?: string[]
 }
 
-// 版本回滚逻辑
-async function rollbackToVersion(componentId: string, targetVersion: number): Promise<void> {
-  // 获取目标版本的内容
-  const versionData = await getComponentVersion(componentId, targetVersion);
-  
-  if (!versionData) {
-    throw new Error(`版本 ${targetVersion} 不存在`);
-  }
-  
-  // 回滚到目标版本
-  await updateComponent(componentId, {
-    content: versionData.content,
-    version: targetVersion,
-    updated_at: new Date()
-  });
+// 组件优化
+POST /api/components/:id/optimize
+{
+  "optimization_prompt": string,
+  "change_reason": string,
+  "change_type": "experimental" | "confirmed" | "refinement"
 }
+
+// 版本管理
+GET /api/components/:id/versions
+POST /api/components/:id/rollback
+{
+  "target_version": number
+}
+
+// 组件搜索和筛选
+GET /api/components/search?q=keyword&project_id=uuid
+GET /api/components/filter?importance_min=3&semantic_type=需求分析&project_id=uuid
 ```
 
-**支持的连线模式**：
-- ✅ **一对一**：一个输入 → 一个输出
-- ✅ **一对多**：一个输入 → 多个输出 (分支处理)
-- ✅ **多对一**：多个输入 → 一个输出 (融合处理)
-- ✅ **多对多**：复杂的网状关系
+### 画布状态API
 
-### 连线关系示例
+```typescript
+// 保存画布状态
+POST /api/projects/:id/canvas-state
+{
+  "display_mode": "overview" | "preview" | "detail",
+  "filter_settings": object,
+  "view_position": { "x": number, "y": number, "zoom": number }
+}
 
-**复杂工作流示例**：
-```
-[原始需求] ──┐
-             ├─→ [需求分析] ──┐
-[用户反馈] ──┘               ├─→ [技术方案] ──┐
-                             │               ├─→ [开发任务]
-[技术限制] ──────────────────┘               │
-                                             │
-[资源限制] ──────────────────────────────────┘
+// 获取画布状态
+GET /api/projects/:id/canvas-state
 ```
 
-**数据示例**：
-```sql
--- components表数据 (纯内容驱动)
-INSERT INTO components (id, title, content) VALUES
-('uuid1', '原始需求', '需要实现用户登录功能，支持邮箱和手机号登录'),
-('uuid2', '需求分析', '1. 功能分解：邮箱登录、手机登录、记住密码\n2. 业务规则：登录失败3次锁定\n3. 安全要求：密码加密存储'),
-('uuid3', '技术方案', '1. 后端：Node.js + JWT\n2. 数据库：PostgreSQL用户表\n3. 前端：React登录组件'),
-('uuid4', '开发任务', '1. 数据库设计 (2天)\n2. 后端API开发 (3天)\n3. 前端组件开发 (2天)\n4. 集成测试 (1天)');
+## 前端组件设计
 
--- connections表数据
-INSERT INTO connections (source_component_id, target_component_id, order_index) VALUES
-('uuid1', 'uuid2', 0),  -- 原始需求 → 需求分析
-('uuid2', 'uuid3', 0),  -- 需求分析 → 技术方案  
-('uuid3', 'uuid4', 0);  -- 技术方案 → 开发任务
+### 智能组件 (SmartComponent)
+
+```typescript
+interface SmartComponentProps {
+  id: string;
+  data: {
+    title: string;
+    content: string;
+    importance_level: number;
+    confidence_score: number;
+    user_rating: number;
+    semantic_type: string;
+    version: number;
+    status: ComponentStatus;
+  };
+  displayMode: 'overview' | 'preview' | 'detail';
+  onUpdate: (updates: Partial<ComponentData>) => void;
+  onOptimize: (prompt: string, reason: string, type: string) => void;
+}
+
+const SmartComponent: React.FC<SmartComponentProps> = ({ 
+  id, 
+  data, 
+  displayMode, 
+  onUpdate, 
+  onOptimize 
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
+
+  return (
+    <div className={`smart-component ${getImportanceClass(data.importance_level)}`}>
+      {/* 组件头部 */}
+      <ComponentHeader
+        title={data.title}
+        importance={data.importance_level}
+        confidence={data.confidence_score}
+        userRating={data.user_rating}
+        semanticType={data.semantic_type}
+        version={data.version}
+        onTitleEdit={(newTitle) => onUpdate({ title: newTitle })}
+        onImportanceChange={(level) => onUpdate({ importance_level: level })}
+        onRatingChange={(rating) => onUpdate({ user_rating: rating })}
+      />
+      
+      {/* 组件内容 */}
+      <ComponentContent
+        content={data.content}
+        displayMode={displayMode}
+        isEditing={isEditing}
+        onContentEdit={(newContent) => onUpdate({ content: newContent })}
+        onDoubleClick={() => setShowOptimizeDialog(true)}
+      />
+      
+      {/* 组件脚部 */}
+      <ComponentFooter
+        status={data.status}
+        onEdit={() => setIsEditing(true)}
+        onOptimize={() => setShowOptimizeDialog(true)}
+      />
+      
+      {/* 优化对话框 */}
+      {showOptimizeDialog && (
+        <OptimizeDialog
+          currentContent={data.content}
+          onOptimize={onOptimize}
+          onClose={() => setShowOptimizeDialog(false)}
+        />
+      )}
+    </div>
+  );
+};
 ```
 
-这样设计的优势：
-- 🔄 **灵活连线**：支持任意复杂的连线关系
-- 📊 **有序输入**：order_index确保多输入时的处理顺序
-- 🎯 **精确查询**：可以精确查询任何组件的输入输出关系
-- 🚀 **性能优化**：通过索引优化连线查询性能
+### 画布控制器 (CanvasController)
 
-## 用户故事：从虚无到宇宙
+```typescript
+const CanvasController: React.FC = () => {
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('preview');
+  const [filterSettings, setFilterSettings] = useState<FilterSettings>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
-### 创世第一天
-
-**李明是一个创业者，他有一个想法但不知道如何开始实现...**
-
-- 💻 李明打开浏览器，进入AI协作画布
-- 👀 他看到一片纯粹的虚无——空白的无限画布
-- 🖱️ 他双击画布中央，出现输入框："在此输入你的想法..."
-- ⌨️ 他输入："我想做一个帮助小企业管理客户的SaaS产品"
-- ⏎ 按下回车，AI开始工作...
-- ✨ 第一个组件诞生，包含了对这个想法的初步分析
-
-### 创世第二天
-
-**李明开始扩展他的宇宙...**
-
-- 🖱️ 他选中第一个组件，拖拽出一条连线到空白处
-- 💭 连线悬空，输入框出现："在此输入你的指令..."
-- ⌨️ 他输入："分析这个产品的目标用户和市场需求"
-- ⏎ 按下回车，AI立即基于 [第一个组件内容 + 用户指令] 开始工作
-- ✨ 新组件在连线末端诞生，包含详细的用户画像和市场分析
-- 🔗 他继续从新组件拖拽连线："设计产品的核心功能模块"
-- 🎨 又一个组件诞生，包含详细的功能规划
-
-### 创世第三天
-
-**宇宙开始形成复杂的结构...**
-
-- 🌊 李明从多个组件拉出连线，汇聚到一个新组件
-- 💬 他输入："基于以上分析，制定MVP开发计划"
-- 🚀 AI综合所有上下文，生成了一个完整的MVP规划
-- 🎯 他继续细化，创建技术架构、团队配置、资金预算等组件
-- 🌌 渐渐地，一个完整的创业宇宙在画布上形成
-
-### 第N天...
-
-**李明的AI协作宇宙已经包含数百个组件，每个想法都能找到它的位置，每个决策都有清晰的推理链条。从最初的虚无，到现在的复杂生态，这就是思维的力量。**
-
-## AI-人类循环协作流程
-
-### 核心循环
-```
-1. 用户输入 → 2. AI扩展 → 3. 人类反馈 → 4. AI修复 → (回到2)
+  return (
+    <div className="canvas-controller">
+      {/* 显示模式切换 */}
+      <DisplayModeToggle
+        mode={displayMode}
+        onChange={setDisplayMode}
+      />
+      
+      {/* 搜索框 */}
+      <SearchBox
+        query={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="搜索组件标题或内容..."
+      />
+      
+      {/* 筛选控制器 */}
+      <FilterController
+        settings={filterSettings}
+        onChange={setFilterSettings}
+      />
+      
+      {/* 画布统计 */}
+      <CanvasStats
+        totalComponents={stats.total}
+        highImportanceCount={stats.highImportance}
+        averageConfidence={stats.averageConfidence}
+      />
+    </div>
+  );
+};
 ```
 
-### 具体实现
+### 版本历史组件 (VersionHistory)
 
-**阶段1：需求扩展**
-- 用户："用户登录功能"
-- AI扩展：生成详细需求清单
-- 人类反馈：标注遗漏或错误
-- AI修复：补充完善需求
+```typescript
+const VersionHistory: React.FC<{ componentId: string }> = ({ componentId }) => {
+  const [versions, setVersions] = useState<ComponentVersion[]>([]);
+  const [showDiff, setShowDiff] = useState<{ from: number; to: number } | null>(null);
 
-**阶段2：方案扩展**  
-- AI：基于确认需求生成技术方案
-- 人类反馈：技术选型建议
-- AI修复：调整架构方案
-
-**阶段3：任务扩展**
-- AI：分解具体开发任务
-- 人类反馈：工期和优先级调整
-- AI修复：重新排期和分配
-
-### 关键交互元素
-
-**扩展按钮**：
-- 每个卡片右下角有"扩展"按钮
-- 点击后AI开始分析和生成
-- 有加载动画显示AI思考过程
-
-**反馈标签**：
-- 用户可在任意内容旁边添加便签
-- 便签颜色表示反馈类型：
-  - 🟡 问题/疑虑
-  - 🟢 确认/同意  
-  - 🔵 建议/补充
-
-**版本历史**：
-- 每次AI修复都保留历史版本
-- 用户可以回滚到之前的版本
-- 显示修改diff对比
-
-## 画布扩展动效设计
-
-### 扩展动画
-```
-初始状态: [需求卡片] 120px高度
-点击扩展: 
-  1. 卡片底部出现加载条 (0.3s)
-  2. AI思考动画 - 打字机效果 (1-3s)  
-  3. 内容区域向下展开 (0.5s)
-  4. 最终高度根据内容自适应
-```
-
-### 反馈动画
-```
-添加反馈:
-  1. 便签从无到有渐显 (0.2s)
-  2. 相关内容高亮闪烁 (0.5s)
-  3. AI响应时整个卡片轻微脉动 (0.3s)
-```
-
-### 修复动画
-```
-AI修复:
-  1. 原内容淡出 (0.3s)
-  2. 新内容淡入 (0.3s) 
-  3. 变更部分用不同颜色高亮 (1s后恢复)
+  return (
+    <div className="version-history">
+      <h3>版本历史</h3>
+      
+      <div className="version-timeline">
+        {versions.map((version) => (
+          <div key={version.version_number} className="version-item">
+            <div className="version-header">
+              <span className="version-number">v{version.version_number}</span>
+              <span className="change-type">{version.change_type}</span>
+              <span className="timestamp">{formatDate(version.created_at)}</span>
+            </div>
+            
+            <div className="change-reason">
+              📝 {version.change_reason}
+            </div>
+            
+            {version.change_event && (
+              <div className="change-event">
+                🔄 {version.change_event}
+              </div>
+            )}
+            
+            <div className="confidence-change">
+              📊 置信度: {version.confidence_before}% → {version.confidence_after}%
+            </div>
+            
+            <div className="version-actions">
+              <button onClick={() => showVersionDiff(version)}>
+                查看差异
+              </button>
+              <button onClick={() => rollbackToVersion(version.version_number)}>
+                回滚到此版本
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {showDiff && (
+        <DiffViewer
+          fromVersion={showDiff.from}
+          toVersion={showDiff.to}
+          onClose={() => setShowDiff(null)}
+        />
+      )}
+    </div>
+  );
+};
 ```
 
 ## 📅 4周开发里程碑
 
-### Week 1: 基础框架搭建 (基础画布 + 卡片系统)
+### Week 1: 基础框架搭建 (基础画布 + 智能组件系统)
 
-**Day 1-2: 项目初始化**
-- [ ] 前后端项目脚手架搭建
-- [ ] 开发环境配置 (Docker + 热重载)
+**Day 1-2: 项目初始化与架构搭建**
+- [ ] 前后端项目脚手架搭建 (React + TypeScript + Node.js)
+- [ ] 开发环境配置 (Docker + 热重载 + 代码规范)
+- [ ] 数据库设计实现 (PostgreSQL表结构创建)
 - [ ] RabbitMQ容器搭建和基础配置
+- [ ] Redis缓存配置和连接
 - [ ] 基础CI/CD流水线设置
-- [ ] 简化数据模型设计 (只需项目和卡片表)
-- [ ] Agent消息队列拓扑设计
 
-**Day 3-4: 画布核心引擎**
-- [ ] Konva.js画布基础设置
-- [ ] 拖拽、缩放、平移交互
+**Day 3-4: React Flow画布引擎搭建**
+- [ ] React Flow基础配置和集成
+- [ ] 自定义节点类型设计 (SmartComponent)
+- [ ] 画布交互功能：拖拽、缩放、平移
+- [ ] MiniMap和Controls组件集成
 - [ ] 画布坐标系统和边界处理
 - [ ] 响应式画布适配
 
-**Day 5-7: 创世体验设计**
-- [ ] 双击画布创建第一个组件交互
-- [ ] 第一个组件的AI生成逻辑
-- [ ] 拖拽连线到空白处的交互
-- [ ] 悬空连线状态和输入框显示
-- [ ] 连线创建新组件的AI处理逻辑
-- [ ] 上下文 [源组件内容 + 用户提示词] 传递机制
+**Day 5-7: 智能组件系统开发**
+- [ ] 组件元信息UI设计：标题、重要性、置信度显示
+- [ ] 三种显示模式实现：概览/预览/详细
+- [ ] 基于重要性的视觉层次设计
+- [ ] 组件状态管理：待运行/运行中/已完成等
+- [ ] 双击创建组件交互
+- [ ] 组件编辑功能实现
 
 **Week 1 验收标准**:
-- ✅ 双击空白画布能创建第一个组件
-- ✅ 输入提示词后AI能生成初始内容
-- ✅ 拖拽连线到空白处能显示输入框
-- ✅ 输入提示词后能在连线末端生成新组件
-- ✅ 画布交互流畅 (60fps)
+- ✅ React Flow画布正常运行，交互流畅
+- ✅ 可以双击空白处创建第一个组件
+- ✅ 组件显示标题、重要性、置信度等元信息
+- ✅ 三种显示模式切换正常
+- ✅ 基础的组件编辑功能工作正常
 
-### Week 2: AI扩展机制 (核心价值功能)
+### Week 2: AI处理机制 + 连线扩展系统
 
-**Day 8-9: 简化LLM服务集成**
-- [ ] RabbitMQ消息队列简化配置 (2个队列)
+**Day 8-9: LLM服务集成**
+- [ ] RabbitMQ消息队列配置 (llm.process.queue, result.notify.queue)
 - [ ] OpenAI API集成和配置
-- [ ] 角色化LLM处理服务实现
-- [ ] 角色提示词设计 (需求分析师/技术架构师/项目经理等)
-- [ ] 上下文直传机制实现
+- [ ] 增强的LLM处理服务实现
+- [ ] 消息格式设计：包含组件元信息
+- [ ] WebSocket实时通信设置
+- [ ] AI生成结果的解析和验证
 
-**Day 10-11: 运行交互逻辑**
-- [ ] 点击运行按钮触发AI处理
-- [ ] 上下文收集和传递机制
-- [ ] AI生成内容的组件更新
-- [ ] 运行状态动画和错误处理
+**Day 10-11: 连线创建机制 (一生二)**
+- [ ] 拖拽连线到空白处的交互
+- [ ] 悬空连线状态和输入框显示
+- [ ] 上下文收集机制：源组件内容+用户提示词
+- [ ] AI处理连线创建请求
+- [ ] 新组件自动生成：内容+标题+元信息
+- [ ] 连线完成和布局优化
 
-**Day 12-14: 二生三融合机制**
+**Day 12-14: 多输入融合机制 (二生三)**
 - [ ] 右键创建空组件功能
 - [ ] 多输入连线关系建立
-- [ ] 多输入上下文收集和聚合逻辑
-- [ ] 融合组件的AI处理流程
+- [ ] 空组件状态管理和UI显示
+- [ ] 多输入上下文聚合逻辑
+- [ ] 融合组件AI处理流程
 - [ ] 空组件到内容组件的状态转换
 
 **Week 2 验收标准**:
 - ✅ 拖拽连线能正确创建新组件 (一生二)
-- ✅ 组件状态正确流转 (待运行→运行中→完成)
-- ✅ 上下文能正确传递给AI
-- ✅ AI生成内容能正确更新组件
-- ✅ 右键能创建空组件，支持多输入连接 (二生三)
-- ✅ 多输入融合能正确聚合上下文并生成内容
+- ✅ AI生成的组件包含合适的标题和元信息
+- ✅ 多输入融合功能正常工作 (二生三)
+- ✅ 组件状态正确流转
+- ✅ WebSocket实时通信稳定
 
-### Week 3: 协作体验优化 (用户体验完善)
+### Week 3: 版本管理 + 信息管理优化
 
-**Day 15-16: 高级交互功能**
-- [ ] 多轮对话历史显示
-- [ ] 智能布局算法 (避免重叠)
-- [ ] 画布元素关系可视化
-- [ ] 快捷键和手势支持
+**Day 15-16: 语义化版本管理**
+- [ ] 组件版本历史数据模型实现
+- [ ] 双击优化功能：优化对话框设计
+- [ ] 变更原因、变更类型记录机制
+- [ ] 版本历史展示界面
+- [ ] 版本diff对比功能
+- [ ] 安全回滚功能实现
 
-**Day 17-18: 数据持久化**
-- [ ] 画布状态保存和加载 (本地存储)
-- [ ] 卡片内容自动保存
-- [ ] 项目导出功能 (JSON格式)
-- [ ] 离线编辑支持
+**Day 17-18: 画布信息管理系统**
+- [ ] 显示模式控制器实现
+- [ ] 组件搜索功能：搜索标题和内容
+- [ ] 筛选功能：按重要性、类型、评分筛选
+- [ ] 画布导航：缩略图和快速定位
+- [ ] 专注模式：高亮相关组件
+- [ ] 画布状态持久化
 
-**Day 19-21: UI/UX 抛光**
-- [ ] 视觉设计优化
-- [ ] 微交互动效完善
-- [ ] 响应式布局适配
-- [ ] 无障碍访问支持
+**Day 19-21: 用户体验优化**
+- [ ] 组件交互动效优化
+- [ ] 加载状态和错误处理
+- [ ] 快捷键支持
+- [ ] 响应式设计适配
+- [ ] 性能优化：大量组件场景测试
+- [ ] 用户引导和帮助文档
 
 **Week 3 验收标准**:
-- ✅ 用户体验流畅自然
-- ✅ 数据可靠保存和同步
-- ✅ 界面美观专业
+- ✅ 版本管理功能完整可用
+- ✅ 信息管理和导航体验良好
+- ✅ 大量组件时性能表现良好
+- ✅ 用户体验流畅直观
 
-### Week 4: 测试部署上线 (产品化准备)
+### Week 4: 测试部署上线 + 功能完善
 
-**Day 22-23: 系统测试**
-- [ ] 单元测试覆盖 (>80%)
-- [ ] 集成测试完整场景
-- [ ] 性能测试和优化
-- [ ] 兼容性测试
+**Day 22-23: 全面测试**
+- [ ] 单元测试编写 (>80%覆盖率)
+- [ ] 集成测试：完整用户流程测试
+- [ ] 性能测试：100+组件场景压力测试
+- [ ] 兼容性测试：多浏览器多设备
+- [ ] AI生成质量测试和优化
+- [ ] 错误边界和异常处理测试
 
 **Day 24-25: 部署准备**
-- [ ] 生产环境配置
-- [ ] 监控告警设置
-- [ ] 备份恢复方案
-- [ ] 安全加固配置
+- [ ] 生产环境配置和优化
+- [ ] Docker容器化部署
+- [ ] 监控告警系统设置
+- [ ] 数据备份和恢复方案
+- [ ] 安全配置和性能调优
+- [ ] 日志收集和分析系统
 
 **Day 26-28: 发布上线**
-- [ ] Beta版本发布
-- [ ] 用户反馈收集
-- [ ] 问题修复迭代
+- [ ] Beta版本发布和内测
+- [ ] 用户反馈收集和分析
+- [ ] 关键问题修复和优化
 - [ ] 正式版本发布
+- [ ] 用户文档和使用指南
+- [ ] 后续迭代计划制定
 
 **Week 4 验收标准**:
-- ✅ 系统稳定可用
-- ✅ 性能指标达标
-- ✅ 用户反馈积极
+- ✅ 系统稳定运行，无关键bug
+- ✅ 性能指标达到预期要求
+- ✅ 用户反馈积极，核心功能满足需求
+- ✅ 部署流程标准化，监控完善
 
 ## 💰 资源投入估算
 
@@ -1043,61 +1257,65 @@ AI修复:
 
 角色分配:
   前端开发 (1人): 
-    - 画布引擎开发
-    - 交互动效实现
-    - UI/UX优化
+    - React Flow画布开发
+    - 智能组件系统
+    - 用户界面和交互
     工时占比: 40% (64工时)
 
   后端开发 (1人):
     - API服务开发  
-    - AI Agent集成
+    - LLM服务集成
     - 数据库设计
+    - 消息队列架构
     工时占比: 35% (56工时)
 
   全栈开发 (1人):
     - 前后端联调
+    - 版本管理系统
     - 部署运维
-    - 测试优化
+    - 测试和优化
     工时占比: 25% (40工时)
 
   产品/设计 (0.5人):
-    - 交互设计
-    - 用户测试
-    - 产品优化
-    工时占比: 选择性投入
+    - 交互设计优化
+    - 用户体验测试
+    - 产品功能验证
+    工时占比: 根据需要调整
 ```
 
 ### 技术成本
 ```yaml
 开发工具: 免费开源
-云服务 (测试阶段):
-  - 服务器: $30/月 (1核2G，无需用户系统)
-  - RabbitMQ: $15/月 (CloudAMQP基础版)
-  - Redis缓存: $10/月 (画布状态缓存)
+云服务 (MVP阶段):
+  - 服务器: $50/月 (2核4G，支持AI处理)
+  - RabbitMQ: $25/月 (CloudAMQP标准版)
+  - PostgreSQL: $20/月 (托管数据库)
+  - Redis: $15/月 (缓存服务)
   - CDN: $10/月
   
 AI API费用:
   - OpenAI GPT-4: $0.03/1K tokens
-  - 预估月用量: $100-200
+  - 预估月用量: $200-400 (包含元信息生成)
   
-总月度成本: ~$165-265
+总月度成本: ~$320-520
 ```
 
 ### 风险评估
 ```yaml
-技术风险 (中等):
-  - 画布性能优化挑战
-  - AI响应质量不稳定
-  - 实时协作同步复杂度
+技术风险 (低-中等):
+  - React Flow学习曲线和迁移风险 (可控)
+  - AI生成质量稳定性 (通过测试优化)
+  - 大规模组件性能挑战 (React Flow内置解决方案)
 
 时间风险 (低):
-  - 功能范围明确
-  - 技术栈成熟稳定
-  - 可降级实现方案
+  - 功能范围清晰，技术方案成熟
+  - 可降级实现的备选方案
+  - 分阶段开发，风险可控
 
 资源风险 (低):
-  - 团队规模适中
-  - 技能栈匹配度高
+  - 团队技能匹配度高
+  - 开源技术栈降低成本
+  - 云服务弹性扩展
 ```
 
 ## ✅ MVP验收标准
@@ -1105,87 +1323,128 @@ AI API费用:
 ### 核心功能验收
 ```yaml
 画布基础能力:
-  - ✅ 支持无限滚动和缩放 (最小10%,最大500%)
-  - ✅ 流畅拖拽交互 (延迟<16ms, 60fps)
-  - ✅ 响应式适配 (支持1200px-4K分辨率)
+  - ✅ 支持无限滚动和缩放 (10%-500%)
+  - ✅ 流畅交互性能 (延迟<16ms, 60fps)
+  - ✅ 支持200+组件无性能问题
+  - ✅ 响应式适配 (1200px-4K分辨率)
 
-扩展协作机制:
-  - ✅ 需求卡片成功扩展为技术方案 (成功率>90%)
-  - ✅ 人类反馈触发AI修正 (响应时间<5秒)  
-  - ✅ 支持多轮对话细化 (至少3轮)
+智能组件系统:
+  - ✅ 组件标题、重要性、置信度正确显示
+  - ✅ 三种显示模式切换流畅
+  - ✅ 基于重要性的视觉层次清晰
+  - ✅ 组件编辑和优化功能正常
 
-数据质量:
-  - ✅ AI生成内容专业性 (专家评分>4/5)
-  - ✅ 扩展内容完整性 (覆盖80%预期要点)
-  - ✅ 反馈修正准确性 (符合预期>85%)
+AI协作机制:
+  - ✅ 连线创建组件成功率>95%
+  - ✅ 多输入融合功能正常
+  - ✅ AI生成内容质量达标 (专家评分>4/5)
+  - ✅ 响应时间<5秒
+
+版本管理:
+  - ✅ 变更原因记录完整
+  - ✅ 版本历史可追溯
+  - ✅ 回滚功能安全可靠
+  - ✅ diff对比清晰准确
+
+信息管理:
+  - ✅ 搜索和筛选功能有效
+  - ✅ 大量组件时导航便捷
+  - ✅ 专注模式提升使用体验
 ```
 
 ### 性能指标
 ```yaml
 响应性能:
-  - 画布交互延迟: <16ms
-  - AI扩展响应: <5秒
+  - 画布交互延迟: <16ms (60fps)
+  - AI生成响应: <5秒
   - 页面加载时间: <3秒
+  - 组件渲染延迟: <100ms
 
 稳定性能:
   - 系统可用性: >99%
   - 错误率: <1%
   - 数据丢失率: 0%
+  - 内存泄漏: 无明显泄漏
 
-用户体验:
-  - 学习成本: <10分钟上手
-  - 任务完成率: >80%
-  - 用户满意度: >4/5分
+扩展性能:
+  - 支持组件数量: 500+ (流畅)
+  - 并发用户支持: 50+ (MVP阶段)
+  - 存储扩展性: 100GB+ (项目数据)
 ```
 
-### 业务价值验证
+### 用户体验指标
 ```yaml
+易用性:
+  - 新用户学习时间: <10分钟
+  - 核心功能完成率: >85%
+  - 错误操作恢复: <30秒
+
+满意度:
+  - 整体满意度: >4.2/5
+  - 功能完整性: >4.0/5
+  - 性能体验: >4.3/5
+  - 创新性认知: >4.5/5
+
 效率提升:
-  - 需求分析时间: 减少60%
-  - 方案设计时间: 减少40%  
-  - 任务分解时间: 减少70%
-
-质量保证:
-  - 需求遗漏率: <10%
-  - 方案一致性: >90%
-  - 任务颗粒度合理性: >85%
-
-用户反馈:
-  - 愿意推荐给同事: >70%
-  - 认为有价值: >80%
-  - 愿意付费使用: >50%
+  - 思维整理效率: 提升50%+
+  - 内容生成效率: 提升60%+
+  - 决策分析效率: 提升40%+
 ```
 
 ## 🎯 开发优先级
 
-### P0 (必须实现)
-1. 基础画布和卡片系统
-2. AI扩展核心逻辑
-3. 人类反馈机制
-4. 数据持久化
+### P0 (必须实现 - 核心价值)
+1. React Flow画布引擎和基础交互
+2. 智能组件系统 (标题、重要性、置信度)
+3. AI处理机制和连线扩展
+4. 多层次信息展示
+5. 语义化版本管理
 
-### P1 (重要优化)
-1. 动画效果和交互优化
-2. 智能布局算法
-3. 性能优化
-4. 错误处理
+### P1 (重要优化 - 体验提升)
+1. 搜索和筛选功能
+2. 画布导航和专注模式
+3. 性能优化和错误处理
+4. 用户界面细节打磨
 
-### P2 (如果有时间)
-1. 预设模板系统
-2. 高级导出功能 (PDF/Word)
-3. 快捷键和热键
-4. 高级自定义主题
+### P2 (如果有时间 - 锦上添花)
+1. 高级快捷键支持
+2. 批量操作功能
+3. 导出和分享功能
+4. 个性化设置和主题
 
 ## MVP核心价值验证
 
-### 验证指标
-1. **循环完成率**：用户是否会进行多轮AI-人类反馈
-2. **细化深度**：从需求到最终任务经过几轮扩展
-3. **修正准确性**：AI根据人类反馈的修正是否符合预期
+### 解决的核心问题
+1. **思维整理混乱**：通过结构化画布和智能组件解决
+2. **信息过载困扰**：通过多层次展示和重要性管理解决
+3. **创意扩展瓶颈**：通过AI连线扩展机制解决
+4. **决策追溯困难**：通过语义化版本管理解决
+5. **协作效率低下**：通过实时AI协作解决
 
 ### 差异化优势
-- 🔄 **动态协作**：不是静态生成，而是持续优化
-- 🌱 **有机增长**：内容像植物一样自然扩展  
-- 🎯 **精准迭代**：基于具体反馈的针对性改进
+- 🎯 **智能语义化**：不仅管理内容，更理解内容含义
+- 🚀 **高性能画布**：支持大规模复杂思维网络
+- 🧠 **认知友好**：版本管理符合人类思维习惯
+- ⚡ **实时AI协作**：从被动工具到主动伙伴
+- 🌊 **无限扩展性**：从简单想法到复杂方案的完整路径
 
-这个开发计划既保证了MVP的核心价值实现，又为后续迭代留下了扩展空间。4周时间可以产出一个真正可用的产品原型，验证扩展式AI-人类协作的产品理念。
+### 商业价值验证
+```yaml
+目标用户价值:
+  - 节约思维整理时间: 60%+
+  - 提升决策质量: 40%+
+  - 减少遗漏风险: 70%+
+  - 加速方案迭代: 50%+
+
+市场差异化:
+  - 相比传统思维导图: 增加AI智能和语义理解
+  - 相比纯AI工具: 增加结构化管理和版本控制
+  - 相比协作平台: 增加个人深度思考支持
+
+用户付费意愿:
+  - 个人用户: ¥99-199/月
+  - 团队用户: ¥499-999/月
+  - 企业用户: ¥1999+/月
+```
+
+这个V2.0开发计划在保持原有极简创造理念的基础上，通过组件语义化、信息层次管理、智能版本控制和现代化技术栈，打造了一个真正适合大规模思维协作的智能平台。整个计划注重实用性和可执行性，为后续的产品迭代和商业化奠定了坚实基础。

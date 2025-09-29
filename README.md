@@ -29,15 +29,6 @@
 │   ├── deployment/        # 部署文档
 │   ├── packages/          # 包文档
 │   ├── sentiment-monitor/ # 情感监控系统文档
-│   │   ├── docs/          # 详细架构文档
-│   │   │   ├── architecture-v2-comprehensive.md
-│   │   │   ├── architecture.md
-│   │   │   └── standards/ # 开发标准规范
-│   │   │       ├── data-models-api-standards.md
-│   │   │       ├── development-standards.md
-│   │   │       ├── event-driven-architecture.md
-│   │   │       ├── message-queue-integration.md
-│   │   │       └── schema-driven-architecture.md
 │   │   └── README.md      # 情感监控说明
 │   ├── CLAUDE.md          # Claude配置文件
 │   └── README.md          # 文档说明
