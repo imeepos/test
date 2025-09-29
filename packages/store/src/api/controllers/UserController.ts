@@ -36,7 +36,8 @@ export class UserController extends BaseController {
       filter.status = status
     }
 
-    const users = await this.userRepo.findMany(filter, {
+    const users = await this.userRepo.findMany({
+      ...filter,
       limit,
       offset,
       select: ['id', 'email', 'username', 'created_at', 'last_login', 'status']
@@ -292,7 +293,7 @@ export class UserController extends BaseController {
   getUserStats = this.asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params
 
-    const stats = await this.userRepo.getUserStatistics(id)
+    const stats = await this.userRepo.getStatistics(id)
     this.success(res, stats)
   })
 

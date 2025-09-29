@@ -250,6 +250,15 @@ export abstract class BaseController {
 }
 
 /**
+ * 错误处理中间件助手类
+ */
+class ErrorHandlerController extends BaseController {
+  public handleError(res: Response, error: Error, statusCode: number = 500): void {
+    this.error(res, error, statusCode)
+  }
+}
+
+/**
  * 错误处理中间件
  */
 export function errorHandler(error: Error, req: Request, res: Response, next: NextFunction): void {
@@ -260,15 +269,15 @@ export function errorHandler(error: Error, req: Request, res: Response, next: Ne
     return next(error)
   }
 
-  const controller = new (class extends BaseController {})()
+  const controller = new ErrorHandlerController()
 
   if (error instanceof DatabaseError) {
-    controller.error(res, error, 500)
+    controller.handleError(res, error, 500)
   } else if (error instanceof ValidationError) {
-    controller.error(res, error, 400)
+    controller.handleError(res, error, 400)
   } else if (error instanceof NotFoundError) {
-    controller.error(res, error, 404)
+    controller.handleError(res, error, 404)
   } else {
-    controller.error(res, error, 500)
+    controller.handleError(res, error, 500)
   }
 }

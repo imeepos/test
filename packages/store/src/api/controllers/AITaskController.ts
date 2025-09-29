@@ -34,7 +34,7 @@ export class AITaskController extends BaseController {
     } else if (type) {
       tasks = await this.aiTaskRepo.findByType(type, { limit, offset })
     } else {
-      tasks = await this.aiTaskRepo.findMany({}, { limit, offset })
+      tasks = await this.aiTaskRepo.findMany({ limit, offset })
     }
 
     const total = tasks.length

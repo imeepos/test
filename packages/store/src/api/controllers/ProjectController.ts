@@ -40,7 +40,7 @@ export class ProjectController extends BaseController {
     if (userId) {
       projects = await this.projectRepo.findByUser(userId, { limit, offset })
     } else {
-      projects = await this.projectRepo.findMany(filter, { limit, offset })
+      projects = await this.projectRepo.findMany({ ...filter, limit, offset })
     }
 
     const total = projects.length

@@ -1,11 +1,26 @@
 // Gateway服务包的主要导出
 export { GatewayServer } from './server/GatewayServer'
-export { ApiRouter } from './router/ApiRouter'
 export { WebSocketManager } from './websocket/WebSocketManager'
 export { AuthMiddleware } from './middleware/AuthMiddleware'
 export { ValidationMiddleware } from './middleware/ValidationMiddleware'
 export { RateLimitMiddleware } from './middleware/RateLimitMiddleware'
 export { ErrorHandler } from './middleware/ErrorHandler'
+
+// 路由器导出 - 新的模块化架构
+export {
+  ApiRouter,
+  BaseRouter,
+  NodeRouter,
+  AIRouter,
+  ProjectRouter,
+  UserRouter
+} from './router'
+
+export type {
+  RouterDependencies,
+  RouteHandler,
+  RouteMap
+} from './router'
 
 // 类型导出
 export type { GatewayConfig } from './types/GatewayConfig'
