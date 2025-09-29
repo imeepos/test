@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局样式 */
+@layer base {
+  * {
+    @apply border-sidebar-border;
+  }
+
+  body {
+    @apply bg-canvas-bg text-sidebar-text;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* 滚动条样式 */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-sidebar-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-sidebar-border rounded-md;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-sidebar-text-muted;
+  }
+}
+
+/* React Flow 自定义样式 */
+@layer components {
+  .react-flow__background {
+    background-color: #0f1015 !important;
+  }
+
+  .react-flow__controls {
+    background-color: #252631 !important;
+    border: 1px solid #343640 !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .react-flow__controls-button {
+    background-color: transparent !important;
+    border: none !important;
+    color: #e2e4e9 !important;
+  }
+
+  .react-flow__controls-button:hover {
+    background-color: #2d2e3a !important;
+  }
+
+  .react-flow__minimap {
+    background-color: #252631 !important;
+    border: 1px solid #343640 !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .react-flow__edge-path {
+    stroke: #6366f1 !important;
+  }
+
+  .react-flow__handle {
+    background-color: #6366f1 !important;
+    border: 2px solid #6366f1 !important;
+  }
+
+  .react-flow__handle.connecting {
+    background-color: #6366f1 !important;
+  }
+
+  .react-flow__handle.valid {
+    background-color: #10b981 !important;
+  }
+}

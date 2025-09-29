@@ -19,9 +19,9 @@
 - Socket.io 实时通信
 
 ## 开发
-
+- 使用pnpm 不要使用npm
 ```bash
-npm run dev
-npm run build
-npm run test
+pnpm run dev
+pnpm run build
+pnpm run test
 ```
