@@ -1,0 +1,35 @@
+{
+  "name": "@sker/config",
+  "version": "1.0.0",
+  "description": "配置管理 - 环境配置、功能开关、主题配置",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.0",
+    "joi": "^17.11.0"
+  },
+  "devDependencies": {
+    "@types/joi": "^17.2.0"
+  },
+  "keywords": [
+    "config",
+    "environment",
+    "features",
+    "theme",
+    "settings"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

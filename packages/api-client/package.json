@@ -1,0 +1,37 @@
+{
+  "name": "@sker/api-client",
+  "version": "1.0.0",
+  "description": "API客户端 - 统一的HTTP客户端、WebSocket连接、状态同步",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "socket.io-client": "^4.7.0",
+    "@sker/data-models": "workspace:*",
+    "@sker/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/socket.io-client": "^4.7.0"
+  },
+  "keywords": [
+    "api",
+    "client",
+    "http",
+    "websocket",
+    "sync"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@sker/backend-core",
+  "version": "1.0.0",
+  "description": "后端核心 - Express中间件、数据库连接、基础服务",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "pg": "^8.11.0",
+    "redis": "^4.6.0",
+    "winston": "^3.11.0",
+    "@sker/data-models": "workspace:*",
+    "@sker/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.0",
+    "@types/pg": "^8.10.0"
+  },
+  "keywords": [
+    "backend",
+    "express",
+    "database",
+    "postgresql",
+    "redis"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

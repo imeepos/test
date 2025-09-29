@@ -1,0 +1,35 @@
+{
+  "name": "@sker/utils",
+  "version": "1.0.0",
+  "description": "通用工具库 - 通用工具函数、常量定义、帮助方法",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0",
+    "lodash-es": "^4.17.0"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.0"
+  },
+  "keywords": [
+    "utils",
+    "tools",
+    "helpers",
+    "constants",
+    "common"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}
