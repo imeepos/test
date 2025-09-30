@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import type { ApiRequest, ApiResponse, ApiResponseBody } from '../types/ApiTypes'
+import type { ApiRequest, ApiResponse, ApiResponseBody } from '../types/ApiTypes.js'
 
 /**
  * 请求增强中间件 - 添加requestId、响应助手等

@@ -1,5 +1,5 @@
-import { databaseManager } from '../config/database'
-import { storeService } from '../services/StoreService'
+import { databaseManager } from '../config/database.js'
+import { storeService } from '../services/StoreService.js'
 
 /**
  * 数据库种子数据管理器

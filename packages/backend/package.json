@@ -4,6 +4,7 @@
   "description": "后端核心 - Express中间件、数据库连接、基础服务",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "files": [
     "dist",
     "types"

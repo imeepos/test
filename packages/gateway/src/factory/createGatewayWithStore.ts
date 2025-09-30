@@ -2,9 +2,9 @@
  * 集成Store微服务的Gateway工厂函数
  */
 
-import { createGateway, type GatewayDependencies } from './createGateway'
-import { createStoreClientForGateway } from '../config/store'
-import type { GatewayConfig } from '../types/GatewayConfig'
+import { createGateway, type GatewayDependencies } from './createGateway.js'
+import { createStoreClientForGateway } from '../config/store.js'
+import type { GatewayConfig } from '../types/GatewayConfig.js'
 import type { StoreClientConfig } from '@sker/store'
 import type { AIEngine } from '@sker/engine'
 import { MessageBroker } from '@sker/broker'

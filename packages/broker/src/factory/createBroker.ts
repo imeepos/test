@@ -1,6 +1,6 @@
-import { MessageBroker } from '../core/MessageBroker'
-import { DEFAULT_BROKER_CONFIG } from '../config/defaults'
-import type { BrokerConfig } from '../types/BrokerConfig'
+import { MessageBroker } from '../core/MessageBroker.js'
+import { DEFAULT_BROKER_CONFIG } from '../config/defaults.js'
+import type { BrokerConfig } from '../types/BrokerConfig.js'
 
 /**
  * 创建MessageBroker的工厂函数

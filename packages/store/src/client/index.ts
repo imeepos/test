@@ -2,11 +2,11 @@
  * Store HTTP客户端导出
  */
 
-export { StoreClient, createStoreClient, createStoreClientFromEnv } from './StoreClient'
-export type { StoreClientConfig } from './StoreClient'
+export { StoreClient, createStoreClient, createStoreClientFromEnv } from './StoreClient.js'
+export type { StoreClientConfig } from './StoreClient.js'
 
 // 默认客户端实例（可选）
-import { createStoreClientFromEnv } from './StoreClient'
+import { createStoreClientFromEnv } from './StoreClient.js'
 
 let defaultClient: ReturnType<typeof createStoreClientFromEnv> | null = null
 

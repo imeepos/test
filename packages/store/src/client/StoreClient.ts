@@ -4,8 +4,8 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
-import { DatabaseError } from '../models'
-import type { ApiResponse } from '../api/BaseController'
+import { DatabaseError } from '../models/index.js'
+import type { ApiResponse } from '../api/BaseController.js'
 
 /**
  * HTTP客户端配置选项

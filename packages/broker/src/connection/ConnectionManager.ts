@@ -1,6 +1,6 @@
 import * as amqp from 'amqplib'
 import { EventEmitter } from 'events'
-import type { BrokerConfig } from '../types/BrokerConfig'
+import type { BrokerConfig } from '../types/BrokerConfig.js'
 
 /**
  * 连接管理器 - 管理RabbitMQ连接的建立、维护和重连

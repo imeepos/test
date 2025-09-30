@@ -2,8 +2,8 @@
  * Broker微服务启动入口
  */
 
-import { startBrokerFromEnvironment } from './factory/createBrokerWithStore'
-import { AIProcessingEngine } from './ai/AIProcessingEngine'
+import { startBrokerFromEnvironment } from './factory/createBrokerWithStore.js'
+import { AIProcessingEngine } from './ai/AIProcessingEngine.js'
 
 // 优雅关闭处理
 let isShuttingDown = false

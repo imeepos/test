@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit'
-import type { RateLimitConfig } from '../types/GatewayConfig'
+import type { RateLimitConfig } from '../types/GatewayConfig.js'
 
 /**
  * 限流中间件 - 防止API滥用

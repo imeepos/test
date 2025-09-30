@@ -1,5 +1,5 @@
-import { BaseRepository } from './BaseRepository'
-import { User, UserStats, QueryOptions, DatabaseError } from '../models'
+import { BaseRepository } from './BaseRepository.js'
+import { User, UserStats, QueryOptions, DatabaseError } from '../models/index.js'
 import * as bcrypt from 'bcryptjs'
 import * as jwt from 'jsonwebtoken'
 

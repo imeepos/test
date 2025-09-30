@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { NodeRepository } from '../../repositories/NodeRepository'
+import { BaseController } from '../BaseController.js'
+import { NodeRepository } from '../../repositories/NodeRepository.js'
 
 /**
  * 节点管理API控制器

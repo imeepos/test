@@ -1,4 +1,4 @@
-import { MessageBroker } from '../core/MessageBroker'
+import { MessageBroker } from '../core/MessageBroker.js'
 import { EventEmitter } from 'events'
 import type {
   ServiceIntegratorConfig,

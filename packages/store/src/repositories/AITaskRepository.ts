@@ -1,5 +1,5 @@
-import { BaseRepository } from './BaseRepository'
-import { AITask, QueryOptions, PaginatedResult, DatabaseError } from '../models'
+import { BaseRepository } from './BaseRepository.js'
+import { AITask, QueryOptions, PaginatedResult, DatabaseError } from '../models/index.js'
 
 /**
  * AI任务仓库 - 处理AI任务相关的数据库操作

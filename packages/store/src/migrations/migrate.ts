@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { databaseManager } from '../config/database'
+import { databaseManager } from '../config/database.js'
 
 /**
  * 迁移记录

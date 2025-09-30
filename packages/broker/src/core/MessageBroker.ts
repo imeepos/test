@@ -6,9 +6,9 @@ import type {
   MessageOptions,
   ConsumerOptions,
   PublishConfirmConfig
-} from '../types/BrokerConfig'
-import { ConnectionManager } from '../connection/ConnectionManager'
-import { QueueManager } from '../queue/QueueManager'
+} from '../types/BrokerConfig.js'
+import { ConnectionManager } from '../connection/ConnectionManager.js'
+import { QueueManager } from '../queue/QueueManager.js'
 
 /**
  * 消息代理核心类 - 封装RabbitMQ操作

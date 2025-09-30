@@ -14,6 +14,9 @@ importers:
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.1
+      uuid:
+        specifier: ^13.0.0
+        version: 13.0.0
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.5.2)(jiti@1.21.7)(yaml@2.8.1)
@@ -135,7 +138,7 @@ importers:
         version: 5.4.20(@types/node@24.5.2)
       vitest:
         specifier: ^1.0.4
-        version: 1.6.1(@types/node@24.5.2)
+        version: 1.6.1(@types/node@24.5.2)(@vitest/ui@1.6.1)
 
   apps/studio:
     dependencies:
@@ -350,13 +353,13 @@ importers:
         version: 5.9.2
       vite:
         specifier: ^4.4.0
-        version: 4.5.14(@types/node@24.5.2)
+        version: 4.5.14(@types/node@20.19.17)
       vite-plugin-dts:
         specifier: ^3.6.0
-        version: 3.9.1(@types/node@24.5.2)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@24.5.2))
+        version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/canvas:
     dependencies:
@@ -442,7 +445,7 @@ importers:
         version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/config:
     dependencies:
@@ -482,7 +485,7 @@ importers:
         version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/engine:
     dependencies:
@@ -643,7 +646,7 @@ importers:
         version: 4.5.14(@types/node@24.5.2)
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/models:
     dependencies:
@@ -766,7 +769,7 @@ importers:
         version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/store:
     dependencies:
@@ -882,7 +885,7 @@ importers:
         version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
 
   packages/version:
     dependencies:
@@ -925,7 +928,38 @@ importers:
         version: 3.9.1(@types/node@20.19.17)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@20.19.17))
       vitest:
         specifier: ^0.34.0
-        version: 0.34.6
+        version: 0.34.6(@vitest/ui@1.6.1)
+
+  tests:
+    dependencies:
+      '@sker/broker':
+        specifier: workspace:*
+        version: link:../packages/broker
+      '@sker/engine':
+        specifier: workspace:*
+        version: link:../packages/engine
+      '@sker/models':
+        specifier: workspace:*
+        version: link:../packages/models
+      uuid:
+        specifier: ^9.0.0
+        version: 9.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.5.2
+      '@types/uuid':
+        specifier: ^9.0.0
+        version: 9.0.8
+      '@vitest/ui':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@24.5.2)(@vitest/ui@1.6.1)
 
 packages:
 
@@ -1833,6 +1867,9 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
+  '@polka/url@1.0.0-next.29':
+    resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
   '@rc-component/async-validator@5.0.4':
     resolution: {integrity: sha512-qgGdcVIF604M9EqjNF0hbUTz42bz/RDtxWdWuU5EQe3hi7M8ob54B6B35rOsvX5eSvIHIzT9iH1R3n+hk3CGfg==}
     engines: {node: '>=14.x'}
@@ -2675,6 +2712,11 @@ packages:
 
   '@vitest/spy@3.2.4':
     resolution: {integrity: sha512-vAfasCOe6AIK70iP5UD11Ac4siNUNJ9i/9PZ3NKx07sG6sUxeag1LWdNrMWeKKYBLlzuK+Gn65Yd5nyL6ds+nw==}
+
+  '@vitest/ui@1.6.1':
+    resolution: {integrity: sha512-xa57bCPGuzEFqGjPs3vVLyqareG8DX0uMkr5U/v5vLv5/ZUrBrPL7gzxzTJedEyZxFMfsozwTIbbYfEQVo3kgg==}
+    peerDependencies:
+      vitest: 1.6.1
 
   '@vitest/utils@0.34.6':
     resolution: {integrity: sha512-IG5aDD8S6zlvloDsnzHw0Ut5xczlF+kv2BOTo+iXfPr54Yhi5qbVOgGB1hZaVq4iJ4C/MZ2J0y15IlsV/ZcI0A==}
@@ -3549,6 +3591,9 @@ packages:
   fecha@4.2.3:
     resolution: {integrity: sha512-OP2IUU6HeYKJi3i0z4A19kHMQoLVs4Hc+DPqqxI2h/DPZHTm/vjsfC6P0b4jCMy14XizLBqvndQ+UilD7707Jw==}
 
+  fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+
   file-entry-cache@6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
     engines: {node: ^10.12.0 || >=12.0.0}
@@ -4375,6 +4420,10 @@ packages:
 
   monaco-editor@0.44.0:
     resolution: {integrity: sha512-5SmjNStN6bSuSE5WPT2ZV+iYn1/yI9sd4Igtk23ChvqB7kDk9lZbB9F5frsuvpB+2njdIeGGFf2G4gbE6rCC9Q==}
+
+  mrmime@2.0.1:
+    resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
+    engines: {node: '>=10'}
 
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
@@ -5205,6 +5254,10 @@ packages:
     resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
     engines: {node: '>=10'}
 
+  sirv@2.0.4:
+    resolution: {integrity: sha512-94Bdh3cC2PKrbgSOUqTiGPWVZeSiXfKOVZNJniWoqrWrRkB1CJzBU3NEbiTsPcYy1lDsANA/THzS+9WBiy5nfQ==}
+    engines: {node: '>= 10'}
+
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
@@ -5442,6 +5495,10 @@ packages:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
 
+  totalist@3.0.1:
+    resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
+    engines: {node: '>=6'}
+
   touch@3.1.1:
     resolution: {integrity: sha512-r0eojU4bI8MnHr8c5bNo7lJDdI2qXlWWJk6a9EAFG7vbhTjElYhBVS3/miuE0uOuoLdb8Mc/rVfsmm6eo5o9GA==}
     hasBin: true
@@ -5639,6 +5696,10 @@ packages:
   utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
+
+  uuid@13.0.0:
+    resolution: {integrity: sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==}
+    hasBin: true
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
@@ -6973,6 +7034,8 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
+  '@polka/url@1.0.0-next.29': {}
+
   '@rc-component/async-validator@5.0.4':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -7933,6 +7996,29 @@ snapshots:
   '@vitest/spy@3.2.4':
     dependencies:
       tinyspy: 4.0.4
+
+  '@vitest/ui@1.6.1(vitest@0.34.6)':
+    dependencies:
+      '@vitest/utils': 1.6.1
+      fast-glob: 3.3.3
+      fflate: 0.8.2
+      flatted: 3.3.3
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      sirv: 2.0.4
+      vitest: 0.34.6(@vitest/ui@1.6.1)
+    optional: true
+
+  '@vitest/ui@1.6.1(vitest@1.6.1)':
+    dependencies:
+      '@vitest/utils': 1.6.1
+      fast-glob: 3.3.3
+      fflate: 0.8.2
+      flatted: 3.3.3
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      sirv: 2.0.4
+      vitest: 1.6.1(@types/node@24.5.2)(@vitest/ui@1.6.1)
 
   '@vitest/utils@0.34.6':
     dependencies:
@@ -9005,6 +9091,8 @@ snapshots:
 
   fecha@4.2.3: {}
 
+  fflate@0.8.2: {}
+
   file-entry-cache@6.0.1:
     dependencies:
       flat-cache: 3.2.0
@@ -10068,6 +10156,8 @@ snapshots:
 
   monaco-editor@0.44.0: {}
 
+  mrmime@2.0.1: {}
+
   ms@2.0.0: {}
 
   ms@2.1.3: {}
@@ -10991,6 +11081,12 @@ snapshots:
     dependencies:
       semver: 7.7.2
 
+  sirv@2.0.4:
+    dependencies:
+      '@polka/url': 1.0.0-next.29
+      mrmime: 2.0.1
+      totalist: 3.0.1
+
   sisteransi@1.0.5: {}
 
   slash@3.0.0: {}
@@ -11253,6 +11349,8 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
+  totalist@3.0.1: {}
+
   touch@3.1.1: {}
 
   tr46@0.0.3: {}
@@ -11407,6 +11505,8 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
+  uuid@13.0.0: {}
+
   uuid@9.0.1: {}
 
   v8-compile-cache-lib@3.0.1: {}
@@ -11497,23 +11597,6 @@ snapshots:
       - rollup
       - supports-color
 
-  vite-plugin-dts@3.9.1(@types/node@24.5.2)(rollup@4.52.3)(typescript@5.9.2)(vite@4.5.14(@types/node@24.5.2)):
-    dependencies:
-      '@microsoft/api-extractor': 7.43.0(@types/node@24.5.2)
-      '@rollup/pluginutils': 5.3.0(rollup@4.52.3)
-      '@vue/language-core': 1.8.27(typescript@5.9.2)
-      debug: 4.4.3(supports-color@5.5.0)
-      kolorist: 1.8.0
-      magic-string: 0.30.19
-      typescript: 5.9.2
-      vue-tsc: 1.8.27(typescript@5.9.2)
-    optionalDependencies:
-      vite: 4.5.14(@types/node@24.5.2)
-    transitivePeerDependencies:
-      - '@types/node'
-      - rollup
-      - supports-color
-
   vite-plugin-dts@3.9.1(@types/node@24.5.2)(rollup@4.52.3)(typescript@5.9.2)(vite@5.4.20(@types/node@24.5.2)):
     dependencies:
       '@microsoft/api-extractor': 7.43.0(@types/node@24.5.2)
@@ -11589,7 +11672,7 @@ snapshots:
       jiti: 1.21.7
       yaml: 2.8.1
 
-  vitest@0.34.6:
+  vitest@0.34.6(@vitest/ui@1.6.1):
     dependencies:
       '@types/chai': 4.3.20
       '@types/chai-subset': 1.3.6(@types/chai@4.3.20)
@@ -11615,6 +11698,8 @@ snapshots:
       vite: 4.5.14(@types/node@20.19.17)
       vite-node: 0.34.6(@types/node@20.19.17)
       why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@vitest/ui': 1.6.1(vitest@0.34.6)
     transitivePeerDependencies:
       - less
       - lightningcss
@@ -11624,7 +11709,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@1.6.1(@types/node@24.5.2):
+  vitest@1.6.1(@types/node@24.5.2)(@vitest/ui@1.6.1):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -11648,6 +11733,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.5.2
+      '@vitest/ui': 1.6.1(vitest@1.6.1)
     transitivePeerDependencies:
       - less
       - lightningcss

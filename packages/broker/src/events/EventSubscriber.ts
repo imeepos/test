@@ -1,5 +1,5 @@
-import type { MessageBroker } from '../core/MessageBroker'
-import type { EventMessage } from '../types/EventTypes'
+import type { MessageBroker } from '../core/MessageBroker.js'
+import type { EventMessage } from '../types/EventTypes.js'
 
 /**
  * 事件订阅器 - 订阅和处理系统事件

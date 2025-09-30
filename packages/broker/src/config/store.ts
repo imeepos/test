@@ -3,7 +3,7 @@
  */
 
 import { createStoreClient, type StoreClientConfig } from '@sker/store'
-import { createStoreAdapter, type StoreAdapter } from '../adapters/StoreAdapter'
+import { createStoreAdapter, type StoreAdapter } from '../adapters/StoreAdapter.js'
 
 /**
  * 默认Store客户端配置 (Broker)

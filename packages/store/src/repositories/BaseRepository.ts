@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg'
-import { databaseManager } from '../config/database'
-import { QueryOptions, PaginatedResult, DatabaseError } from '../models'
+import { databaseManager } from '../config/database.js'
+import { QueryOptions, PaginatedResult, DatabaseError } from '../models/index.js'
 
 /**
  * 基础仓库类 - 提供通用的数据库操作方法

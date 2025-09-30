@@ -1,5 +1,5 @@
-import { BaseRepository } from './BaseRepository'
-import { Project, ProjectStats, QueryOptions, PaginatedResult, DatabaseError } from '../models'
+import { BaseRepository } from './BaseRepository.js'
+import { Project, ProjectStats, QueryOptions, PaginatedResult, DatabaseError } from '../models/index.js'
 
 /**
  * 项目仓库 - 处理项目相关的数据库操作

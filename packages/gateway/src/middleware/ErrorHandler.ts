@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import type { ApiRequest, ApiError } from '../types/ApiTypes'
+import type { ApiRequest, ApiError } from '../types/ApiTypes.js'
 
 /**
  * 错误处理中间件 - 统一错误处理和响应格式化

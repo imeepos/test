@@ -3,8 +3,8 @@
  * 允许现有代码无缝切换到微服务架构
  */
 
-import { StoreService } from '../services/StoreService'
-import { StoreClient, createStoreClient, type StoreClientConfig } from '../client'
+import { StoreService } from '../services/StoreService.js'
+import { StoreClient, createStoreClient, type StoreClientConfig } from '../client/index.js'
 
 /**
  * Store创建选项

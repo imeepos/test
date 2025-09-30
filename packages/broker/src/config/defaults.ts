@@ -1,4 +1,4 @@
-import type { BrokerConfig } from '../types/BrokerConfig'
+import type { BrokerConfig } from '../types/BrokerConfig.js'
 import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,

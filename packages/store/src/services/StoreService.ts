@@ -1,10 +1,10 @@
-import { databaseManager } from '../config/database'
-import { UserRepository } from '../repositories/UserRepository'
-import { ProjectRepository } from '../repositories/ProjectRepository'
-import { NodeRepository } from '../repositories/NodeRepository'
-import { ConnectionRepository } from '../repositories/ConnectionRepository'
-import { AITaskRepository } from '../repositories/AITaskRepository'
-import { DatabaseError } from '../models'
+import { databaseManager } from '../config/database.js'
+import { UserRepository } from '../repositories/UserRepository.js'
+import { ProjectRepository } from '../repositories/ProjectRepository.js'
+import { NodeRepository } from '../repositories/NodeRepository.js'
+import { ConnectionRepository } from '../repositories/ConnectionRepository.js'
+import { AITaskRepository } from '../repositories/AITaskRepository.js'
+import { DatabaseError } from '../models/index.js'
 // import { MessageBroker } from '@sker/broker'
 // 临时类型定义，直到 @sker/broker 包可用
 interface MessageBroker {
@@ -13,7 +13,7 @@ interface MessageBroker {
   isConnected(): boolean
   on(event: string, callback: (...args: any[]) => void): void
 }
-import { DataEventPublisher, createDataEventPublisher } from '../messaging/DataEventPublisher'
+import { DataEventPublisher, createDataEventPublisher } from '../messaging/DataEventPublisher.js'
 
 /**
  * 存储服务 - 提供统一的数据访问接口
@@ -255,7 +255,7 @@ export class StoreService {
    * 执行数据库迁移
    */
   async migrate(): Promise<void> {
-    const { MigrationManager } = await import('../migrations/migrate')
+    const { MigrationManager } = await import('../migrations/migrate.js')
     const migrationManager = new MigrationManager()
     await migrationManager.migrate()
   }
@@ -268,7 +268,7 @@ export class StoreService {
     pending: string[]
     current: string | null
   }> {
-    const { MigrationManager } = await import('../migrations/migrate')
+    const { MigrationManager } = await import('../migrations/migrate.js')
     const migrationManager = new MigrationManager()
     return migrationManager.getStatus()
   }

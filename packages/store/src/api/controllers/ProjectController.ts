@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { ProjectRepository } from '../../repositories/ProjectRepository'
+import { BaseController } from '../BaseController.js'
+import { ProjectRepository } from '../../repositories/ProjectRepository.js'
 
 /**
  * 项目管理API控制器

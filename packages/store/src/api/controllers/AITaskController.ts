@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { AITaskRepository } from '../../repositories/AITaskRepository'
+import { BaseController } from '../BaseController.js'
+import { AITaskRepository } from '../../repositories/AITaskRepository.js'
 
 /**
  * AI任务管理API控制器

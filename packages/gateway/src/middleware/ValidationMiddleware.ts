@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { body, param, query, validationResult } from 'express-validator'
-import type { ApiRequest } from '../types/ApiTypes'
+import type { ApiRequest } from '../types/ApiTypes.js'
 
 /**
  * 验证中间件 - 请求参数验证

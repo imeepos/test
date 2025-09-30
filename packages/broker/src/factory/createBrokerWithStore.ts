@@ -2,12 +2,12 @@
  * 集成Store微服务的Broker工厂函数
  */
 
-import { MessageBroker } from '../core/MessageBroker'
-import { AITaskScheduler } from '../scheduler/AITaskScheduler'
-import { createStoreAdapterForBroker, createStoreAdapterFromEnv } from '../config/store'
-import { DEFAULT_BROKER_CONFIG } from '../config/defaults'
+import { MessageBroker } from '../core/MessageBroker.js'
+import { AITaskScheduler } from '../scheduler/AITaskScheduler.js'
+import { createStoreAdapterForBroker, createStoreAdapterFromEnv } from '../config/store.js'
+import { DEFAULT_BROKER_CONFIG } from '../config/defaults.js'
 import type { StoreClientConfig } from '@sker/store'
-import type { StoreAdapter } from '../adapters/StoreAdapter'
+import type { StoreAdapter } from '../adapters/StoreAdapter.js'
 
 export interface BrokerFactoryConfig {
   rabbitmq?: {

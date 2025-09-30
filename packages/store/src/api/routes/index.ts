@@ -1,10 +1,10 @@
 import { Router } from 'express'
-import { UserController } from '../controllers/UserController'
-import { ProjectController } from '../controllers/ProjectController'
-import { NodeController } from '../controllers/NodeController'
-import { ConnectionController } from '../controllers/ConnectionController'
-import { AITaskController } from '../controllers/AITaskController'
-import { SystemController } from '../controllers/SystemController'
+import { UserController } from '../controllers/UserController.js'
+import { ProjectController } from '../controllers/ProjectController.js'
+import { NodeController } from '../controllers/NodeController.js'
+import { ConnectionController } from '../controllers/ConnectionController.js'
+import { AITaskController } from '../controllers/AITaskController.js'
+import { SystemController } from '../controllers/SystemController.js'
 
 /**
  * API路由器 - 统一管理所有API端点

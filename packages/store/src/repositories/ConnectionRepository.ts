@@ -1,5 +1,5 @@
-import { BaseRepository } from './BaseRepository'
-import { Connection, QueryOptions, DatabaseError } from '../models'
+import { BaseRepository } from './BaseRepository.js'
+import { Connection, QueryOptions, DatabaseError } from '../models/index.js'
 
 /**
  * 连接关系仓库 - 处理节点连接相关的数据库操作

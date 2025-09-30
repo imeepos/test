@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { databaseManager } from '../../config/database'
-import { storeService } from '../../services/StoreService'
+import { BaseController } from '../BaseController.js'
+import { databaseManager } from '../../config/database.js'
+import { storeService } from '../../services/StoreService.js'
 
 /**
  * 系统管理API控制器

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { DatabaseError, ValidationError, NotFoundError } from '../models'
+import { DatabaseError, ValidationError, NotFoundError } from '../models/index.js'
 
 /**
  * 标准API响应格式

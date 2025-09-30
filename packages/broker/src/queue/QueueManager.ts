@@ -1,5 +1,5 @@
 import amqp from 'amqplib'
-import type { BrokerConfig, ExchangeConfig, QueueConfig } from '../types/BrokerConfig'
+import type { BrokerConfig, ExchangeConfig, QueueConfig } from '../types/BrokerConfig.js'
 
 /**
  * 队列管理器 - 管理交换机和队列的声明和配置

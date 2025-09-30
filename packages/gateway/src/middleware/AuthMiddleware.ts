@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import type { AuthConfig } from '../types/GatewayConfig'
-import type { ApiRequest, AuthUser } from '../types/ApiTypes'
+import type { AuthConfig } from '../types/GatewayConfig.js'
+import type { ApiRequest, AuthUser } from '../types/ApiTypes.js'
 
 /**
  * 认证中间件 - JWT Token验证

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { ConnectionRepository } from '../../repositories/ConnectionRepository'
+import { BaseController } from '../BaseController.js'
+import { ConnectionRepository } from '../../repositories/ConnectionRepository.js'
 
 /**
  * 连接管理API控制器

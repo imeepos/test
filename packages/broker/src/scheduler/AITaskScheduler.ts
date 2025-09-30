@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { EventEmitter } from 'events'
-import type { MessageBroker } from '../core/MessageBroker'
+import type { MessageBroker } from '../core/MessageBroker.js'
 import type {
   AITaskMessage,
   AIResultMessage,

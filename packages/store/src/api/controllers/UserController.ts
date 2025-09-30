@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { BaseController } from '../BaseController'
-import { UserRepository } from '../../repositories/UserRepository'
-import { validateEmail, validateUsername, validatePassword } from '../../index'
+import { BaseController } from '../BaseController.js'
+import { UserRepository } from '../../repositories/UserRepository.js'
+import { validateEmail, validateUsername, validatePassword } from '../../index.js'
 
 /**
  * 用户管理API控制器

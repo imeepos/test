@@ -8,8 +8,8 @@
 import dotenv from 'dotenv'
 import express from 'express'
 import http from 'http'
-import { databaseManager } from './config/database'
-import { createApiRouter, createSystemRouter } from './api/routes'
+import { databaseManager } from './config/database.js'
+import { createApiRouter, createSystemRouter } from './api/routes/index.js'
 import {
   corsMiddleware,
   requestLogger,

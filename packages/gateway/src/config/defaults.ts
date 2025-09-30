@@ -1,4 +1,4 @@
-import type { GatewayConfig } from '../types/GatewayConfig'
+import type { GatewayConfig } from '../types/GatewayConfig.js'
 
 /**
  * 默认Gateway配置

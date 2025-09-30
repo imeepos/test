@@ -1,6 +1,6 @@
-import { BaseRepository } from './BaseRepository'
-import { Node, QueryOptions, PaginatedResult, DatabaseError } from '../models'
-import { databaseManager } from '../config/database'
+import { BaseRepository } from './BaseRepository.js'
+import { Node, QueryOptions, PaginatedResult, DatabaseError } from '../models/index.js'
+import { databaseManager } from '../config/database.js'
 
 /**
  * 节点仓库 - 处理节点相关的数据库操作
