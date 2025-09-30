@@ -29,9 +29,6 @@ async function gracefulShutdown(services: any) {
 async function main() {
   try {
     console.log('🚀 启动 SKER Broker 微服务...')
-    console.log(`📊 环境: ${process.env.NODE_ENV || 'development'}`)
-    console.log(`🐰 RabbitMQ: ${process.env.RABBITMQ_URL || 'amqp://localhost:5672'}`)
-    console.log(`🗄️  Store Service: ${process.env.STORE_SERVICE_URL || 'http://localhost:3001'}`)
     
     // 创建AI处理引擎
     const aiEngine = new AIProcessingEngine({
@@ -44,34 +41,10 @@ async function main() {
     
     console.log(`🤖 AI引擎配置完成 (模型: ${process.env.AI_DEFAULT_MODEL || 'gpt-3.5-turbo'})`)
     
-    // 启动服务 - startBrokerFromEnvironment 会根据环境变量判断使用开发还是生产配置
-    // 我们需要手动传递 aiEngine，所以使用更具体的函数
-    const env = process.env.NODE_ENV || 'development'
+    // 使用 startBrokerFromEnvironment，它会正确处理环境变量和配置
+    const { startBrokerFromEnvironment } = await import('./factory/createBrokerWithStore')
     
-    const config = {
-      rabbitmq: {
-        // 只传递非空的环境变量，让工厂函数处理默认值
-        ...(process.env.RABBITMQ_URL && { url: process.env.RABBITMQ_URL }),
-        ...(process.env.RABBITMQ_RECONNECT_DELAY && { reconnectDelay: parseInt(process.env.RABBITMQ_RECONNECT_DELAY) }),
-        ...(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS && { maxReconnectAttempts: parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) })
-      },
-      scheduler: {
-        ...(process.env.AI_TASK_TIMEOUT && { defaultTimeout: parseInt(process.env.AI_TASK_TIMEOUT) })
-      },
-      store: {
-        // 只传递非空的环境变量，让工厂函数处理默认值
-        ...(process.env.STORE_SERVICE_URL && { baseURL: process.env.STORE_SERVICE_URL }),
-        ...(process.env.STORE_AUTH_TOKEN && { authToken: process.env.STORE_AUTH_TOKEN }),
-        ...(process.env.STORE_TIMEOUT && { timeout: parseInt(process.env.STORE_TIMEOUT) }),
-        ...(process.env.STORE_RETRIES && { retries: parseInt(process.env.STORE_RETRIES) })
-      }
-    }
-    
-    const { startDevelopmentBrokerWithStore, startProductionBrokerWithStore } = await import('./factory/createBrokerWithStore')
-    
-    const services = env === 'production' 
-      ? await startProductionBrokerWithStore(config, { aiEngine })
-      : await startDevelopmentBrokerWithStore(config, { aiEngine })
+    const services = await startBrokerFromEnvironment({ aiEngine })
     console.log('✅ Broker 微服务启动成功!')
     
     // 设置进程信号处理

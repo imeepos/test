@@ -10,7 +10,7 @@ resources
 .env.production
 .env.staging
 .env.development
-
+.turbo
 nul
 
 # IDE and editor files

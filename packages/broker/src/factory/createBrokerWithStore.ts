@@ -41,7 +41,7 @@ export async function createBrokerWithStore(
 
   // 创建消息代理
   const messageBroker = new MessageBroker({
-    connectionUrl: config.rabbitmq?.url || process.env.RABBITMQ_URL || 'amqp://localhost',
+    connectionUrl: config.rabbitmq?.url || 'amqp://localhost',
     retry: {
       maxRetries: config.rabbitmq?.maxReconnectAttempts || 10,
       initialDelay: config.rabbitmq?.reconnectDelay || 5000,
@@ -81,20 +81,23 @@ export async function createDevelopmentBrokerWithStore(
 ) {
   const devConfig: BrokerConfig = {
     rabbitmq: {
-      url: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
-      reconnectDelay: 3000,
-      maxReconnectAttempts: 5
+      url: process.env.RABBITMQ_URL || 'amqp://sker_user:sker_password@rabbitmq:5672',
+      reconnectDelay: config.rabbitmq?.reconnectDelay ?? 3000,
+      maxReconnectAttempts: config.rabbitmq?.maxReconnectAttempts ?? 5
     },
     scheduler: {
-      defaultTimeout: 300000 // 5分钟
+      defaultTimeout: config.scheduler?.defaultTimeout ?? 300000 // 5分钟
     },
     store: {
-      baseURL: process.env.STORE_SERVICE_URL || 'http://localhost:3001',
-      timeout: 30000,
-      retries: 3
-    },
-    ...config
+      baseURL: process.env.STORE_SERVICE_URL || 'http://store:3001',
+      timeout: config.store?.timeout ?? 30000,
+      retries: config.store?.retries ?? 3,
+      ...(config.store?.authToken && { authToken: config.store.authToken })
+    }
   }
+
+  console.log(`🔧 开发环境配置 - RabbitMQ: ${devConfig.rabbitmq.url}`)
+  console.log(`🔧 开发环境配置 - Store: ${devConfig.store.baseURL}`)
 
   return createBrokerWithStore(devConfig, dependencies)
 }
@@ -108,21 +111,27 @@ export async function createProductionBrokerWithStore(
 ) {
   const prodConfig: BrokerConfig = {
     rabbitmq: {
-      url: process.env.RABBITMQ_URL || 'amqp://rabbitmq:5672',
-      reconnectDelay: 5000,
-      maxReconnectAttempts: 10
+      url: process.env.RABBITMQ_URL || 'amqp://sker_user:sker_password@rabbitmq:5672',
+      reconnectDelay: config.rabbitmq?.reconnectDelay ?? 5000,
+      maxReconnectAttempts: config.rabbitmq?.maxReconnectAttempts ?? 10
     },
     scheduler: {
-      defaultTimeout: 600000 // 10分钟
+      defaultTimeout: config.scheduler?.defaultTimeout ?? 600000 // 10分钟
     },
     store: {
       baseURL: process.env.STORE_SERVICE_URL || 'http://store:3001',
-      timeout: 15000,
-      retries: 5,
-      retryDelay: 2000
-    },
-    ...config
+      timeout: config.store?.timeout ?? 15000,
+      retries: config.store?.retries ?? 5,
+      retryDelay: config.store?.retryDelay ?? 2000,
+      ...(config.store?.authToken && { authToken: config.store.authToken })
+    }
   }
+
+  console.log(`🔧 生产环境配置`)
+  console.log(`   RabbitMQ URL: ${prodConfig.rabbitmq.url}`)
+  console.log(`   Store URL: ${prodConfig.store.baseURL}`)
+  console.log(`   环境变量 RABBITMQ_URL: ${process.env.RABBITMQ_URL}`)
+  console.log(`   环境变量 STORE_SERVICE_URL: ${process.env.STORE_SERVICE_URL}`)
 
   return createBrokerWithStore(prodConfig, dependencies)
 }
@@ -215,23 +224,23 @@ export async function startProductionBrokerWithStore(
 /**
  * 从环境变量启动Broker服务
  */
-export async function startBrokerFromEnvironment() {
+export async function startBrokerFromEnvironment(dependencies?: BrokerDependencies) {
   console.log('🚀 从环境变量启动Broker服务...')
 
   const env = process.env.NODE_ENV || 'development'
   
+  // 只传递有效的非默认配置，让环境特定函数处理默认值
   const config: BrokerConfig = {
     rabbitmq: {
-      url: process.env.RABBITMQ_URL,
-      reconnectDelay: process.env.RABBITMQ_RECONNECT_DELAY ? parseInt(process.env.RABBITMQ_RECONNECT_DELAY) : undefined,
-      maxReconnectAttempts: process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS ? parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) : undefined
+      // 只有当环境变量存在时才覆盖默认值
+      ...(process.env.RABBITMQ_RECONNECT_DELAY && { reconnectDelay: parseInt(process.env.RABBITMQ_RECONNECT_DELAY) }),
+      ...(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS && { maxReconnectAttempts: parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) })
     },
     scheduler: {
-      defaultTimeout: process.env.AI_TASK_TIMEOUT ? parseInt(process.env.AI_TASK_TIMEOUT) : undefined
+      ...(process.env.AI_TASK_TIMEOUT && { defaultTimeout: parseInt(process.env.AI_TASK_TIMEOUT) })
     },
     store: {
       // 只传递非空的环境变量，让工厂函数处理默认值
-      ...(process.env.STORE_SERVICE_URL && { baseURL: process.env.STORE_SERVICE_URL }),
       ...(process.env.STORE_AUTH_TOKEN && { authToken: process.env.STORE_AUTH_TOKEN }),
       ...(process.env.STORE_TIMEOUT && { timeout: parseInt(process.env.STORE_TIMEOUT) }),
       ...(process.env.STORE_RETRIES && { retries: parseInt(process.env.STORE_RETRIES) })
@@ -239,12 +248,12 @@ export async function startBrokerFromEnvironment() {
   }
 
   console.log(`📊 环境: ${env}`)
-  console.log(`🐰 RabbitMQ: ${config.rabbitmq?.url || 'using default'}`)
-  console.log(`🏪 Store Service: ${process.env.STORE_SERVICE_URL || 'using default'}`)
+  console.log(`🐰 RabbitMQ: ${process.env.RABBITMQ_URL || 'using environment default'}`)
+  console.log(`🏪 Store Service: ${process.env.STORE_SERVICE_URL || 'using environment default'}`)
 
   if (env === 'production') {
-    return startProductionBrokerWithStore(config)
+    return startProductionBrokerWithStore(config, dependencies)
   } else {
-    return startDevelopmentBrokerWithStore(config)
+    return startDevelopmentBrokerWithStore(config, dependencies)
   }
 }
