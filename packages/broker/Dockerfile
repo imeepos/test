@@ -85,12 +85,17 @@ RUN chown -R broker:nodejs /app
 # 切换到非root用户
 USER broker
 
+# 安装curl用于健康检查
+USER root
+RUN apk add --no-cache curl
+USER broker
+
 # 暴露端口（如果broker服务有HTTP端点）
 EXPOSE 3002
 
-# 健康检查：检查进程是否存在
+# 健康检查：检查HTTP端点
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD pgrep -f "node.*dist/main.js" > /dev/null || exit 1
+  CMD curl -f http://localhost:3002/health || exit 1
 
 # 运行应用
 CMD ["node", "dist/main.js"]

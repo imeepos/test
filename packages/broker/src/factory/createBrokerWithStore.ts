@@ -218,6 +218,8 @@ export async function startProductionBrokerWithStore(
 export async function startBrokerFromEnvironment() {
   console.log('🚀 从环境变量启动Broker服务...')
 
+  const env = process.env.NODE_ENV || 'development'
+  
   const config: BrokerConfig = {
     rabbitmq: {
       url: process.env.RABBITMQ_URL,
@@ -228,14 +230,17 @@ export async function startBrokerFromEnvironment() {
       defaultTimeout: process.env.AI_TASK_TIMEOUT ? parseInt(process.env.AI_TASK_TIMEOUT) : undefined
     },
     store: {
-      baseURL: process.env.STORE_SERVICE_URL,
-      authToken: process.env.STORE_AUTH_TOKEN,
-      timeout: process.env.STORE_TIMEOUT ? parseInt(process.env.STORE_TIMEOUT) : undefined,
-      retries: process.env.STORE_RETRIES ? parseInt(process.env.STORE_RETRIES) : undefined
+      // 只传递非空的环境变量，让工厂函数处理默认值
+      ...(process.env.STORE_SERVICE_URL && { baseURL: process.env.STORE_SERVICE_URL }),
+      ...(process.env.STORE_AUTH_TOKEN && { authToken: process.env.STORE_AUTH_TOKEN }),
+      ...(process.env.STORE_TIMEOUT && { timeout: parseInt(process.env.STORE_TIMEOUT) }),
+      ...(process.env.STORE_RETRIES && { retries: parseInt(process.env.STORE_RETRIES) })
     }
   }
 
-  const env = process.env.NODE_ENV || 'development'
+  console.log(`📊 环境: ${env}`)
+  console.log(`🐰 RabbitMQ: ${config.rabbitmq?.url || 'using default'}`)
+  console.log(`🏪 Store Service: ${process.env.STORE_SERVICE_URL || 'using default'}`)
 
   if (env === 'production') {
     return startProductionBrokerWithStore(config)

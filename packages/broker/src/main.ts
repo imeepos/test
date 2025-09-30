@@ -50,18 +50,20 @@ async function main() {
     
     const config = {
       rabbitmq: {
-        url: process.env.RABBITMQ_URL,
-        reconnectDelay: process.env.RABBITMQ_RECONNECT_DELAY ? parseInt(process.env.RABBITMQ_RECONNECT_DELAY) : undefined,
-        maxReconnectAttempts: process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS ? parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) : undefined
+        // 只传递非空的环境变量，让工厂函数处理默认值
+        ...(process.env.RABBITMQ_URL && { url: process.env.RABBITMQ_URL }),
+        ...(process.env.RABBITMQ_RECONNECT_DELAY && { reconnectDelay: parseInt(process.env.RABBITMQ_RECONNECT_DELAY) }),
+        ...(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS && { maxReconnectAttempts: parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) })
       },
       scheduler: {
-        defaultTimeout: process.env.AI_TASK_TIMEOUT ? parseInt(process.env.AI_TASK_TIMEOUT) : undefined
+        ...(process.env.AI_TASK_TIMEOUT && { defaultTimeout: parseInt(process.env.AI_TASK_TIMEOUT) })
       },
       store: {
-        baseURL: process.env.STORE_SERVICE_URL,
-        authToken: process.env.STORE_AUTH_TOKEN,
-        timeout: process.env.STORE_TIMEOUT ? parseInt(process.env.STORE_TIMEOUT) : undefined,
-        retries: process.env.STORE_RETRIES ? parseInt(process.env.STORE_RETRIES) : undefined
+        // 只传递非空的环境变量，让工厂函数处理默认值
+        ...(process.env.STORE_SERVICE_URL && { baseURL: process.env.STORE_SERVICE_URL }),
+        ...(process.env.STORE_AUTH_TOKEN && { authToken: process.env.STORE_AUTH_TOKEN }),
+        ...(process.env.STORE_TIMEOUT && { timeout: parseInt(process.env.STORE_TIMEOUT) }),
+        ...(process.env.STORE_RETRIES && { retries: parseInt(process.env.STORE_RETRIES) })
       }
     }
     
