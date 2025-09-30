@@ -167,6 +167,20 @@ export async function startBrokerWithStore(
   await messageBroker.start()
   console.log('✅ MessageBroker已连接')
 
+  // 验证broker完全准备就绪
+  const maxWaitTime = 30000 // 30秒超时
+  const checkInterval = 500 // 每500ms检查一次
+  const startTime = Date.now()
+
+  while (!messageBroker.isReady()) {
+    if (Date.now() - startTime > maxWaitTime) {
+      throw new Error('Timeout waiting for MessageBroker to be ready')
+    }
+    console.log('⏳ 等待MessageBroker完全就绪...')
+    await new Promise(resolve => setTimeout(resolve, checkInterval))
+  }
+  console.log('✅ MessageBroker已完全就绪')
+
   // 初始化AI任务调度器
   await aiTaskScheduler.initialize()
   console.log('✅ AITaskScheduler已初始化')

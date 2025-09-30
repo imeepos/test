@@ -189,6 +189,8 @@ services:
       - STORE_SERVICE_URL=http://store:3001
       - BROKER_SERVICE_URL=http://broker:3002
       - ENGINE_SERVICE_URL=http://engine:8001
+      # RabbitMQ 配置 - 临时禁用以解决启动问题
+      # - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       # 认证配置
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
       # 数据库配置 (如果 Gateway 需要直接数据库访问)
@@ -221,6 +223,33 @@ services:
       - sker-network
     volumes:
       - ./packages/gateway/.env:/app/packages/gateway/.env:ro
+    restart: unless-stopped
+
+  # Frontend Applications
+  studio:
+    build:
+      context: .
+      dockerfile: apps/studio/Dockerfile
+    environment:
+      - NODE_ENV=production
+      # API 配置
+      - API_BASE_URL=http://gateway:8000
+      - WS_BASE_URL=ws://gateway:8000
+      # CORS 配置
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+    ports:
+      - "3000:80"
+    depends_on:
+      gateway:
+        condition: service_started
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     restart: unless-stopped
 
 networks:

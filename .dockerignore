@@ -132,6 +132,15 @@ Dockerfile
 .dockerignore
 docker-compose*.yml
 
+# Exclude all node_modules initially - we'll install them in container
+**/node_modules/
+**/dist/
+**/package-lock.json
+
+# Windows specific files that might cause permission issues
+**/.git/
+.git/
+
 # Documentation
 *.md
 !README.md
