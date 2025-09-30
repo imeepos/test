@@ -157,7 +157,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
       source,
       message,
       data,
-      stack: level === 'error' ? new Error().stack : undefined
+      ...(level === 'error' && new Error().stack ? { stack: new Error().stack } : {})
     }
 
     setLogs(prev => [...prev, logEntry])
@@ -205,7 +205,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
           ...prev.errors,
           {
             message: (error as Error).message,
-            stack: (error as Error).stack
+            ...((error as Error).stack ? { stack: (error as Error).stack } : {})
           }
         ]
       }))
@@ -300,7 +300,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
   const setBreakpoint = (line: number, condition?: string) => {
     const breakpoint: Breakpoint = {
       line,
-      condition,
+      ...(condition ? { condition } : {}),
       enabled: true,
       hitCount: 0
     }

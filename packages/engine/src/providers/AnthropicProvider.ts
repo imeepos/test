@@ -106,6 +106,7 @@ export class AnthropicProvider implements AIProvider {
       this.parseOptimizeResult(result.content)
 
     return {
+      content: optimizedContent,
       optimizedContent,
       improvementSummary,
       confidence: result.confidence,

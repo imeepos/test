@@ -171,7 +171,7 @@ export const AIProcessingIndicator: React.FC<AIProcessingIndicatorProps> = ({
                       <AIJobItem
                         key={job.id}
                         job={job}
-                        onCancel={job.canCancel ? () => cancelJob(job.id) : undefined}
+                        {...(job.canCancel ? { onCancel: () => cancelJob(job.id) } : {})}
                         onToggle={() => toggleJob(job.id)}
                       />
                     ))}
@@ -184,10 +184,10 @@ export const AIProcessingIndicator: React.FC<AIProcessingIndicatorProps> = ({
             {!isExpanded && activeJobs.length > 0 && (
               <div className="px-3 pb-3">
                 <div className="text-xs text-sidebar-text-muted">
-                  {activeJobs[0].description}
+                  {activeJobs[0]?.description}
                   {activeJobs.length > 1 && ` +${activeJobs.length - 1} 更多`}
                 </div>
-                {activeJobs[0].progress > 0 && (
+                {activeJobs[0]?.progress && activeJobs[0].progress > 0 && (
                   <div className="mt-2 w-full bg-sidebar-border rounded-full h-1">
                     <div
                       className="bg-sidebar-accent h-1 rounded-full transition-all duration-300"

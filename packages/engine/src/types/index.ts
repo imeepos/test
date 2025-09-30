@@ -7,12 +7,20 @@ export interface EngineConfig {
   baseURL?: string
   organization?: string
   models: ModelConfig
+  model: {
+    name: string
+    maxTokens: number
+  }
   defaultModel: string
   temperature: number
   maxTokens: number
   timeout: number
   retryConfig: RetryConfig
   costOptimization?: CostOptimization
+  rateLimiting?: {
+    requestsPerMinute: number
+    tokensPerMinute?: number
+  }
 }
 
 export interface ModelConfig {
@@ -289,6 +297,8 @@ export interface UsageStats {
   modelUsage: Record<string, number>
   errorDistribution: Record<string, number>
   lastResetAt: Date
+  startTime: number
+  lastError?: Error
 }
 
 // 缓存相关

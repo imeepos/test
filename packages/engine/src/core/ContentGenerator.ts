@@ -318,6 +318,7 @@ export class ContentGenerator {
     })
 
     return {
+      content: fusedContent,
       fusedContent,
       keyInsights,
       confidence: result.confidence,
