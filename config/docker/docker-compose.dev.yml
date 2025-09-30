@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services Only for Development
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sker_dev_db
+      POSTGRES_USER: sker_dev_user
+      POSTGRES_PASSWORD: sker_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./packages/store/src/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - sker-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sker_dev_user -d sker_dev_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - sker-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: sker_dev_user
+      RABBITMQ_DEFAULT_PASS: sker_dev_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_dev_data:/var/lib/rabbitmq
+    networks:
+      - sker-dev-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  sker-dev-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  rabbitmq_dev_data:

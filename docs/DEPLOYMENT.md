@@ -40,7 +40,7 @@
 
 2. **配置环境变量**
    ```bash
-   cp .env.example .env
+   cp config/env/.env.example .env
    ```
 
    编辑 `.env` 文件：
@@ -297,7 +297,7 @@ pnpm install
 
 **配置环境变量**
 ```bash
-cp .env.example .env
+cp config/env/.env.example .env
 cp apps/studio/.env.example apps/studio/.env.local
 cp apps/developer/.env.example apps/developer/.env.local
 ```
