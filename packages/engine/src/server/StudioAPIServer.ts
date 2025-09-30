@@ -111,7 +111,7 @@ export class StudioAPIServer {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      handler: (req: Request, res: Response) => {
+      handler: (req: any, res: any) => {
         res.status(429).json({
           success: false,
           error: {
@@ -126,7 +126,7 @@ export class StudioAPIServer {
       }
     })
 
-    this.app.use('/api', limiter)
+    this.app.use('/api', limiter as any)
 
     // 请求日志中间件
     this.app.use((req: Request, res: Response, next: NextFunction) => {

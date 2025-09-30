@@ -216,7 +216,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       // 添加请求ID
@@ -267,7 +268,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const result = await this.adapter.optimizeContent(content, context, targetStyle)
@@ -308,7 +310,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const result = await this.adapter.fusionGenerate(inputs, fusionType)
@@ -349,7 +352,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const title = await this.adapter.generateTitle(content)
@@ -390,7 +394,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const tags = await this.adapter.extractTags(content)
@@ -431,7 +436,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const results = await this.adapter.batchGenerate(requests)
@@ -472,7 +478,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const result = await this.adapter.analyzeSemantics(content, analysisType)
@@ -513,7 +520,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const result = await this.adapter.optimizeNode(optimizeRequest)
@@ -554,7 +562,8 @@ export class StudioAPIRouter {
             processingTime: Date.now() - req.startTime
           }
         }
-        return res.status(400).json(response)
+        res.status(400).json(response)
+        return
       }
 
       const state = await this.adapter.getProcessingState(nodeId)
