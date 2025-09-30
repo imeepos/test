@@ -2,7 +2,7 @@
   "name": "@sker/models",
   "version": "1.0.0",
   "description": "数据模型与验证 - 统一的数据结构定义、类型声明、验证逻辑",
-  "main": "dist/index.js",
+  "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "files": [

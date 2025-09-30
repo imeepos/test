@@ -2,7 +2,7 @@
   "name": "@sker/config",
   "version": "1.0.0",
   "description": "配置管理 - 环境配置、功能开关、主题配置",
-  "main": "dist/index.js",
+  "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "files": [
