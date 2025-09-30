@@ -61,16 +61,26 @@ services:
       dockerfile: packages/store/Dockerfile
     environment:
       - NODE_ENV=production
+      - PORT=3001
       - DATABASE_URL=postgresql://sker_user:sker_password@postgres:5432/sker_db
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      # 数据库配置
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_DATABASE=sker_db
       - PG_USER=sker_user
       - PG_PASSWORD=sker_password
       - PG_SSL=false
+      # Redis 配置
+      - REDIS_DB=${REDIS_DB:-0}
+      # 缓存配置
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      - CACHE_MAX_KEYS=${CACHE_MAX_KEYS:-10000}
+      # OpenAI 配置
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
+      # 消息队列配置
+      - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
     ports:
       - "3001:3001"
     depends_on:
@@ -90,15 +100,24 @@ services:
       dockerfile: packages/broker/Dockerfile
     environment:
       - NODE_ENV=production
+      - PORT=3002
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      # 数据库配置 (如果 Broker 需要数据库访问)
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_DATABASE=sker_db
       - PG_USER=sker_user
       - PG_PASSWORD=sker_password
       - PG_SSL=false
+      # Redis 配置 (用于缓存和队列)
+      - REDIS_URL=redis://redis:6379
+      - REDIS_DB=${REDIS_DB:-1}
+      # AI 相关配置
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
+      # 服务间通信配置
+      - STORE_SERVICE_URL=http://store:3001
+      - ENGINE_SERVICE_URL=http://engine:8001
     ports:
       - "3002:3002"
     depends_on:
@@ -116,10 +135,23 @@ services:
       dockerfile: packages/engine/Dockerfile
     environment:
       - NODE_ENV=production
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-auth-key}
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       - STUDIO_API_PORT=8001
+      - STUDIO_API_HOST=0.0.0.0
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      # OpenAI 配置
+      - USE_CUSTOM_PROVIDER=${USE_CUSTOM_PROVIDER:-true}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://gateway.bowong.cc}
+      - OPENAI_DEFAULT_MODEL=${OPENAI_DEFAULT_MODEL:-gpt-4}
+      - OPENAI_TIMEOUT=${OPENAI_TIMEOUT:-30000}
+      - OPENAI_MAX_RETRIES=${OPENAI_MAX_RETRIES:-3}
+      # CORS 配置
+      - STUDIO_CORS_ORIGIN=${STUDIO_CORS_ORIGIN:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+      # 限流配置
+      - API_RATE_LIMIT_WINDOW=${API_RATE_LIMIT_WINDOW:-900000}
+      - API_RATE_LIMIT_MAX=${API_RATE_LIMIT_MAX:-100}
+      - API_TIMEOUT=${API_TIMEOUT:-120000}
     ports:
       - "8001:8001"
     depends_on:
@@ -137,17 +169,30 @@ services:
       dockerfile: packages/gateway/Dockerfile
     environment:
       - NODE_ENV=production
+      - PORT=8000
+      # 服务间通信配置
       - STORE_SERVICE_URL=http://store:3001
       - BROKER_SERVICE_URL=http://broker:3002
       - ENGINE_SERVICE_URL=http://engine:8001
+      # 认证配置
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      # 数据库配置 (如果 Gateway 需要直接数据库访问)
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_DATABASE=sker_db
       - PG_USER=sker_user
       - PG_PASSWORD=sker_password
       - PG_SSL=false
+      # Redis 配置 (用于会话管理等)
+      - REDIS_URL=redis://redis:6379
+      - REDIS_DB=${REDIS_DB:-2}
+      # AI 相关配置
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
+      # CORS 配置
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+      # 限流配置
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-900000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
     ports:
       - "8000:8000"
     depends_on:
