@@ -561,17 +561,13 @@ export class AIRouter extends BaseRouter {
             const request = requests[i]
             const result = await this.aiEngine!.generateContent({
               prompt: request.prompt || request.inputs?.join('\n'),
+              inputs: request.inputs || [],
               model: request.model || 'gpt-4',
-              maxTokens: request.maxTokens || 2000,
               temperature: request.temperature || 0.7,
-              userId: userId,
-              projectId,
-              metadata: {
-                requestId: req.requestId,
-                source: 'gateway_api_batch_direct',
-                batchIndex: i
+              options: {
+                maxTokens: request.maxTokens || 2000
               }
-            })
+            } as any)
 
             results.push(ResponseMapper.toAIGenerateResponse(result))
           } catch (error) {

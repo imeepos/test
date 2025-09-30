@@ -113,6 +113,9 @@ export interface OptimizeRequest {
   targetStyle?: string
   targetLength?: 'shorter' | 'longer' | 'same'
   model?: string
+  userId?: string
+  projectId?: string
+  metadata?: any
 }
 
 export interface OptimizeResult {
@@ -121,6 +124,8 @@ export interface OptimizeResult {
   improvementSummary: string
   confidence: number
   changes: string[]
+  title?: string
+  improvements?: string[]
   metadata: ProcessingMetadata
 }
 

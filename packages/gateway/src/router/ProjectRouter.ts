@@ -426,8 +426,10 @@ export class ProjectRouter extends BaseRouter {
         // 搜索项目
         const allProjects = await this.storeClient!.projects.search(
           search.trim(),
-          user_id,
-          { filters: options.filters }
+          {
+            ...options.filters,
+            user_id
+          }
         )
         totalCount = allProjects.length
         results = allProjects.slice(options.offset, options.offset + options.limit)
