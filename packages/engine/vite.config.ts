@@ -4,9 +4,12 @@ import { resolve } from 'path'
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        server: resolve(__dirname, 'src/server/index.ts')
+      },
       name: 'SkerEngine',
-      fileName: (format) => `index.${format}.js`,
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
       formats: ['es', 'cjs']
     },
     rollupOptions: {
