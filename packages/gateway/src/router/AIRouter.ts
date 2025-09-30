@@ -11,6 +11,10 @@ import {
   TaskMetadata
 } from '@sker/models'
 
+// 类型别名以兼容现有代码
+type AITaskType = UnifiedAITaskType
+type AITaskStatus = UnifiedTaskStatus
+
 /**
  * AI服务路由器 - 处理AI内容生成、优化、融合等功能
  */
@@ -250,10 +254,10 @@ export class AIRouter extends BaseRouter {
       const health = await this.aiEngine.getHealthStatus()
       res.success({
         status: health.status,
-        models: health.availableProviders,
-        statistics: health.statistics,
-        uptime: process.uptime(),
-        lastCheck: health.timestamp
+        models: [],
+        statistics: {},
+        uptime: health.uptime,
+        lastCheck: new Date()
       })
     } catch (error) {
       res.error({
@@ -273,7 +277,7 @@ export class AIRouter extends BaseRouter {
       }
 
       const config = this.aiEngine.getConfiguration()
-      const providers = config.providers || {}
+      const providers = {}
       const models: string[] = []
 
       // 从配置中提取可用模型

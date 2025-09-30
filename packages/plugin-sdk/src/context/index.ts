@@ -55,7 +55,7 @@ export class PluginContext {
   /**
    * 获取插件配置
    */
-  getConfig<T = any>(key: string, defaultValue?: T): T {
+  async getConfig<T = any>(key: string, defaultValue?: T): Promise<T> {
     return this.storage.get(`plugin:${this.metadata.id}:config:${key}`, defaultValue)
   }
 
@@ -69,7 +69,7 @@ export class PluginContext {
   /**
    * 获取插件数据
    */
-  getData<T = any>(key: string, defaultValue?: T): T {
+  async getData<T = any>(key: string, defaultValue?: T): Promise<T> {
     return this.storage.get(`plugin:${this.metadata.id}:data:${key}`, defaultValue)
   }
 

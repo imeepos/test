@@ -33,6 +33,10 @@ async function main() {
         analysis: 'gpt-3.5-turbo',
         fusion: 'gpt-3.5-turbo'
       },
+      model: {
+        name: process.env.OPENAI_DEFAULT_MODEL || 'gpt-3.5-turbo',
+        maxTokens: 4000
+      },
       retryConfig: {
         maxRetries: parseInt(process.env.OPENAI_MAX_RETRIES || '3'),
         backoffMultiplier: 2,

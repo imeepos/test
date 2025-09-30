@@ -67,6 +67,10 @@ export class EngineFactory {
         analysis: model,
         fusion: model
       },
+      model: {
+        name: model,
+        maxTokens: 2000
+      },
       defaultModel: model,
       temperature: 0.7,
       maxTokens: 2000,
@@ -96,6 +100,10 @@ export class EngineFactory {
         optimization: 'gpt-3.5-turbo',
         analysis: 'gpt-4',
         fusion: 'gpt-4'
+      },
+      model: {
+        name: 'gpt-4',
+        maxTokens: 4000
       },
       defaultModel: 'gpt-4',
       temperature: 0.5,
@@ -127,6 +135,10 @@ export class EngineFactory {
         analysis: 'gpt-4-turbo',
         fusion: 'gpt-4-turbo'
       },
+      model: {
+        name: 'gpt-4-turbo',
+        maxTokens: 8000
+      },
       defaultModel: 'gpt-4-turbo',
       temperature: 0.6,
       maxTokens: 8000,
@@ -156,6 +168,10 @@ export class EngineFactory {
         optimization: 'gpt-3.5-turbo',
         analysis: 'gpt-3.5-turbo',
         fusion: 'gpt-3.5-turbo'
+      },
+      model: {
+        name: 'gpt-3.5-turbo',
+        maxTokens: 1500
       },
       defaultModel: 'gpt-3.5-turbo',
       temperature: 0.8,
@@ -222,6 +238,10 @@ export class EngineFactory {
         optimization: options.defaultModel,
         analysis: options.defaultModel,
         fusion: options.defaultModel
+      },
+      model: {
+        name: options.defaultModel,
+        maxTokens: options.maxTokens ?? 2000
       },
       defaultModel: options.defaultModel,
       temperature: options.temperature ?? 0.7,

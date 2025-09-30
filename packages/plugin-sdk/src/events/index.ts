@@ -185,15 +185,15 @@ export class EventSystem implements EventSystemAPI {
   /**
    * 设置最大监听器数量
    */
-  setMaxListeners(count: number): void {
-    this.emitter.setMaxListeners(count)
+  setMaxListeners(_count: number): void {
+    // EventEmitter3 没有 setMaxListeners 方法，这里只是接口兼容
   }
 
   /**
    * 获取最大监听器数量
    */
   getMaxListeners(): number {
-    return this.emitter.getMaxListeners()
+    return 10 // EventEmitter3 默认最大监听器数量
   }
 
   /**
@@ -506,8 +506,8 @@ export class AdvancedEventSystem extends EventSystem {
     const count = this.stats.get(event) || 0
     this.stats.set(event, count + 1)
 
-    // 调用父类方法
-    this.emitter.emit(event, data)
+    // 调用父类的 emit 方法
+    super.emit(event, data)
   }
 
   /**

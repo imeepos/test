@@ -425,8 +425,7 @@ export class ProjectRouter extends BaseRouter {
       if (search && search.trim()) {
         // 搜索项目
         const allProjects = await this.storeClient!.projects.search(
-          search.trim(),
-          user_id,
+          { query: search.trim(), userId: user_id },
           { filters: options.filters }
         )
         totalCount = allProjects.length

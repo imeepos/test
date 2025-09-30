@@ -13,7 +13,11 @@ import type {
   WebSocketMessage,
   GatewayQueueConfig
 } from '../types/messaging'
-import type { UnifiedAITaskMessage } from '@sker/models/src/messaging/AITaskTypes'
+import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models/src/messaging/AITaskTypes'
+
+// 类型别名以兼容现有代码
+type AITaskMessage = UnifiedAITaskMessage
+type AIResultMessage = UnifiedAIResultMessage
 
 /**
  * Gateway 队列管理器 - 处理各种消息队列操作
@@ -99,7 +103,7 @@ export class QueueManager extends EventEmitter {
       QUEUE_NAMES.AI_RESULTS,
       async (message, metadata) => {
         try {
-          const taskResult: AITaskMessage = JSON.parse(message)
+          const taskResult: AIResultMessage = JSON.parse(message)
           console.log(`收到AI任务结果: ${taskResult.taskId}, 状态: ${taskResult.status}`)
 
           // 发送任务结果给相关的 WebSocket 连接
@@ -380,7 +384,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 处理任务完成
    */
-  private async handleTaskCompleted(taskResult: AITaskMessage): Promise<void> {
+  private async handleTaskCompleted(taskResult: AIResultMessage): Promise<void> {
     // 发送 WebSocket 通知
     await this.publishWebSocketMessage({
       id: `task-complete-${taskResult.taskId}`,
@@ -397,7 +401,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 处理任务失败
    */
-  private async handleTaskFailed(taskResult: AITaskMessage): Promise<void> {
+  private async handleTaskFailed(taskResult: AIResultMessage): Promise<void> {
     // 发送 WebSocket 通知
     await this.publishWebSocketMessage({
       id: `task-failed-${taskResult.taskId}`,
@@ -424,7 +428,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 处理任务进度
    */
-  private async handleTaskProgress(taskResult: AITaskMessage): Promise<void> {
+  private async handleTaskProgress(taskResult: AIResultMessage): Promise<void> {
     // 发送 WebSocket 进度通知
     await this.publishWebSocketMessage({
       id: `task-progress-${taskResult.taskId}`,

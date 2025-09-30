@@ -106,6 +106,7 @@ export class AnthropicProvider implements AIProvider {
       this.parseOptimizeResult(result.content)
 
     return {
+      content: optimizedContent, // 统一的内容字段
       optimizedContent,
       improvementSummary,
       confidence: result.confidence,

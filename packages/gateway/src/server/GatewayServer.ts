@@ -65,17 +65,17 @@ export class GatewayServer {
           aiTask: {
             request: ROUTING_KEYS.AI_PROCESS,
             result: ROUTING_KEYS.AI_RESULT,
-            progress: ROUTING_KEYS.AI_PROCESS
+            progress: ROUTING_KEYS.TASK_STATUS
           },
           websocket: {
-            broadcast: ROUTING_KEYS.WEBSOCKET_CONNECTED,
-            userMessage: ROUTING_KEYS.WEBSOCKET_CONNECTED,
-            systemMessage: ROUTING_KEYS.WEBSOCKET_CONNECTED
+            broadcast: ROUTING_KEYS.NODE_UPDATED,
+            userMessage: ROUTING_KEYS.NODE_UPDATED,
+            systemMessage: ROUTING_KEYS.PROJECT_UPDATED
           },
           system: {
-            notification: ROUTING_KEYS.NOTIFICATION_SENT,
-            alert: ROUTING_KEYS.ALERT_SENT,
-            maintenance: ROUTING_KEYS.SYSTEM_UPDATED
+            notification: ROUTING_KEYS.AI_TASK_COMPLETED,
+            alert: ROUTING_KEYS.AI_TASK_FAILED,
+            maintenance: ROUTING_KEYS.TASK_STATUS
           }
         }
       })

@@ -6,6 +6,7 @@ export interface ApiRequest<T = any> extends Request {
   user?: AuthUser
   timestamp: Date
   requestId: string
+  sessionId?: string
 }
 
 // 扩展的API响应类型

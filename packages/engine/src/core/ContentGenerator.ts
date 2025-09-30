@@ -277,7 +277,9 @@ export class ContentGenerator {
     return {
       content: optimizedContent, // 统一的内容字段
       optimizedContent,
+      title: result.title,
       improvementSummary,
+      improvements: changes,
       confidence: result.confidence,
       changes,
       metadata: result.metadata
@@ -318,6 +320,7 @@ export class ContentGenerator {
     })
 
     return {
+      content: fusedContent, // 统一的内容字段
       fusedContent,
       keyInsights,
       confidence: result.confidence,

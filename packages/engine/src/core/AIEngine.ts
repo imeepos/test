@@ -66,7 +66,8 @@ export class AIEngine extends EventEmitter {
       totalCost: 0,
       modelUsage: {},
       errorDistribution: {},
-      lastResetAt: new Date()
+      lastResetAt: new Date(),
+      startTime: Date.now()
     }
 
     // 初始化服务提供者
@@ -513,7 +514,8 @@ export class AIEngine extends EventEmitter {
       totalCost: 0,
       modelUsage: {},
       errorDistribution: {},
-      lastResetAt: new Date()
+      lastResetAt: new Date(),
+      startTime: Date.now()
     }
   }
 

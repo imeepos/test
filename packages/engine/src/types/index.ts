@@ -7,12 +7,19 @@ export interface EngineConfig {
   baseURL?: string
   organization?: string
   models: ModelConfig
+  model: {
+    name: string
+    maxTokens: number
+  }
   defaultModel: string
   temperature: number
   maxTokens: number
   timeout: number
   retryConfig: RetryConfig
   costOptimization?: CostOptimization
+  rateLimiting?: {
+    requestsPerMinute: number
+  }
 }
 
 export interface ModelConfig {
@@ -84,6 +91,9 @@ export interface GenerateRequest {
   length?: 'short' | 'medium' | 'long'
   model?: string
   temperature?: number
+  maxTokens?: number
+  userId?: string
+  projectId?: string
   options?: TaskOptions
 }
 
@@ -105,12 +115,17 @@ export interface OptimizeRequest {
   targetStyle?: string
   targetLength?: 'shorter' | 'longer' | 'same'
   model?: string
+  userId?: string
+  projectId?: string
+  metadata?: any
 }
 
 export interface OptimizeResult {
   content: string // 统一的内容字段
   optimizedContent: string
+  title?: string
   improvementSummary: string
+  improvements?: string[]
   confidence: number
   changes: string[]
   metadata: ProcessingMetadata
@@ -122,6 +137,9 @@ export interface FusionRequest {
   context?: string
   fusionType: 'synthesis' | 'comparison' | 'integration' | 'summary'
   model?: string
+  userId?: string
+  projectId?: string
+  metadata?: any
 }
 
 export interface FusionResult {
@@ -289,6 +307,8 @@ export interface UsageStats {
   modelUsage: Record<string, number>
   errorDistribution: Record<string, number>
   lastResetAt: Date
+  startTime: number
+  lastError?: Error
 }
 
 // 缓存相关

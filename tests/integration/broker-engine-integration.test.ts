@@ -7,8 +7,8 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { MessageBroker, createDevelopmentBroker } from '@sker/broker'
 import { AIEngine, createAITaskQueueProcessor } from '@sker/engine'
 import {
-  UnifiedAITaskMessage,
-  UnifiedAIResultMessage,
+  type UnifiedAITaskMessage,
+  type UnifiedAIResultMessage,
   QUEUE_NAMES,
   EXCHANGE_NAMES,
   ROUTING_KEYS,
