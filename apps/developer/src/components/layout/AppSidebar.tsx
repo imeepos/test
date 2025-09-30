@@ -17,7 +17,7 @@ import {
   CrownOutlined,
   GiftOutlined,
 } from '@ant-design/icons'
-import type { MenuItem } from '../../types'
+import type { MenuItem } from '../../types/index.js'
 
 const { Sider } = Layout
 const { Text } = Typography

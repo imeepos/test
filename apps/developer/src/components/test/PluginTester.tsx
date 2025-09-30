@@ -539,7 +539,7 @@ export const PluginTester: React.FC<PluginTesterProps> = ({
       ...testCase,
       status: passed ? 'passed' : 'failed',
       duration,
-      error: passed ? undefined : '测试断言失败',
+      ...(!passed ? { error: '测试断言失败' } : {}),
       assertions: updatedAssertions
     }
   }

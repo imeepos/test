@@ -91,9 +91,9 @@ export class ResponseMapper {
     return {
       id: queueTaskStatus.taskId,
       status: this.mapTaskStatus(queueTaskStatus.status),
-      progress: queueTaskStatus.progress,
-      result: queueTaskStatus.result ? this.toAIGenerateResponse(queueTaskStatus.result) : undefined,
-      error: queueTaskStatus.error?.message
+      ...(queueTaskStatus.progress !== undefined ? { progress: queueTaskStatus.progress } : {}),
+      ...(queueTaskStatus.result ? { result: this.toAIGenerateResponse(queueTaskStatus.result) } : {}),
+      ...(queueTaskStatus.error?.message ? { error: queueTaskStatus.error.message } : {})
     }
   }
 

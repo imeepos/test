@@ -65,7 +65,16 @@ export const ROUTING_KEYS = {
 
   AI_TASK_STARTED: 'ai.task_started',
   AI_TASK_COMPLETED: 'ai.task_completed',
-  AI_TASK_FAILED: 'ai.task_failed'
+  AI_TASK_FAILED: 'ai.task_failed',
+
+  // WebSocket 事件
+  WEBSOCKET_CONNECTED: 'websocket.connected',
+  WEBSOCKET_DISCONNECTED: 'websocket.disconnected',
+
+  // 系统通知
+  NOTIFICATION_SENT: 'notification.sent',
+  ALERT_SENT: 'alert.sent',
+  SYSTEM_UPDATED: 'system.updated'
 } as const
 
 // 消息类型接口映射

@@ -128,6 +128,8 @@ export interface OptimizeResult {
   improvements?: string[]
   confidence: number
   changes: string[]
+  title?: string
+  improvements?: string[]
   metadata: ProcessingMetadata
 }
 

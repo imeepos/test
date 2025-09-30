@@ -9,7 +9,7 @@ import {
   TeamOutlined,
   MoreOutlined,
 } from '@ant-design/icons'
-import MonacoEditor from '@monaco-editor/react'
+import { Editor as MonacoEditor } from '@monaco-editor/react'
 import type { MenuProps } from 'antd'
 
 const { Content, Sider } = Layout

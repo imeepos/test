@@ -61,6 +61,10 @@ export class EngineFactory {
     return {
       provider: 'openai',
       apiKey,
+      model: {
+        name: model,
+        maxTokens: 2000
+      },
       models: {
         generation: model,
         optimization: model,

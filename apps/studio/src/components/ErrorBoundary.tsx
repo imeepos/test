@@ -1,7 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import React, { Component } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, RefreshCw, Bug, Home } from 'lucide-react'
-import { Button } from './ui/Button'
+import { Button } from './ui/Button.js'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -58,7 +59,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined })
+    this.setState({ hasError: false })
   }
 
   private handleReload = () => {
@@ -67,7 +68,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   private handleGoHome = () => {
     // 重置应用状态
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined })
+    this.setState({ hasError: false })
     
     // 清理localStorage中的缓存数据
     try {

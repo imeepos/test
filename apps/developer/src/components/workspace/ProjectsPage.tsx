@@ -27,7 +27,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import type { Project } from '../../types'
+import type { Project } from '../../types/index.js'
 
 const { Title } = Typography
 const { Option } = Select
@@ -287,7 +287,7 @@ export const ProjectsPage: React.FC = () => {
           {new Date(updatedAt).toLocaleDateString('zh-CN')}
         </div>
       ),
-      sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+      sorter: (a: Project, b: Project) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
     },
     {
       title: '操作',

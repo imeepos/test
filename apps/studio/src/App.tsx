@@ -105,7 +105,7 @@ function App() {
 
   return (
     <ErrorBoundary
-      onError={(error, errorInfo) => {
+      onError={(error: Error, errorInfo: React.ErrorInfo) => {
         // 记录错误到控制台
         console.error('应用错误:', error)
         console.error('错误信息:', errorInfo)
