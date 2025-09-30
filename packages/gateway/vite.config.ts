@@ -19,7 +19,14 @@ export default defineConfig({
         'express-validator',
         'jsonwebtoken',
         'compression',
-        'uuid'
+        'uuid',
+        'bcrypt',
+        'http',
+        'events',
+        '@sker/broker',
+        '@sker/config',
+        '@sker/models',
+        '@sker/store'
       ]
     },
     target: 'node16',
