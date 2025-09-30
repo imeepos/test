@@ -316,7 +316,7 @@ export class BatchProcessor extends EventEmitter {
       failed,
       totalProcessingTime,
       totalTokens,
-      totalCost: totalCost > 0 ? totalCost : undefined
+      ...(totalCost > 0 ? { totalCost } : {})
     }
   }
 
