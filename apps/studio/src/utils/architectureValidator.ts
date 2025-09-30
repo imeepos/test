@@ -636,7 +636,7 @@ export class ArchitectureValidator {
       category: 'performance',
       code,
       message,
-      suggestion
+      ...(suggestion ? { suggestion } : {})
     })
   }
 
