@@ -15,6 +15,7 @@ import {
   OnConnect,
   OnNodesChange,
   OnEdgesChange,
+  OnConnectStart,
   OnConnectEnd,
   useReactFlow,
 } from 'reactflow'
@@ -52,6 +53,11 @@ const Canvas: React.FC<CanvasProps> = ({
   const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null)
   const [connectStartPosition, setConnectStartPosition] = useState<{ x: number; y: number } | null>(null)
   
+  // 双击检测状态
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const clickCountRef = useRef<number>(0)
+  const lastClickEventRef = useRef<React.MouseEvent | null>(null)
+  
   // 右键菜单状态
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean
@@ -72,38 +78,104 @@ const Canvas: React.FC<CanvasProps> = ({
     setSelectedNodes,
   } = useCanvasStore()
 
-  const {
-    getNodes,
-    edges: storeEdges,
-    connectNodes,
-    disconnectNodes,
-    addNode,
-    updateNode,
-  } = useNodeStore()
+  // 直接订阅store中的nodes Map
+  const nodesMap = useNodeStore(state => state.nodes)
+  const storeEdges = useNodeStore(state => state.edges)
+  const getNodes = useNodeStore(state => state.getNodes)
+  const connectNodes = useNodeStore(state => state.connectNodes)
+  const disconnectNodes = useNodeStore(state => state.disconnectNodes)
+  const addNode = useNodeStore(state => state.addNode)
+  const updateNode = useNodeStore(state => state.updateNode)
+  
+  // 直接从Map获取节点数组
+  const storeNodes = React.useMemo(() => {
+    console.log('🗂️ Canvas: 直接从Map获取节点')
+    console.log('📊 Canvas: nodesMap类型:', nodesMap instanceof Map)
+    console.log('📈 Canvas: nodesMap大小:', nodesMap?.size || 0)
+    
+    if (!(nodesMap instanceof Map)) {
+      console.error('❌ Canvas: nodesMap不是Map类型!', typeof nodesMap)
+      return []
+    }
+    
+    const nodes = Array.from(nodesMap.values())
+    console.log('✅ Canvas: 从Map转换的节点数组:', nodes.length)
+    return nodes
+  }, [nodesMap])
+  
+  // 强制订阅store变化
+  const [forceRender, setForceRender] = React.useState(0)
+  
+  // 监听store的真实状态变化
+  React.useEffect(() => {
+    console.log('🔔 Canvas: 监听store变化')
+    const unsubscribe = useNodeStore.subscribe((state) => {
+      console.log('📢 Canvas: Store状态变化通知', state.nodes.size)
+      setForceRender(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [])
 
   const { preferences, addToast } = useUIStore()
 
   // 转换节点数据格式
   const nodes = React.useMemo(() => {
-    return getNodes().map((node): Node<AINodeData> => ({
-      id: node.id,
-      type: 'aiNode',
-      position: node.position,
-      data: {
+    console.log('🔍 Canvas: useMemo 重新执行 - 使用storeNodes')
+    console.log('📊 Canvas: storeNodes数量:', storeNodes.length)
+    console.log('📋 Canvas: storeNodes详情:', storeNodes)
+    
+    if (storeNodes.length === 0) {
+      console.log('⚠️ Canvas: storeNodes中没有节点')
+    }
+    
+    const reactFlowNodes = storeNodes.map((node): Node<AINodeData> => {
+      console.log(`🔄 Canvas: 转换节点 ${node.id}:`, {
         id: node.id,
-        content: node.content,
-        title: node.title,
-        importance: node.importance,
-        confidence: node.confidence,
-        status: node.status,
-        tags: node.tags,
-        version: node.version,
-        createdAt: node.createdAt,
-        updatedAt: node.updatedAt,
-      },
-      selected: selectedNodeIds.includes(node.id),
-    }))
-  }, [getNodes, selectedNodeIds])
+        position: node.position,
+        content: node.content?.substring(0, 50) + '...',
+        type: 'aiNode'
+      })
+      
+      // 验证节点位置
+      if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+        console.warn(`⚠️ Canvas: 节点 ${node.id} 位置无效:`, node.position)
+      } else if (node.position.x < -10000 || node.position.x > 10000 || node.position.y < -10000 || node.position.y > 10000) {
+        console.warn(`⚠️ Canvas: 节点 ${node.id} 位置可能超出可视范围:`, node.position)
+      }
+      
+      return {
+        id: node.id,
+        type: 'aiNode',
+        position: node.position,
+        data: {
+          id: node.id,
+          content: node.content,
+          title: node.title,
+          importance: node.importance,
+          confidence: node.confidence,
+          status: node.status,
+          tags: node.tags,
+          version: node.version,
+          createdAt: node.createdAt,
+          updatedAt: node.updatedAt,
+        },
+        selected: selectedNodeIds.includes(node.id),
+      }
+    })
+    
+    console.log('✅ Canvas: 转换后的ReactFlow节点数量:', reactFlowNodes.length)
+    console.log('📝 Canvas: ReactFlow节点详情:', reactFlowNodes)
+    
+    if (reactFlowNodes.length !== storeNodes.length) {
+      console.error('❌ Canvas: 节点转换数量不匹配!', { 
+        store: storeNodes.length, 
+        reactFlow: reactFlowNodes.length 
+      })
+    }
+    
+    return reactFlowNodes
+  }, [storeNodes, selectedNodeIds, forceRender])
 
   // 转换连接数据格式
   const edges = React.useMemo(() => {
@@ -118,18 +190,76 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [storeEdges])
 
   // React Flow状态
-  const [rfNodes, setRfNodes, onNodesChange] = useNodesState(nodes)
+  const [rfNodes, setRfNodes, originalOnNodesChange] = useNodesState(nodes)
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges)
+
+  // 防抖定时器引用
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 自定义节点变化处理器 - 处理位置同步
+  const handleNodesChange = useCallback((changes: any[]) => {
+    console.log('🎯 Canvas: handleNodesChange 被调用', changes)
+    
+    // 先调用原始的onNodesChange处理器
+    originalOnNodesChange(changes)
+    
+    // 处理位置变化，同步到store
+    const positionChanges = changes.filter(change => change.type === 'position' && change.position)
+    
+    if (positionChanges.length > 0) {
+      console.log('📍 Canvas: 检测到位置变化', positionChanges)
+      
+      // 清除之前的防抖定时器
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+      
+      // 使用防抖，避免拖拽过程中频繁更新store
+      debounceTimeoutRef.current = setTimeout(() => {
+        positionChanges.forEach(change => {
+          const nodeId = change.id
+          const newPosition = change.position
+          
+          console.log(`🔄 Canvas: 同步节点 ${nodeId} 位置到store:`, newPosition)
+          
+          // 更新store中的节点位置
+          updateNode(nodeId, { position: newPosition })
+        })
+        
+        console.log('✅ Canvas: 位置同步完成')
+      }, 300) // 300ms防抖延迟
+    }
+  }, [originalOnNodesChange, updateNode])
 
   // 同步节点状态
   React.useEffect(() => {
-    setRfNodes(nodes)
+    console.log('🔄 Canvas: 同步节点状态到ReactFlow')
+    console.log('📥 Canvas: 传入的nodes:', nodes.length, nodes)
+    console.log('📤 Canvas: 当前rfNodes:', rfNodes.length, rfNodes)
+    
+    if (nodes.length !== rfNodes.length) {
+      console.log('🔃 Canvas: 节点数量变化，更新ReactFlow状态')
+      setRfNodes(nodes)
+    } else if (JSON.stringify(nodes) !== JSON.stringify(rfNodes)) {
+      console.log('🔃 Canvas: 节点内容变化，更新ReactFlow状态')
+      setRfNodes(nodes)
+    } else {
+      console.log('✅ Canvas: 节点状态一致，无需更新')
+    }
   }, [nodes, setRfNodes])
 
   // 同步连接状态
   React.useEffect(() => {
+    console.log('🔗 Canvas: 同步连接状态到ReactFlow:', edges.length)
     setRfEdges(edges)
   }, [edges, setRfEdges])
+
+  // 监听store变化的额外effect
+  React.useEffect(() => {
+    console.log('🔍 Canvas: Store变化监听 - 检查getNodes方法')
+    const storeNodes = getNodes()
+    console.log('🏪 Canvas: 直接调用getNodes()结果:', storeNodes.length, storeNodes)
+  }, [getNodes])
 
   // 连接开始处理
   const onConnectStart = useCallback(
@@ -559,6 +689,43 @@ const Canvas: React.FC<CanvasProps> = ({
     [getNodes, addToast, updateNode]
   )
 
+  // 自定义双击检测处理器
+  const handlePaneClickWithDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      console.log('画布点击事件:', event)
+      
+      // 增加点击计数
+      clickCountRef.current += 1
+      lastClickEventRef.current = event
+      
+      // 如果已有计时器，清除它
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      
+      // 设置新的计时器
+      clickTimeoutRef.current = setTimeout(() => {
+        if (clickCountRef.current === 1) {
+          // 单击处理
+          console.log('识别为单击事件')
+          // 这里可以添加单击逻辑，当前只是日志记录
+        } else if (clickCountRef.current === 2) {
+          // 双击处理
+          console.log('识别为双击事件，触发双击处理器')
+          if (lastClickEventRef.current) {
+            handleCanvasDoubleClick(lastClickEventRef.current)
+          }
+        }
+        
+        // 重置计数器
+        clickCountRef.current = 0
+        lastClickEventRef.current = null
+        clickTimeoutRef.current = null
+      }, 300) // 300ms 内的点击被认为是双击
+    },
+    [handleCanvasDoubleClick]
+  )
+
   // 多输入融合处理
   const handleFusionCreate = useCallback(
     async (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => {
@@ -626,21 +793,90 @@ const Canvas: React.FC<CanvasProps> = ({
     [getNodes, addNode, connectNodes, setSelectedNodes, addToast]
   )
 
+  // 清理定时器
+  React.useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // 额外的渲染调试
+  React.useEffect(() => {
+    console.log('🎨 Canvas: 组件重新渲染')
+    console.log('📊 Canvas: 当前rfNodes数量:', rfNodes.length)
+    console.log('📝 Canvas: 当前rfNodes详情:', rfNodes)
+  })
+
   return (
     <div ref={reactFlowWrapper} className="h-full w-full">
+      {/* 添加开发模式的调试信息显示 */}
+      {import.meta.env.DEV && (
+        <div className="absolute top-2 right-2 z-50 bg-black/80 text-white p-2 rounded text-xs space-y-1">
+          <div>Store节点: {getNodes().length}</div>
+          <div>ReactFlow节点: {rfNodes.length}</div>
+          <div>转换节点: {nodes.length}</div>
+          <div>直接Map: {storeNodes.length}</div>
+          <button 
+            onClick={() => {
+              console.log('🧹 清除localStorage缓存')
+              localStorage.removeItem('node-storage')
+              window.location.reload()
+            }}
+            className="bg-red-600 hover:bg-red-700 px-1 py-0.5 rounded text-xs"
+          >
+            清除缓存
+          </button>
+          <button 
+            onClick={() => {
+              console.log('📊 当前store状态:')
+              console.log('nodesMap:', nodesMap)
+              console.log('storeNodes:', storeNodes)
+              console.log('nodes:', nodes)
+              console.log('rfNodes:', rfNodes)
+            }}
+            className="bg-blue-600 hover:bg-blue-700 px-1 py-0.5 rounded text-xs"
+          >
+            调试状态
+          </button>
+          <button 
+            onClick={() => {
+              console.log('🧪 测试创建节点')
+              const testNode = addNode({
+                content: '测试节点内容',
+                title: '测试节点',
+                importance: 3,
+                confidence: 0.8,
+                status: 'idle',
+                tags: ['test'],
+                position: { x: 100, y: 100 },
+                connections: [],
+                version: 1,
+                metadata: { semantic: [], editCount: 0 }
+              })
+              console.log('✅ 测试节点创建完成:', testNode)
+            }}
+            className="bg-green-600 hover:bg-green-700 px-1 py-0.5 rounded text-xs"
+          >
+            测试创建
+          </button>
+        </div>
+      )}
+      
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onInit={setReactFlowInstance}
-        onPaneClick={(event) => {
-          console.log('画布点击事件:', event)
-        }}
-        onPaneDoubleClick={handleCanvasDoubleClick}
+        onPaneClick={handlePaneClickWithDoubleClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeContextMenu={handleNodeContextMenu}
         onSelectionChange={handleSelectionChange}

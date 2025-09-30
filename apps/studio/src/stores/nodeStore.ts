@@ -87,6 +87,9 @@ export const useNodeStore = create<NodeState>()(
         
         // 节点CRUD操作
         addNode: (nodeData) => {
+          console.log('➕ NodeStore: 开始添加节点')
+          console.log('📋 NodeStore: 输入数据:', nodeData)
+          
           const id = generateId()
           const now = new Date()
           const node: AINode = {
@@ -102,7 +105,24 @@ export const useNodeStore = create<NodeState>()(
             },
           }
           
+          console.log('🏷️ NodeStore: 生成节点ID:', id)
+          console.log('📝 NodeStore: 完整节点对象:', node)
+          
+          // 检查添加前的状态
+          const beforeState = get()
+          console.log('📊 NodeStore: 添加前Map大小:', beforeState.nodes.size)
+          console.log('🔍 NodeStore: 添加前Map类型:', beforeState.nodes instanceof Map)
+          
           set((state) => {
+            console.log('🔄 NodeStore: 执行set函数')
+            console.log('📊 NodeStore: set前state.nodes大小:', state.nodes.size)
+            console.log('🔍 NodeStore: set前state.nodes类型:', state.nodes instanceof Map)
+            
+            if (!(state.nodes instanceof Map)) {
+              console.error('❌ NodeStore: state.nodes不是Map类型!', typeof state.nodes)
+              state.nodes = new Map()
+            }
+            
             state.nodes.set(id, node)
             state.history.push({
               id: generateId(),
@@ -110,7 +130,17 @@ export const useNodeStore = create<NodeState>()(
               data: node,
               timestamp: now,
             })
+            
+            console.log('✅ NodeStore: 节点已添加到Map')
+            console.log('📊 NodeStore: 添加后Map大小:', state.nodes.size)
+            console.log('🔍 NodeStore: 添加的节点在Map中:', state.nodes.has(id))
+            console.log('🎯 NodeStore: Map中的节点:', state.nodes.get(id))
           })
+          
+          // 检查添加后的状态
+          const afterState = get()
+          console.log('📊 NodeStore: 添加后全局状态Map大小:', afterState.nodes.size)
+          console.log('🔍 NodeStore: 添加后全局状态节点存在:', afterState.nodes.has(id))
           
           return id
         },
@@ -164,7 +194,21 @@ export const useNodeStore = create<NodeState>()(
         },
         
         getNodes: () => {
-          return Array.from(get().nodes.values())
+          const state = get()
+          const nodesMap = state.nodes
+          console.log('🏪 NodeStore: getNodes调用')
+          console.log('📊 NodeStore: Map类型检查:', nodesMap instanceof Map)
+          console.log('📈 NodeStore: Map大小:', nodesMap?.size || 0)
+          console.log('🗂️ NodeStore: Map内容:', nodesMap)
+          
+          if (!(nodesMap instanceof Map)) {
+            console.error('❌ NodeStore: nodes不是Map类型!', typeof nodesMap, nodesMap)
+            return []
+          }
+          
+          const nodes = Array.from(nodesMap.values())
+          console.log('✅ NodeStore: 转换后的节点数组:', nodes.length, nodes)
+          return nodes
         },
         
         // 连接管理
@@ -355,9 +399,46 @@ export const useNodeStore = create<NodeState>()(
         name: 'node-storage',
         partialize: (state) => ({
           templates: state.templates,
-          // 不持久化 Map 和数组，避免序列化问题
-          // nodes 和 edges 会在应用启动时重新初始化
+          // 将Map转换为对象数组进行持久化
+          nodes: Array.from(state.nodes.entries()).map(([id, node]) => node),
+          edges: state.edges,
+          history: state.history,
         }),
+        // 自定义反序列化逻辑
+        merge: (persistedState: any, currentState: NodeState) => {
+          console.log('🔄 NodeStore: Merge函数执行')
+          console.log('📥 NodeStore: persistedState:', persistedState)
+          console.log('📤 NodeStore: currentState.nodes类型:', currentState.nodes instanceof Map)
+          
+          const nodes = new Map<string, AINode>()
+          
+          // 从持久化数据中恢复节点
+          if (persistedState?.nodes && Array.isArray(persistedState.nodes)) {
+            console.log('📦 NodeStore: 从持久化恢复节点数量:', persistedState.nodes.length)
+            persistedState.nodes.forEach((node: any) => {
+              if (node.id) {
+                console.log(`🔹 NodeStore: 恢复节点 ${node.id}`)
+                nodes.set(node.id, node as AINode)
+              }
+            })
+            console.log('✅ NodeStore: 恢复后Map大小:', nodes.size)
+          } else {
+            console.log('⚠️ NodeStore: 没有持久化节点数据')
+          }
+          
+          const merged = {
+            ...currentState,
+            ...persistedState,
+            nodes, // 使用恢复的Map
+            edges: persistedState?.edges || [],
+            history: persistedState?.history || [],
+          }
+          
+          console.log('🏁 NodeStore: Merge后nodes类型:', merged.nodes instanceof Map)
+          console.log('🏁 NodeStore: Merge后nodes大小:', merged.nodes.size)
+          
+          return merged
+        },
       }
     ),
     {

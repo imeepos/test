@@ -19,6 +19,8 @@ import type { AINodeData, ImportanceLevel, AINode as AINodeType } from '@/types'
 export interface AINodeProps extends NodeProps<AINodeData> {}
 
 const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
+  console.log('🎯 AINode: 渲染节点', data.id, data)
+  
   const { viewMode } = useCanvasStore()
   const { updateNode } = useNodeStore()
   
