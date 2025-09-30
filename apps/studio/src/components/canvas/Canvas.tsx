@@ -274,7 +274,14 @@ const Canvas: React.FC<CanvasProps> = ({
   // 画布双击事件
   const handleCanvasDoubleClick = useCallback(
     async (event: React.MouseEvent) => {
-      if (!reactFlowInstance || !reactFlowWrapper.current) return
+      console.log('画布双击事件触发:', event.target)
+      
+      if (!reactFlowInstance || !reactFlowWrapper.current) {
+        console.log('reactFlowInstance 或 reactFlowWrapper 未准备好')
+        return
+      }
+
+      console.log('确认是空白画布区域的双击事件 (onPaneDoubleClick)')
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
       const position = reactFlowInstance.project({
@@ -282,17 +289,22 @@ const Canvas: React.FC<CanvasProps> = ({
         y: event.clientY - reactFlowBounds.top,
       })
 
+      console.log('计算的位置:', position)
+
       onCanvasDoubleClick?.(position)
 
       // 创建新节点
       if (onNodeCreate) {
+        console.log('使用自定义的 onNodeCreate 处理器')
         onNodeCreate(position)
       } else {
+        console.log('使用默认的节点创建逻辑')
         // 检查是否按住了 Ctrl/Cmd 键来启用AI生成
         const useAI = event.ctrlKey || event.metaKey
         
         try {
           if (useAI) {
+            console.log('创建AI生成的节点')
             // 显示AI生成提示
             addToast({
               type: 'info',
@@ -322,6 +334,7 @@ const Canvas: React.FC<CanvasProps> = ({
             })
 
             if (newNodeId) {
+              console.log('AI节点创建成功, ID:', newNodeId)
               addToast({
                 type: 'success',
                 title: 'AI节点创建成功',
@@ -329,6 +342,7 @@ const Canvas: React.FC<CanvasProps> = ({
               })
             }
           } else {
+            console.log('创建空白节点')
             // 创建空节点，用户手动编辑
             const newNodeId = addNode({
               content: '请输入内容...',
@@ -347,6 +361,7 @@ const Canvas: React.FC<CanvasProps> = ({
             })
 
             if (newNodeId) {
+              console.log('空白节点创建成功, ID:', newNodeId)
               addToast({
                 type: 'success',
                 title: '节点已创建',
@@ -358,7 +373,7 @@ const Canvas: React.FC<CanvasProps> = ({
           console.error('创建节点失败:', error)
           
           // AI失败时回退到空节点
-          addNode({
+          const fallbackNodeId = addNode({
             content: '请输入内容...',
             title: '',
             importance: 3,
@@ -373,6 +388,10 @@ const Canvas: React.FC<CanvasProps> = ({
               editCount: 0,
             },
           })
+
+          if (fallbackNodeId) {
+            console.log('回退到空白节点创建成功, ID:', fallbackNodeId)
+          }
 
           addToast({
             type: 'warning',
@@ -618,7 +637,10 @@ const Canvas: React.FC<CanvasProps> = ({
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onInit={setReactFlowInstance}
-        onDoubleClick={handleCanvasDoubleClick}
+        onPaneClick={(event) => {
+          console.log('画布点击事件:', event)
+        }}
+        onPaneDoubleClick={handleCanvasDoubleClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeContextMenu={handleNodeContextMenu}
         onSelectionChange={handleSelectionChange}
@@ -631,6 +653,7 @@ const Canvas: React.FC<CanvasProps> = ({
           includeHiddenNodes: false,
         }}
         onContextMenu={handleContextMenu}
+        deleteKeyCode={null}
       >
         <Background
           color="#1a1b23"

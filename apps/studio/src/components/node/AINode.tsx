@@ -83,7 +83,9 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // 处理双击编辑
   const handleDoubleClick = (e: React.MouseEvent) => {
+    console.log('节点双击事件触发, 节点ID:', data.id)
     e.stopPropagation()
+    e.preventDefault()
     setIsEditorOpen(true)
   }
 

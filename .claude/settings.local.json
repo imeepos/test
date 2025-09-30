@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:bit.ly)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

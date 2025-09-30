@@ -3,4 +3,6 @@
 # 后端架构文档：ARCHITECTURE.md
 
 
-检查当前实现与设计文档packages\broker\README.md实现是否一致
+apps/studio:
+
+双击画布功能没有实现或实现有问题 请检查一下

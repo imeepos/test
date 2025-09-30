@@ -355,6 +355,8 @@ export const useNodeStore = create<NodeState>()(
         name: 'node-storage',
         partialize: (state) => ({
           templates: state.templates,
+          // 不持久化 Map 和数组，避免序列化问题
+          // nodes 和 edges 会在应用启动时重新初始化
         }),
       }
     ),
