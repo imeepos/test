@@ -45,7 +45,7 @@ export class ConnectionManager extends EventEmitter {
       this.connection = await amqp.connect(
         this.config.connectionUrl,
         this.config.connectionOptions || {}
-      ) as unknown as amqp.Connection
+      ) as unknown as amqp.ChannelModel
 
       this.setupConnectionEventHandlers()
       this.isConnecting = false
