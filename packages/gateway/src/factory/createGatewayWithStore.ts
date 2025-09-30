@@ -6,7 +6,7 @@ import { createGateway, type GatewayDependencies } from './createGateway'
 import { createStoreClientForGateway } from '../config/store'
 import type { GatewayConfig } from '../types/GatewayConfig'
 import type { StoreClientConfig } from '@sker/store'
-import { AIEngine } from '@sker/engine'
+import type { AIEngine } from '@sker/engine'
 import { MessageBroker } from '@sker/broker'
 
 export interface ExtendedGatewayDependencies {

@@ -136,7 +136,7 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
 })
 
 // 启动应用
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
     console.error('💥 应用启动失败:', error)
     process.exit(1)

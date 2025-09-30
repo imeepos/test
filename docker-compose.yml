@@ -63,6 +63,14 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://sker_user:sker_password@postgres:5432/sker_db
       - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=sker_db
+      - PG_USER=sker_user
+      - PG_PASSWORD=sker_password
+      - PG_SSL=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
     ports:
       - "3001:3001"
     depends_on:
@@ -83,6 +91,14 @@ services:
     environment:
       - NODE_ENV=production
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=sker_db
+      - PG_USER=sker_user
+      - PG_PASSWORD=sker_password
+      - PG_SSL=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
     ports:
       - "3002:3002"
     depends_on:
@@ -103,6 +119,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       - STUDIO_API_PORT=8001
+      - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
     ports:
       - "8001:8001"
     depends_on:
@@ -123,7 +140,14 @@ services:
       - STORE_SERVICE_URL=http://store:3001
       - BROKER_SERVICE_URL=http://broker:3002
       - ENGINE_SERVICE_URL=http://engine:8001
-      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+      - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=sker_db
+      - PG_USER=sker_user
+      - PG_PASSWORD=sker_password
+      - PG_SSL=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
     ports:
       - "8000:8000"
     depends_on:

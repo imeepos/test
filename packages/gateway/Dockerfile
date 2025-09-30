@@ -71,8 +71,14 @@ COPY packages/config/package.json ./packages/config/
 COPY packages/broker/package.json ./packages/broker/
 COPY packages/store/package.json ./packages/store/
 
-# 仅安装生产依赖
-RUN pnpm install --prod --frozen-lockfile
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
+# 仅安装生产依赖，允许构建脚本运行
+RUN pnpm config set unsafe-perm true && \
+    pnpm install --prod --frozen-lockfile && \
+    cd node_modules/.pnpm/bcrypt*/node_modules/bcrypt && \
+    npm run install || true
 
 # 从构建阶段复制构建产物
 COPY --from=builder /app/packages/config/dist/ ./packages/config/dist/
@@ -98,4 +104,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # 运行应用
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server.cjs.js"]

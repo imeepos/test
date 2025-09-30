@@ -13,7 +13,7 @@ import { AuthMiddleware } from '../middleware/AuthMiddleware'
 import { ValidationMiddleware } from '../middleware/ValidationMiddleware'
 import { RequestEnhancer } from '../middleware/RequestEnhancer'
 import { QueueManager } from '../messaging/QueueManager'
-import { AIEngine } from '@sker/engine'
+import type { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store'
 import { MessageBroker } from '@sker/broker'
 

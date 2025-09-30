@@ -73,7 +73,6 @@ export class ResponseMapper {
       metadata: {
         requestId: additionalContext?.requestId || this.generateRequestId(),
         source: 'gateway_api',
-        type: frontendRequest.type,
         inputCount: frontendRequest.inputs?.length || 1
       }
     }
@@ -238,7 +237,7 @@ export class ResponseMapper {
         'tags': '请为以上内容提取3-5个关键标签'
       }
 
-      const instruction = defaultInstructions[request.type as keyof typeof defaultInstructions] || defaultInstructions.generate
+      const instruction = defaultInstructions.generate
       parts.push(`指令：${instruction}\n`)
     }
 

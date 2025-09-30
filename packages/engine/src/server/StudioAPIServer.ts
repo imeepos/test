@@ -504,8 +504,8 @@ export async function createAndStartStudioAPIServer(
   return server
 }
 
-// 信号处理
-if (require.main === module) {
+// 信号处理 - ES 模块兼容版本
+if (import.meta.url === `file://${process.argv[1]}`) {
   // 处理优雅关闭信号
   const shutdownSignals = ['SIGTERM', 'SIGINT', 'SIGUSR2']
   let server: StudioAPIServer | null = null

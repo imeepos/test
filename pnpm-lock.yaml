@@ -23,6 +23,9 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
+      turbo:
+        specifier: ^2.0.0
+        version: 2.5.8
 
   apps/developer:
     dependencies:
@@ -459,6 +462,9 @@ importers:
       vite:
         specifier: ^7.1.7
         version: 7.1.7(@types/node@24.5.2)(jiti@1.21.7)(yaml@2.8.1)
+      vite-plugin-dts:
+        specifier: ^3.9.1
+        version: 3.9.1(@types/node@24.5.2)(rollup@4.52.3)(typescript@5.9.2)(vite@7.1.7(@types/node@24.5.2)(jiti@1.21.7)(yaml@2.8.1))
 
   packages/gateway:
     dependencies:
@@ -526,9 +532,15 @@ importers:
       eslint:
         specifier: ^8.50.0
         version: 8.57.1
+      nodemon:
+        specifier: ^3.0.2
+        version: 3.1.10
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10
+      ts-node:
+        specifier: ^10.9.1
+        version: 10.9.2(@swc/core@1.13.5)(@types/node@24.5.2)(typescript@5.9.2)
       typescript:
         specifier: ^5.2.0
         version: 5.9.2
@@ -5152,6 +5164,40 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  turbo-darwin-64@2.5.8:
+    resolution: {integrity: sha512-Dh5bCACiHO8rUXZLpKw+m3FiHtAp2CkanSyJre+SInEvEr5kIxjGvCK/8MFX8SFRjQuhjtvpIvYYZJB4AGCxNQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  turbo-darwin-arm64@2.5.8:
+    resolution: {integrity: sha512-f1H/tQC9px7+hmXn6Kx/w8Jd/FneIUnvLlcI/7RGHunxfOkKJKvsoiNzySkoHQ8uq1pJnhJ0xNGTlYM48ZaJOQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  turbo-linux-64@2.5.8:
+    resolution: {integrity: sha512-hMyvc7w7yadBlZBGl/bnR6O+dJTx3XkTeyTTH4zEjERO6ChEs0SrN8jTFj1lueNXKIHh1SnALmy6VctKMGnWfw==}
+    cpu: [x64]
+    os: [linux]
+
+  turbo-linux-arm64@2.5.8:
+    resolution: {integrity: sha512-LQELGa7bAqV2f+3rTMRPnj5G/OHAe2U+0N9BwsZvfMvHSUbsQ3bBMWdSQaYNicok7wOZcHjz2TkESn1hYK6xIQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  turbo-windows-64@2.5.8:
+    resolution: {integrity: sha512-3YdcaW34TrN1AWwqgYL9gUqmZsMT4T7g8Y5Azz+uwwEJW+4sgcJkIi9pYFyU4ZBSjBvkfuPZkGgfStir5BBDJQ==}
+    cpu: [x64]
+    os: [win32]
+
+  turbo-windows-arm64@2.5.8:
+    resolution: {integrity: sha512-eFC5XzLmgXJfnAK3UMTmVECCwuBcORrWdewoiXBnUm934DY6QN8YowC/srhNnROMpaKaqNeRpoB5FxCww3eteQ==}
+    cpu: [arm64]
+    os: [win32]
+
+  turbo@2.5.8:
+    resolution: {integrity: sha512-5c9Fdsr9qfpT3hA0EyYSFRZj1dVVsb6KIWubA9JBYZ/9ZEAijgUEae0BBR/Xl/wekt4w65/lYLTFaP3JmwSO8w==}
+    hasBin: true
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -6382,6 +6428,14 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
+  '@microsoft/api-extractor-model@7.28.13(@types/node@24.5.2)':
+    dependencies:
+      '@microsoft/tsdoc': 0.14.2
+      '@microsoft/tsdoc-config': 0.16.2
+      '@rushstack/node-core-library': 4.0.2(@types/node@24.5.2)
+    transitivePeerDependencies:
+      - '@types/node'
+
   '@microsoft/api-extractor@7.43.0(@types/node@20.19.17)':
     dependencies:
       '@microsoft/api-extractor-model': 7.28.13(@types/node@20.19.17)
@@ -6391,6 +6445,24 @@ snapshots:
       '@rushstack/rig-package': 0.5.2
       '@rushstack/terminal': 0.10.0(@types/node@20.19.17)
       '@rushstack/ts-command-line': 4.19.1(@types/node@20.19.17)
+      lodash: 4.17.21
+      minimatch: 3.0.8
+      resolve: 1.22.10
+      semver: 7.5.4
+      source-map: 0.6.1
+      typescript: 5.4.2
+    transitivePeerDependencies:
+      - '@types/node'
+
+  '@microsoft/api-extractor@7.43.0(@types/node@24.5.2)':
+    dependencies:
+      '@microsoft/api-extractor-model': 7.28.13(@types/node@24.5.2)
+      '@microsoft/tsdoc': 0.14.2
+      '@microsoft/tsdoc-config': 0.16.2
+      '@rushstack/node-core-library': 4.0.2(@types/node@24.5.2)
+      '@rushstack/rig-package': 0.5.2
+      '@rushstack/terminal': 0.10.0(@types/node@24.5.2)
+      '@rushstack/ts-command-line': 4.19.1(@types/node@24.5.2)
       lodash: 4.17.21
       minimatch: 3.0.8
       resolve: 1.22.10
@@ -6726,6 +6798,17 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.17
 
+  '@rushstack/node-core-library@4.0.2(@types/node@24.5.2)':
+    dependencies:
+      fs-extra: 7.0.1
+      import-lazy: 4.0.0
+      jju: 1.4.0
+      resolve: 1.22.10
+      semver: 7.5.4
+      z-schema: 5.0.5
+    optionalDependencies:
+      '@types/node': 24.5.2
+
   '@rushstack/rig-package@0.5.2':
     dependencies:
       resolve: 1.22.10
@@ -6738,9 +6821,25 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.17
 
+  '@rushstack/terminal@0.10.0(@types/node@24.5.2)':
+    dependencies:
+      '@rushstack/node-core-library': 4.0.2(@types/node@24.5.2)
+      supports-color: 8.1.1
+    optionalDependencies:
+      '@types/node': 24.5.2
+
   '@rushstack/ts-command-line@4.19.1(@types/node@20.19.17)':
     dependencies:
       '@rushstack/terminal': 0.10.0(@types/node@20.19.17)
+      '@types/argparse': 1.0.38
+      argparse: 1.0.10
+      string-argv: 0.3.2
+    transitivePeerDependencies:
+      - '@types/node'
+
+  '@rushstack/ts-command-line@4.19.1(@types/node@24.5.2)':
+    dependencies:
+      '@rushstack/terminal': 0.10.0(@types/node@24.5.2)
       '@types/argparse': 1.0.38
       argparse: 1.0.10
       string-argv: 0.3.2
@@ -10533,6 +10632,33 @@ snapshots:
 
   tslib@2.8.1: {}
 
+  turbo-darwin-64@2.5.8:
+    optional: true
+
+  turbo-darwin-arm64@2.5.8:
+    optional: true
+
+  turbo-linux-64@2.5.8:
+    optional: true
+
+  turbo-linux-arm64@2.5.8:
+    optional: true
+
+  turbo-windows-64@2.5.8:
+    optional: true
+
+  turbo-windows-arm64@2.5.8:
+    optional: true
+
+  turbo@2.5.8:
+    optionalDependencies:
+      turbo-darwin-64: 2.5.8
+      turbo-darwin-arm64: 2.5.8
+      turbo-linux-64: 2.5.8
+      turbo-linux-arm64: 2.5.8
+      turbo-windows-64: 2.5.8
+      turbo-windows-arm64: 2.5.8
+
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
@@ -10670,6 +10796,23 @@ snapshots:
       vue-tsc: 1.8.27(typescript@5.9.2)
     optionalDependencies:
       vite: 4.5.14(@types/node@20.19.17)
+    transitivePeerDependencies:
+      - '@types/node'
+      - rollup
+      - supports-color
+
+  vite-plugin-dts@3.9.1(@types/node@24.5.2)(rollup@4.52.3)(typescript@5.9.2)(vite@7.1.7(@types/node@24.5.2)(jiti@1.21.7)(yaml@2.8.1)):
+    dependencies:
+      '@microsoft/api-extractor': 7.43.0(@types/node@24.5.2)
+      '@rollup/pluginutils': 5.3.0(rollup@4.52.3)
+      '@vue/language-core': 1.8.27(typescript@5.9.2)
+      debug: 4.4.3(supports-color@5.5.0)
+      kolorist: 1.8.0
+      magic-string: 0.30.19
+      typescript: 5.9.2
+      vue-tsc: 1.8.27(typescript@5.9.2)
+    optionalDependencies:
+      vite: 7.1.7(@types/node@24.5.2)(jiti@1.21.7)(yaml@2.8.1)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
