@@ -66,7 +66,8 @@ export class AIEngine extends EventEmitter {
       totalCost: 0,
       modelUsage: {},
       errorDistribution: {},
-      lastResetAt: new Date()
+      lastResetAt: new Date(),
+      startTime: Date.now()
     }
 
     // 初始化服务提供者
@@ -513,7 +514,8 @@ export class AIEngine extends EventEmitter {
       totalCost: 0,
       modelUsage: {},
       errorDistribution: {},
-      lastResetAt: new Date()
+      lastResetAt: new Date(),
+      startTime: Date.now()
     }
   }
 
@@ -652,7 +654,7 @@ export class AIEngine extends EventEmitter {
         // 如果启用了failFast并且有失败的任务，立即停止
         if (failFast && batchResults.some(result => !result.success)) {
           const failedResult = batchResults.find(result => !result.success)
-          throw new Error(`批处理失败: ${failedResult.error}`)
+          throw new Error(`批处理失败: ${failedResult?.error || '未知错误'}`)
         }
 
         results.push(...batchResults)
