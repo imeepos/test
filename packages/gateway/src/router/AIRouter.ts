@@ -58,6 +58,7 @@ export class AIRouter extends BaseRouter {
       const aiTask = {
         taskId,
         type,
+        status: 'queued',
         priority: 'normal',
         userId,
         projectId,
@@ -118,7 +119,8 @@ export class AIRouter extends BaseRouter {
       const taskId = this.generateTaskId()
       const aiTask = {
         taskId,
-        type: 'optimize',
+        type: 'content_optimization' as AITaskType,
+        status: 'queued',
         priority: 'normal',
         userId,
         projectId,
@@ -178,7 +180,8 @@ export class AIRouter extends BaseRouter {
       const taskId = this.generateTaskId()
       const aiTask = {
         taskId,
-        type: 'fusion',
+        type: 'content_fusion' as AITaskType,
+        status: 'queued',
         priority: 'high', // 融合任务优先级较高
         userId,
         projectId,
@@ -309,7 +312,8 @@ export class AIRouter extends BaseRouter {
       const batchTaskId = this.generateTaskId()
       const batchTask = {
         taskId: batchTaskId,
-        type: 'batch_processing',
+        type: 'batch_processing' as AITaskType,
+        status: 'queued',
         priority: options.priority || 'normal',
         userId,
         projectId,
@@ -428,7 +432,7 @@ export class AIRouter extends BaseRouter {
         return
       }
 
-      const result = await this.aiEngine!.fusionContent({
+      const result = await this.aiEngine!.fuseContent({
         inputs,
         instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
         model: model || 'gpt-4',

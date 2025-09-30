@@ -13,6 +13,10 @@ import { AuthMiddleware } from '../middleware/AuthMiddleware'
 import { ValidationMiddleware } from '../middleware/ValidationMiddleware'
 import { RequestEnhancer } from '../middleware/RequestEnhancer'
 import { QueueManager } from '../messaging/QueueManager'
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES
+} from '@sker/models'
 import type { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store'
 import { MessageBroker } from '@sker/broker'
@@ -45,15 +49,15 @@ export class GatewayServer {
     if (dependencies?.messageBroker) {
       this.queueManager = new QueueManager(dependencies.messageBroker, {
         exchanges: {
-          aiTasks: 'llm.direct',
-          websocket: 'realtime.fanout',
-          system: 'events.topic',
+          aiTasks: EXCHANGE_NAMES.LLM_DIRECT,
+          websocket: EXCHANGE_NAMES.REALTIME_FANOUT,
+          system: EXCHANGE_NAMES.EVENTS_TOPIC,
           deadLetter: 'dlx.direct'
         },
         queues: {
-          aiTaskResults: 'result.notify.queue',
-          websocketBroadcast: 'events.websocket.queue',
-          systemNotifications: 'events.notification.queue',
+          aiTaskResults: QUEUE_NAMES.AI_RESULTS,
+          websocketBroadcast: QUEUE_NAMES.EVENTS_WEBSOCKET,
+          systemNotifications: QUEUE_NAMES.EVENTS_STORAGE,
           deadLetterQueue: 'dlx.queue'
         }
       })

@@ -477,6 +477,9 @@ importers:
       '@sker/models':
         specifier: workspace:*
         version: link:../models
+      '@sker/store':
+        specifier: workspace:*
+        version: link:../store
       compression:
         specifier: ^1.7.4
         version: 1.8.1
@@ -544,6 +547,9 @@ importers:
       '@sker/config':
         specifier: workspace:*
         version: link:../config
+      '@sker/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@sker/models':
         specifier: workspace:*
         version: link:../models

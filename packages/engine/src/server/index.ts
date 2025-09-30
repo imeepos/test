@@ -3,6 +3,9 @@
 import dotenv from 'dotenv'
 import { AIEngine } from '../core/AIEngine.js'
 import { StudioAPIServer } from './StudioAPIServer.js'
+import { MessageBroker } from '@sker/broker'
+import { StoreClient } from '@sker/store'
+import { AITaskQueueConsumer } from '../messaging/AITaskQueueConsumer.js'
 
 // 加载环境变量
 dotenv.config()
@@ -12,7 +15,8 @@ dotenv.config()
  */
 async function main() {
   try {
-    console.log('🚀 启动 SKER Engine Studio API Server...')
+    const runMode = process.env.ENGINE_RUN_MODE || 'http' // 'http', 'queue', 'both'
+    console.log(`🚀 启动 SKER Engine (模式: ${runMode})...`)
 
     // 创建 AI 引擎实例
     const aiEngine = new AIEngine({
@@ -36,51 +40,124 @@ async function main() {
       }
     })
 
-    // 创建 API 服务器
-    const apiServer = new StudioAPIServer(aiEngine, {
-      port: parseInt(process.env.STUDIO_API_PORT || '8000'),
-      host: process.env.STUDIO_API_HOST || '0.0.0.0',
-      cors: {
-        origin: process.env.STUDIO_CORS_ORIGIN?.split(',') || [
-          'http://localhost:3000',
-          'http://localhost:5173',
-          'http://localhost:8080'
-        ],
-        credentials: true
-      },
-      rateLimit: {
-        windowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW || '900000'), // 15分钟
-        max: parseInt(process.env.API_RATE_LIMIT_MAX || '100'),
-        message: '请求过于频繁，请稍后再试'
-      },
-      timeout: parseInt(process.env.API_TIMEOUT || '120000'), // 2分钟
-      environment: (process.env.NODE_ENV as any) || 'development'
-    })
+    let apiServer: StudioAPIServer | undefined
+    let queueConsumer: AITaskQueueConsumer | undefined
 
-    // 启动服务器
-    await apiServer.start()
+    // 根据运行模式启动相应服务
+    if (runMode === 'http' || runMode === 'both') {
+      // 启动HTTP API服务器
+      apiServer = new StudioAPIServer(aiEngine, {
+        port: parseInt(process.env.STUDIO_API_PORT || '8000'),
+        host: process.env.STUDIO_API_HOST || '0.0.0.0',
+        cors: {
+          origin: process.env.STUDIO_CORS_ORIGIN?.split(',') || [
+            'http://localhost:3000',
+            'http://localhost:5173',
+            'http://localhost:8080'
+          ],
+          credentials: true
+        },
+        rateLimit: {
+          windowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW || '900000'), // 15分钟
+          max: parseInt(process.env.API_RATE_LIMIT_MAX || '100'),
+          message: '请求过于频繁，请稍后再试'
+        },
+        timeout: parseInt(process.env.API_TIMEOUT || '120000'), // 2分钟
+        environment: (process.env.NODE_ENV as any) || 'development'
+      })
+
+      await apiServer.start()
+      console.log('✅ HTTP API服务器启动成功')
+    }
+
+    if (runMode === 'queue' || runMode === 'both') {
+      // 启动队列消费者
+      const messageBroker = new MessageBroker({
+        connectionUrl: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
+        exchanges: {
+          'llm.direct': {
+            type: 'direct',
+            durable: true
+          }
+        },
+        queues: {
+          'ai.tasks': {
+            durable: true
+          }
+        },
+        retry: {
+          maxRetries: parseInt(process.env.QUEUE_RETRY_ATTEMPTS || '3'),
+          maxAttempts: parseInt(process.env.QUEUE_RETRY_ATTEMPTS || '3'),
+          initialDelay: parseInt(process.env.QUEUE_RETRY_DELAY || '1000'),
+          maxDelay: parseInt(process.env.QUEUE_RETRY_MAX_DELAY || '10000'),
+          backoffMultiplier: parseFloat(process.env.QUEUE_RETRY_BACKOFF || '2'),
+          retryableErrors: ['ENOTFOUND', 'ECONNRESET', 'TIMEOUT']
+        }
+      })
+
+      const storeClient = new StoreClient({
+        baseURL: process.env.STORE_API_URL || 'http://localhost:3001',
+        authToken: process.env.STORE_AUTH_TOKEN,
+        timeout: parseInt(process.env.STORE_TIMEOUT || '30000')
+      })
+
+      queueConsumer = new AITaskQueueConsumer(
+        messageBroker,
+        aiEngine,
+        storeClient,
+        {
+          concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '5'),
+          retryAttempts: parseInt(process.env.QUEUE_RETRY_ATTEMPTS || '3'),
+          prefetchCount: parseInt(process.env.QUEUE_PREFETCH_COUNT || '10')
+        }
+      )
+
+      await queueConsumer.start()
+      console.log('✅ 队列消费者启动成功')
+    }
 
     // 显示启动信息
-    const status = apiServer.getStatus()
-    console.log(`✅ 服务器启动成功!`)
-    console.log(`📍 监听地址: http://${status.host}:${status.port}`)
-    console.log(`🌍 运行环境: ${status.environment}`)
-    console.log(`🔗 API 根路径: http://${status.host}:${status.port}/api/ai`)
-    console.log(`❤️  健康检查: http://${status.host}:${status.port}/health`)
+    console.log(`✅ SKER Engine 启动完成! (模式: ${runMode})`)
+    
+    let status: any = null
+    if (apiServer) {
+      status = apiServer.getStatus()
+      console.log(`📍 HTTP API 地址: http://${status.host}:${status.port}`)
+      console.log(`🌍 运行环境: ${status.environment}`)
+      console.log(`🔗 API 根路径: http://${status.host}:${status.port}/api/ai`)
+      console.log(`❤️  健康检查: http://${status.host}:${status.port}/health`)
 
-    if (status.environment === 'development') {
-      console.log(`📚 API 文档: http://${status.host}:${status.port}/docs`)
+      if (status.environment === 'development') {
+        console.log(`📚 API 文档: http://${status.host}:${status.port}/docs`)
+      }
+    }
+
+    if (queueConsumer) {
+      const queueStats = queueConsumer.getStats()
+      console.log(`🎯 队列消费者状态: ${queueStats.isRunning ? '运行中' : '已停止'}`)
+      console.log(`📊 并发处理数: ${queueStats.config.concurrency}`)
+      console.log(`🔄 重试次数: ${queueStats.config.retryAttempts}`)
     }
 
     // 优雅关闭处理
     const shutdownHandler = async (signal: string) => {
       console.log(`\n收到 ${signal} 信号，开始优雅关闭...`)
       try {
-        await apiServer.stop()
-        console.log('✅ 服务器已优雅关闭')
+        const shutdownPromises: Promise<void>[] = []
+
+        if (apiServer) {
+          shutdownPromises.push(apiServer.stop())
+        }
+
+        if (queueConsumer) {
+          shutdownPromises.push(queueConsumer.stop())
+        }
+
+        await Promise.all(shutdownPromises)
+        console.log('✅ Engine服务已优雅关闭')
         process.exit(0)
       } catch (error) {
-        console.error('❌ 关闭服务器时出错:', error)
+        console.error('❌ 关闭Engine服务时出错:', error)
         process.exit(1)
       }
     }
@@ -91,7 +168,7 @@ async function main() {
     process.on('SIGUSR2', () => shutdownHandler('SIGUSR2')) // nodemon 重启信号
 
     // 开发环境下的热重载支持
-    if (status.environment === 'development') {
+    if (status && status.environment === 'development') {
       console.log('🔥 开发模式已启用 - 支持热重载')
     }
 

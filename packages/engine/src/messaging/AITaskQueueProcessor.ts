@@ -164,8 +164,7 @@ export class AITaskQueueProcessor extends EventEmitter {
           await this.processTaskMessage(message, workerId)
         },
         {
-          noAck: false, // 手动确认
-          prefetch: 1   // 每次只处理一个任务
+          noAck: false // 手动确认
         }
       )
     }
@@ -185,8 +184,7 @@ export class AITaskQueueProcessor extends EventEmitter {
         await this.processBatchMessage(message)
       },
       {
-        noAck: false,
-        prefetch: 1
+        noAck: false
       }
     )
 
@@ -263,10 +261,10 @@ export class AITaskQueueProcessor extends EventEmitter {
       // 根据错误类型决定是否重新入队
       if (this.shouldRetry(error, taskData)) {
         console.log(`重新入队任务: ${taskData?.taskId}`)
-        this.broker.nack(message, false, true) // 重新入队
+        this.broker.nack(message, true) // 重新入队
       } else {
         console.log(`拒绝任务: ${taskData?.taskId}`)
-        this.broker.nack(message, false, false) // 不重新入队
+        this.broker.nack(message, false) // 不重新入队
       }
 
     } finally {
@@ -303,7 +301,7 @@ export class AITaskQueueProcessor extends EventEmitter {
 
     } catch (error) {
       console.error('批处理任务失败:', error)
-      this.broker.nack(message, false, false)
+      this.broker.nack(message, false)
     }
   }
 

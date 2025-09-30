@@ -42,10 +42,65 @@ export interface Connection {
   sourceId: string
   targetId: string
   type: ConnectionType
+  style?: EdgeStyle
 }
 
 // 连接类型
 export type ConnectionType = 'input' | 'output' | 'bidirectional'
+
+// 连线样式配置
+export interface EdgeStyle {
+  stroke?: string // 连线颜色
+  strokeWidth?: number // 连线粗细
+  strokeDasharray?: string // 虚线样式，如 "5,5" 表示虚线
+  animated?: boolean // 是否动画
+  type?: EdgeType // 连线类型
+}
+
+// 连线类型
+export type EdgeType = 'straight' | 'smoothstep' | 'step' | 'bezier'
+
+// 连线样式预设
+export const EdgeStylePresets = {
+  solid: {
+    stroke: '#6366f1',
+    strokeWidth: 2,
+    strokeDasharray: undefined,
+    animated: false,
+    type: 'smoothstep' as EdgeType
+  },
+  dashed: {
+    stroke: '#6366f1',
+    strokeWidth: 2,
+    strokeDasharray: '8,4',
+    animated: false,
+    type: 'smoothstep' as EdgeType
+  },
+  dotted: {
+    stroke: '#6366f1',
+    strokeWidth: 2,
+    strokeDasharray: '2,3',
+    animated: false,
+    type: 'smoothstep' as EdgeType
+  },
+  thick: {
+    stroke: '#6366f1',
+    strokeWidth: 4,
+    strokeDasharray: undefined,
+    animated: false,
+    type: 'smoothstep' as EdgeType
+  },
+  thin: {
+    stroke: '#6366f1',
+    strokeWidth: 1,
+    strokeDasharray: undefined,
+    animated: false,
+    type: 'smoothstep' as EdgeType
+  }
+} as const
+
+// 连线样式预设名称
+export type EdgeStylePresetName = keyof typeof EdgeStylePresets
 
 // 节点元数据
 export interface NodeMetadata {

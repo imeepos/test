@@ -118,26 +118,20 @@ export class ResponseMapper {
    * 转换错误到统一错误格式
    */
   static toAPIError(error: Error | any, requestId?: string): {
-    success: false
-    error: {
-      code: string
-      message: string
-      timestamp: Date
-      requestId?: string
-      details?: any
-    }
+    code: string
+    message: string
+    timestamp: Date
+    requestId: string
+    details?: any
   } {
     const errorCode = this.mapErrorToCode(error)
 
     return {
-      success: false,
-      error: {
-        code: errorCode,
-        message: error.message || '未知错误',
-        timestamp: new Date(),
-        requestId,
-        details: error.details || undefined
-      }
+      code: errorCode,
+      message: error.message || '未知错误',
+      timestamp: new Date(),
+      requestId: requestId || this.generateRequestId(),
+      details: error.details || undefined
     }
   }
 

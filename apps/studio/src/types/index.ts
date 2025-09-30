@@ -7,6 +7,9 @@ export type * from './api'
 // 解决Position类型重复导出问题
 export type { Position } from './canvas'
 
+// 导出常量
+export { EdgeStylePresets } from './node'
+
 // 通用工具类型
 export interface Option<T> {
   value: T

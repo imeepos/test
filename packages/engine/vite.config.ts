@@ -45,7 +45,8 @@ export default defineConfig({
         '@sker/models',
         '@sker/config',
         '@sker/ai',
-        '@sker/broker'
+        '@sker/broker',
+        '@sker/store'
       ]
     },
     target: 'node16',

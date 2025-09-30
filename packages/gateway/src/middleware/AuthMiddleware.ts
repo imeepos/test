@@ -202,7 +202,7 @@ export class AuthMiddleware {
     }
     
     if (config.expiresIn) {
-      options.expiresIn = config.expiresIn
+      options.expiresIn = parseInt(config.expiresIn)
     }
     if (config.issuer) {
       options.issuer = config.issuer

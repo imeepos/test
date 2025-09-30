@@ -26,6 +26,7 @@ export interface UnifiedAITaskMessage {
   inputs: string[]
   context?: string
   instruction?: string
+  parameters?: Record<string, any>
   nodeId: string
   projectId: string
   userId: string
@@ -50,12 +51,19 @@ export interface TaskMetadata {
 // 统一的AI处理结果格式
 export interface UnifiedAIResultMessage {
   taskId: string
+  type: UnifiedAITaskType
   nodeId: string
+  projectId: string
+  userId: string
+  status: UnifiedTaskStatus
   success: boolean
   result?: AIProcessingResult
   error?: AIProcessingError
   processingTime: number
   timestamp: Date
+  progress?: number
+  message?: string
+  savedData?: any
   metadata?: ResultMetadata
 }
 
@@ -90,6 +98,7 @@ export interface AIProcessingError {
   retryable: boolean
   retryAfter?: number
   severity: 'low' | 'medium' | 'high'
+  timestamp?: Date
 }
 
 // 结果元数据

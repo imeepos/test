@@ -480,8 +480,8 @@ export class NodeRouter extends BaseRouter {
         // 默认排除已删除的节点
         options.filters.status = ['active', 'draft', 'archived']
       }
-      if (importance_min) options.filters.importance_min = parseInt(importance_min)
-      if (importance_max) options.filters.importance_max = parseInt(importance_max)
+      if (importance_min) options.filters.importance_min = parseInt(String(importance_min))
+      if (importance_max) options.filters.importance_max = parseInt(String(importance_max))
 
       let results, totalCount
 
@@ -540,7 +540,7 @@ export class NodeRouter extends BaseRouter {
 
       // 计算分页信息
       const totalPages = Math.ceil(totalCount / options.limit)
-      const currentPage = parseInt(page)
+      const currentPage = parseInt(String(page))
       const hasNext = currentPage < totalPages
       const hasPrev = currentPage > 1
 
@@ -740,7 +740,7 @@ export class NodeRouter extends BaseRouter {
         }
 
         const [versionsResult, totalResult] = await Promise.all([
-          pool.query(versionsQuery, [id, parseInt(limit), parseInt(offset)]),
+          pool.query(versionsQuery, [id, parseInt(String(limit)), parseInt(String(offset))]),
           pool.query(totalQuery, [id])
         ])
 
@@ -765,9 +765,9 @@ export class NodeRouter extends BaseRouter {
           versions: formattedVersions,
           pagination: {
             total,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            has_more: total > parseInt(offset) + formattedVersions.length
+            limit: parseInt(String(limit)),
+            offset: parseInt(String(offset)),
+            has_more: total > parseInt(String(offset)) + formattedVersions.length
           },
           current_version: formattedVersions.find(v => v.is_current)?.version_number || 1
         })
@@ -780,8 +780,8 @@ export class NodeRouter extends BaseRouter {
           versions: [],
           pagination: {
             total: 0,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
+            limit: parseInt(String(limit)),
+            offset: parseInt(String(offset)),
             has_more: false
           },
           current_version: 1,

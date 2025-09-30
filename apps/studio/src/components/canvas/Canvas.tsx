@@ -22,6 +22,7 @@ import {
 import 'reactflow/dist/style.css'
 
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
+import type { StoreEdge } from '@/stores/nodeStore'
 import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
 import { ShortcutHandler } from '../interactions/ShortcutHandler'
@@ -136,14 +137,29 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // 转换连接数据格式
   const edges = React.useMemo(() => {
-    return storeEdges.map((edge): Edge => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: 'smoothstep',
-      style: { stroke: '#6366f1', strokeWidth: 2 },
-      animated: true,
-    }))
+    return storeEdges.map((edge): Edge => {
+      const defaultStyle = { 
+        stroke: '#6366f1', 
+        strokeWidth: 2,
+        type: 'smoothstep' as const,
+        animated: false,
+        strokeDasharray: undefined
+      }
+      const edgeStyle = edge.style || {}
+      
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edgeStyle.type || defaultStyle.type,
+        style: {
+          stroke: edgeStyle.stroke || defaultStyle.stroke,
+          strokeWidth: edgeStyle.strokeWidth || defaultStyle.strokeWidth,
+          strokeDasharray: edgeStyle.strokeDasharray,
+        },
+        animated: edgeStyle.animated ?? defaultStyle.animated,
+      }
+    })
   }, [storeEdges])
 
   // React Flow状态
@@ -495,6 +511,22 @@ const Canvas: React.FC<CanvasProps> = ({
     []
   )
 
+  // 连线右键菜单
+  const handleEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault()
+      event.stopPropagation()
+      
+      setContextMenu({
+        isOpen: true,
+        position: { x: event.clientX, y: event.clientY },
+        targetType: 'edge',
+        targetId: edge.id
+      })
+    },
+    []
+  )
+
   // 关闭右键菜单
   const closeContextMenu = useCallback(() => {
     setContextMenu(prev => ({ ...prev, isOpen: false }))
@@ -717,6 +749,7 @@ const Canvas: React.FC<CanvasProps> = ({
         onPaneClick={handlePaneClickWithDoubleClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onEdgeContextMenu={handleEdgeContextMenu}
         onSelectionChange={handleSelectionChange}
         nodeTypes={nodeTypes}
         attributionPosition="bottom-left"

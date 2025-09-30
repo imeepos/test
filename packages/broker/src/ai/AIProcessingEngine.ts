@@ -80,7 +80,11 @@ export class AIProcessingEngine {
       // 构造结果消息
       const resultMessage: AIResultMessage = {
         taskId: task.taskId,
+        type: task.type,
         nodeId: task.nodeId,
+        projectId: task.projectId,
+        userId: task.userId,
+        status: 'completed',
         success: true,
         result,
         processingTime,
@@ -110,7 +114,11 @@ export class AIProcessingEngine {
 
       const resultMessage: AIResultMessage = {
         taskId: task.taskId,
+        type: task.type,
         nodeId: task.nodeId,
+        projectId: task.projectId,
+        userId: task.userId,
+        status: 'failed',
         success: false,
         error: errorResult,
         processingTime,
