@@ -334,7 +334,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-2xl mx-4 bg-sidebar-surface rounded-lg shadow-2xl border border-sidebar-border"
+            className="w-full max-w-5xl mx-4 bg-sidebar-surface rounded-lg shadow-2xl border border-sidebar-border"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}

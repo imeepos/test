@@ -19,8 +19,6 @@ import type { AINodeData, ImportanceLevel, AINode as AINodeType } from '@/types'
 export interface AINodeProps extends NodeProps<AINodeData> {}
 
 const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
-  console.log('🎯 AINode: 渲染节点', data.id, data)
-  
   const { viewMode } = useCanvasStore()
   const { updateNode } = useNodeStore()
   
@@ -85,7 +83,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // 处理双击编辑
   const handleDoubleClick = (e: React.MouseEvent) => {
-    console.log('节点双击事件触发, 节点ID:', data.id)
     e.stopPropagation()
     e.preventDefault()
     setIsEditorOpen(true)

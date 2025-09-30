@@ -115,10 +115,14 @@ class WebSocketService {
    * 发送消息
    */
   async sendMessage(type: string, payload: any): Promise<any> {
+    const requestId = this.generateMessageId()
     const message: WebSocketMessage = {
-      id: this.generateMessageId(),
+      id: requestId,
       type,
-      payload,
+      payload: {
+        ...payload,
+        requestId // 确保payload中包含requestId
+      },
       timestamp: Date.now(),
     }
 
@@ -137,16 +141,16 @@ class WebSocketService {
     return new Promise((resolve, reject) => {
       // 设置超时
       const timeout = setTimeout(() => {
-        this.pendingMessages.delete(message.id)
+        this.pendingMessages.delete(requestId)
         reject(new Error('消息响应超时'))
       }, this.config.messageTimeout)
 
-      this.pendingMessages.set(message.id, { resolve, reject, timeout })
+      this.pendingMessages.set(requestId, { resolve, reject, timeout })
       
       try {
-        this.socket!.emit(type, payload)
+        this.socket!.emit(type, message.payload)
       } catch (error) {
-        this.pendingMessages.delete(message.id)
+        this.pendingMessages.delete(requestId)
         clearTimeout(timeout)
         reject(error)
       }
@@ -211,18 +215,21 @@ class WebSocketService {
     try {
       // 处理响应消息
       if (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR')) {
-        // 查找对应的请求
-        for (const [messageId, pendingMessage] of this.pendingMessages.entries()) {
-          // 这里需要根据实际情况匹配消息
+        // 根据requestId匹配对应的请求
+        const requestId = data.requestId || data.taskId
+        if (requestId && this.pendingMessages.has(requestId)) {
+          const pendingMessage = this.pendingMessages.get(requestId)!
           clearTimeout(pendingMessage.timeout)
-          this.pendingMessages.delete(messageId)
+          this.pendingMessages.delete(requestId)
           
           if (eventName.endsWith('_ERROR')) {
-            pendingMessage.reject(new Error(data.error || '请求失败'))
+            pendingMessage.reject(new Error(data.error?.message || data.error || '请求失败'))
           } else {
             pendingMessage.resolve(data)
           }
           return
+        } else {
+          console.warn(`收到响应消息但找不到对应的请求: ${eventName}, requestId: ${requestId}`)
         }
       }
 
@@ -302,6 +309,20 @@ class WebSocketService {
     while (this.messageQueue.length > 0 && this.socket?.connected) {
       const message = this.messageQueue.shift()!
       try {
+        // 为队列中的消息重新设置Promise处理器
+        const timeout = setTimeout(() => {
+          this.pendingMessages.delete(message.id)
+        }, this.config.messageTimeout)
+
+        // 重新创建Promise处理器（如果还没有的话）
+        if (!this.pendingMessages.has(message.id)) {
+          this.pendingMessages.set(message.id, {
+            resolve: () => {}, // 队列消息的resolve会被忽略
+            reject: () => {},  // 队列消息的reject会被忽略
+            timeout
+          })
+        }
+
         this.socket.emit(message.type, message.payload)
       } catch (error) {
         console.error('队列消息发送失败:', error)
