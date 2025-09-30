@@ -126,7 +126,6 @@ export interface PluginTesterProps {
  * 插件测试器组件
  */
 export const PluginTester: React.FC<PluginTesterProps> = ({
-  pluginCode,
   onTestStart,
   onTestComplete
 }) => {

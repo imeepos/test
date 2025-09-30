@@ -202,8 +202,8 @@ export interface IQueueService {
 
   // 队列管理
   getQueueStats(): Promise<QueueStats>
-  getQueueConfig(): Promise<QueueConfig>
-  updateQueueConfig(config: Partial<QueueConfig>): Promise<boolean>
+  getQueueConfig(): Promise<StudioQueueConfig>
+  updateQueueConfig(config: Partial<StudioQueueConfig>): Promise<boolean>
 
   // 监控和事件
   subscribe(eventType: QueueEventType, callback: (event: QueueMonitorEvent) => void): () => void

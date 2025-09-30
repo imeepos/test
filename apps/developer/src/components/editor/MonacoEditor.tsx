@@ -320,61 +320,9 @@ declare module '@sker/plugin-sdk' {
     return editorInstanceRef.current
   }, [])
 
-  /**
-   * 格式化代码
-   */
-  const formatCode = useCallback(async (): Promise<void> => {
-    if (editorInstanceRef.current) {
-      await editorInstanceRef.current.trigger('keyboard', 'editor.action.formatDocument', {})
-    }
-  }, [])
-
-  /**
-   * 设置编辑器焦点
-   */
-  const focus = useCallback((): void => {
-    if (editorInstanceRef.current) {
-      editorInstanceRef.current.focus()
-    }
-  }, [])
-
-  /**
-   * 插入文本到光标位置
-   */
-  const insertText = useCallback((text: string): void => {
-    if (editorInstanceRef.current) {
-      const selection = editorInstanceRef.current.getSelection()
-      const range = selection || new monaco.Range(1, 1, 1, 1)
-
-      editorInstanceRef.current.executeEdits('insert-text', [{
-        range,
-        text,
-        forceMoveMarkers: true
-      }])
-    }
-  }, [])
-
-  /**
-   * 获取选中文本
-   */
-  const getSelectedText = useCallback((): string => {
-    if (editorInstanceRef.current) {
-      const selection = editorInstanceRef.current.getSelection()
-      if (selection) {
-        return editorInstanceRef.current.getModel()?.getValueInRange(selection) || ''
-      }
-    }
-    return ''
-  }, [])
 
   // 将方法暴露给父组件使用
-  React.useImperativeHandle(onMount, () => ({
-    getEditor,
-    formatCode,
-    focus,
-    insertText,
-    getSelectedText
-  }), [getEditor, formatCode, focus, insertText, getSelectedText])
+  React.useImperativeHandle(onMount, () => getEditor() as any, [getEditor])
 
   if (error) {
     return (

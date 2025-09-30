@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   Card,
   Button,
@@ -12,13 +12,10 @@ import {
   Input,
   Select,
   Switch,
-  Spin,
   Progress,
-  Tooltip,
   Badge,
   Drawer,
   Table,
-  Tree,
   message
 } from 'antd'
 import {
@@ -26,7 +23,6 @@ import {
   PauseCircleOutlined,
   StopOutlined,
   BugOutlined,
-  ReloadOutlined,
   ClearOutlined,
   DownloadOutlined,
   SettingOutlined,
@@ -40,7 +36,6 @@ import {
 const { TabPane } = Tabs
 const { Text, Title } = Typography
 const { Panel } = Collapse
-const { TextArea } = Input
 const { Option } = Select
 
 /**
@@ -127,7 +122,6 @@ export interface PluginDebuggerProps {
  * 插件调试器组件
  */
 export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
-  pluginCode,
   onDebugStart,
   onDebugStop,
   onDebugPause,
@@ -203,15 +197,15 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
 
       addLog('info', 'Debugger', '插件调试完成')
     } catch (error) {
-      addLog('error', 'Debugger', `调试失败: ${error.message}`)
+      addLog('error', 'Debugger', `调试失败: ${(error as Error).message}`)
       setDebugState(prev => ({
         ...prev,
         isRunning: false,
         errors: [
           ...prev.errors,
           {
-            message: error.message,
-            stack: error.stack
+            message: (error as Error).message,
+            stack: (error as Error).stack
           }
         ]
       }))
@@ -348,7 +342,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
    * 模拟插件执行
    */
   const simulatePluginExecution = async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let step = 0
       const totalSteps = 10
 
@@ -510,7 +504,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
         <div style={{ marginBottom: 16 }}>
           <Progress
             percent={Math.round((debugState.currentStep / debugState.totalSteps) * 100)}
-            status={debugState.isPaused ? 'paused' : 'active'}
+            status={debugState.isPaused ? 'normal' : 'active'}
             format={() => `${debugState.currentStep}/${debugState.totalSteps}`}
           />
         </div>
@@ -625,7 +619,7 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
                     >
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </Text>
-                    <Tag size="small">{log.source}</Tag>
+                    <Tag>{log.source}</Tag>
                     <Text style={{ fontFamily: 'monospace' }}>
                       {log.message}
                     </Text>
@@ -669,15 +663,14 @@ export const PluginDebugger: React.FC<PluginDebuggerProps> = ({
           </div>
 
           <Table
-            dataSource={Array.from(breakpoints.entries()).map(([line, bp]) => ({
-              key: line,
-              line,
+            dataSource={Array.from(breakpoints.entries()).map(([lineNum, bp]) => ({
+              key: lineNum,
               ...bp
             }))}
             size="small"
             pagination={false}
           >
-            <Table.Column title="行号" dataIndex="line" key="line" />
+            <Table.Column title="行号" dataIndex="line" key="lineNumber" width={80} />
             <Table.Column
               title="状态"
               dataIndex="enabled"

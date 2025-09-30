@@ -1,4 +1,4 @@
-import amqp from 'amqplib'
+import * as amqp from 'amqplib'
 import { EventEmitter } from 'events'
 import type { BrokerConfig } from '../types/BrokerConfig'
 
@@ -7,7 +7,7 @@ import type { BrokerConfig } from '../types/BrokerConfig'
  */
 export class ConnectionManager extends EventEmitter {
   private config: BrokerConfig
-  private connection: amqp.Connection | null = null
+  private connection: amqp.ChannelModel | null = null
   private isConnecting: boolean = false
   private reconnectTimer: NodeJS.Timeout | null = null
   private reconnectAttempts: number = 0
@@ -152,7 +152,7 @@ export class ConnectionManager extends EventEmitter {
   /**
    * 获取连接实例
    */
-  getConnection(): amqp.Connection | null {
+  getConnection(): amqp.ChannelModel | null {
     return this.connection
   }
 

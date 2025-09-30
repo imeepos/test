@@ -11,7 +11,6 @@ import {
 
 const { Sider, Content } = Layout
 const { Title, Paragraph, Text } = Typography
-const { Link } = Anchor
 
 export const DocumentationPage: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string>('quick-start')
@@ -264,7 +263,6 @@ export const DocumentationPage: React.FC = () => {
 
   // 生成锚点
   const getAnchorItems = () => {
-    const content = getDocumentContent(selectedSection)
     // 这里应该解析内容中的标题来生成锚点
     // 简化版本，直接返回一些示例锚点
     return [

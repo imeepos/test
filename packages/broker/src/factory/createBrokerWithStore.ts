@@ -5,6 +5,7 @@
 import { MessageBroker } from '../core/MessageBroker'
 import { AITaskScheduler } from '../scheduler/AITaskScheduler'
 import { createStoreAdapterForBroker, createStoreAdapterFromEnv } from '../config/store'
+import { DEFAULT_BROKER_CONFIG } from '../config/defaults'
 import type { StoreClientConfig } from '@sker/store'
 import type { StoreAdapter } from '../adapters/StoreAdapter'
 
@@ -51,7 +52,7 @@ export async function createBrokerWithStore(
   console.log(`   最终connectionUrl: ${finalConnectionUrl}`)
   console.log(`   重试配置: maxRetries=${config.rabbitmq?.maxReconnectAttempts || 10}, initialDelay=${config.rabbitmq?.reconnectDelay || 5000}`)
 
-  // 创建消息代理
+  // 创建消息代理 - 使用完整的默认配置
   const messageBroker = new MessageBroker({
     connectionUrl: finalConnectionUrl,
     retry: {
@@ -61,8 +62,8 @@ export async function createBrokerWithStore(
       backoffMultiplier: 2,
       retryableErrors: ['ECONNRESET', 'ENOTFOUND', 'TIMEOUT', 'ECONNREFUSED']
     },
-    exchanges: {},
-    queues: {},
+    exchanges: DEFAULT_BROKER_CONFIG.exchanges,
+    queues: DEFAULT_BROKER_CONFIG.queues,
     prefetch: 5,
     heartbeat: 60,
     deadLetter: { enabled: false, exchange: 'dlx', routingKey: 'failed' },
