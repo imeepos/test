@@ -71,6 +71,7 @@ services:
       - PG_PASSWORD=sker_password
       - PG_SSL=false
       # Redis 配置
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-0}
       # 缓存配置
       - CACHE_TTL=${CACHE_TTL:-3600}
@@ -116,6 +117,7 @@ services:
       - PG_SSL=false
       # Redis 配置 (用于缓存和队列)
       - REDIS_URL=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-1}
       # AI 相关配置
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}
@@ -202,6 +204,7 @@ services:
       - PG_SSL=false
       # Redis 配置 (用于会话管理等)
       - REDIS_URL=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-2}
       # AI 相关配置
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test-demo-key-for-development}

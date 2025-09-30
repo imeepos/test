@@ -104,7 +104,7 @@ const envSchema = Joi.object({
 
   // Redis配置
   REDIS_URL: Joi.string().default('redis://localhost:6379'),
-  REDIS_PASSWORD: Joi.string().optional(),
+  REDIS_PASSWORD: Joi.string().allow('').optional(),
   REDIS_DB: Joi.number().default(0),
 
   // 消息队列配置
