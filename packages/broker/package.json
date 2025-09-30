@@ -1,7 +1,6 @@
 {
   "name": "@sker/broker",
   "version": "1.0.0",
-  "type": "module",
   "description": "消息代理服务 - RabbitMQ封装、AI任务调度、实时通信协调",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +11,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
+    "start": "node dist/main.js",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "clean": "rimraf dist"

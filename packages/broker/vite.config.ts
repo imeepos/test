@@ -10,17 +10,20 @@ export default defineConfig({
     })
   ],
   build: {
-    lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'SkerBroker',
-      fileName: (format) => `index.${format}.js`,
-      formats: ['es', 'cjs']
-    },
     rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'src/index.ts'),
+        main: resolve(__dirname, 'src/main.ts')
+      },
+      output: {
+        entryFileNames: '[name].js',
+        format: 'cjs'
+      },
       external: [
         'amqplib',
         'uuid',
         'events',
+        'http',
         '@sker/models',
         '@sker/store'
       ]
