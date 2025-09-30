@@ -8,7 +8,7 @@ import { createStoreAdapterForBroker, createStoreAdapterFromEnv } from '../confi
 import type { StoreClientConfig } from '@sker/store'
 import type { StoreAdapter } from '../adapters/StoreAdapter'
 
-export interface BrokerConfig {
+export interface BrokerFactoryConfig {
   rabbitmq?: {
     url?: string
     reconnectDelay?: number
@@ -29,19 +29,31 @@ export interface BrokerDependencies {
  * 创建集成Store的Broker服务
  */
 export async function createBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ): Promise<{
   messageBroker: MessageBroker
   aiTaskScheduler: AITaskScheduler
   storeAdapter: StoreAdapter
 }> {
+  // 【调试日志3】打印传入的配置
+  console.log('🔍 createBrokerWithStore 接收到的配置:')
+  console.log(`   config.rabbitmq:`, JSON.stringify(config.rabbitmq, null, 2))
+  console.log(`   config.store:`, JSON.stringify(config.store, null, 2))
+
   // 创建Store适配器
   const storeAdapter = await createStoreAdapterForBroker(config.store)
 
+  // 【调试日志4】确定最终的连接URL
+  const finalConnectionUrl = config.rabbitmq?.url || 'amqp://localhost'
+  console.log('🔍 MessageBroker 连接配置:')
+  console.log(`   config.rabbitmq?.url: ${config.rabbitmq?.url}`)
+  console.log(`   最终connectionUrl: ${finalConnectionUrl}`)
+  console.log(`   重试配置: maxRetries=${config.rabbitmq?.maxReconnectAttempts || 10}, initialDelay=${config.rabbitmq?.reconnectDelay || 5000}`)
+
   // 创建消息代理
   const messageBroker = new MessageBroker({
-    connectionUrl: config.rabbitmq?.url || 'amqp://localhost',
+    connectionUrl: finalConnectionUrl,
     retry: {
       maxRetries: config.rabbitmq?.maxReconnectAttempts || 10,
       initialDelay: config.rabbitmq?.reconnectDelay || 5000,
@@ -76,10 +88,10 @@ export async function createBrokerWithStore(
  * 创建开发环境Broker
  */
 export async function createDevelopmentBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ) {
-  const devConfig: BrokerConfig = {
+  const devConfig: BrokerFactoryConfig = {
     rabbitmq: {
       url: process.env.RABBITMQ_URL || 'amqp://sker_user:sker_password@rabbitmq:5672',
       reconnectDelay: config.rabbitmq?.reconnectDelay ?? 3000,
@@ -106,10 +118,10 @@ export async function createDevelopmentBrokerWithStore(
  * 创建生产环境Broker
  */
 export async function createProductionBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ) {
-  const prodConfig: BrokerConfig = {
+  const prodConfig: BrokerFactoryConfig = {
     rabbitmq: {
       url: process.env.RABBITMQ_URL || 'amqp://sker_user:sker_password@rabbitmq:5672',
       reconnectDelay: config.rabbitmq?.reconnectDelay ?? 5000,
@@ -140,7 +152,7 @@ export async function createProductionBrokerWithStore(
  * 启动完整的Broker服务
  */
 export async function startBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ): Promise<{
   messageBroker: MessageBroker
@@ -184,7 +196,7 @@ export async function startBrokerWithStore(
  * 启动开发环境Broker
  */
 export async function startDevelopmentBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ) {
   return startBrokerWithStore(config, dependencies)
@@ -194,13 +206,13 @@ export async function startDevelopmentBrokerWithStore(
  * 启动生产环境Broker
  */
 export async function startProductionBrokerWithStore(
-  config: BrokerConfig = {},
+  config: BrokerFactoryConfig = {},
   dependencies?: Omit<BrokerDependencies, 'storeAdapter'>
 ) {
   const prodConfig = {
     ...config,
     rabbitmq: {
-      url: process.env.RABBITMQ_URL || 'amqp://rabbitmq:5672',
+      url: process.env.RABBITMQ_URL || 'amqp://sker_user:sker_password@rabbitmq:5672',
       reconnectDelay: 5000,
       maxReconnectAttempts: 10,
       ...config.rabbitmq
@@ -229,9 +241,20 @@ export async function startBrokerFromEnvironment(dependencies?: BrokerDependenci
 
   const env = process.env.NODE_ENV || 'development'
   
+  // 【调试日志1】打印所有相关环境变量的原始值
+  console.log('🔍 环境变量调试信息:')
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV}`)
+  console.log(`   RABBITMQ_URL: ${process.env.RABBITMQ_URL}`)
+  console.log(`   RABBITMQ_RECONNECT_DELAY: ${process.env.RABBITMQ_RECONNECT_DELAY}`)
+  console.log(`   RABBITMQ_MAX_RECONNECT_ATTEMPTS: ${process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS}`)
+  console.log(`   STORE_SERVICE_URL: ${process.env.STORE_SERVICE_URL}`)
+  console.log(`   STORE_AUTH_TOKEN: ${process.env.STORE_AUTH_TOKEN ? '[已设置]' : '[未设置]'}`)
+  
   // 只传递有效的非默认配置，让环境特定函数处理默认值
-  const config: BrokerConfig = {
+  const config: BrokerFactoryConfig = {
     rabbitmq: {
+      // 🔧 修复：直接传递RABBITMQ_URL到url字段
+      ...(process.env.RABBITMQ_URL && { url: process.env.RABBITMQ_URL }),
       // 只有当环境变量存在时才覆盖默认值
       ...(process.env.RABBITMQ_RECONNECT_DELAY && { reconnectDelay: parseInt(process.env.RABBITMQ_RECONNECT_DELAY) }),
       ...(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS && { maxReconnectAttempts: parseInt(process.env.RABBITMQ_MAX_RECONNECT_ATTEMPTS) })
@@ -247,9 +270,11 @@ export async function startBrokerFromEnvironment(dependencies?: BrokerDependenci
     }
   }
 
-  console.log(`📊 环境: ${env}`)
-  console.log(`🐰 RabbitMQ: ${process.env.RABBITMQ_URL || 'using environment default'}`)
-  console.log(`🏪 Store Service: ${process.env.STORE_SERVICE_URL || 'using environment default'}`)
+  // 【调试日志2】打印解析后的配置对象
+  console.log('🔍 解析后的配置对象:')
+  console.log(`   环境: ${env}`)
+  console.log(`   config.rabbitmq:`, JSON.stringify(config.rabbitmq, null, 2))
+  console.log(`   config.store:`, JSON.stringify(config.store, null, 2))
 
   if (env === 'production') {
     return startProductionBrokerWithStore(config, dependencies)

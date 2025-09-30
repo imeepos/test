@@ -24,7 +24,7 @@ export {
   startDevelopmentBrokerWithStore,
   startProductionBrokerWithStore,
   startBrokerFromEnvironment,
-  type BrokerConfig as ExtendedBrokerConfig,
+  type BrokerFactoryConfig as ExtendedBrokerConfig,
   type BrokerDependencies
 } from './factory/createBrokerWithStore'
 

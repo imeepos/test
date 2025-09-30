@@ -16,6 +16,12 @@ export class ConnectionManager extends EventEmitter {
   constructor(config: BrokerConfig) {
     super()
     this.config = config
+    
+    // 【调试日志5】ConnectionManager构造函数接收到的配置
+    console.log('🔍 ConnectionManager 构造配置:')
+    console.log(`   connectionUrl: ${config.connectionUrl}`)
+    console.log(`   connectionOptions:`, JSON.stringify(config.connectionOptions, null, 2))
+    console.log(`   retry:`, JSON.stringify(config.retry, null, 2))
   }
 
   /**
@@ -29,6 +35,11 @@ export class ConnectionManager extends EventEmitter {
     this.isConnecting = true
 
     try {
+      // 【调试日志6】连接尝试时的详细信息
+      console.log('🔍 正在尝试连接RabbitMQ:')
+      console.log(`   connectionUrl: ${this.config.connectionUrl}`)
+      console.log(`   connectionOptions:`, JSON.stringify(this.config.connectionOptions || {}, null, 2))
+      
       console.log('Connecting to RabbitMQ...')
 
       this.connection = await amqp.connect(
