@@ -11,6 +11,8 @@ resources
 .env.staging
 .env.development
 
+nul
+
 # IDE and editor files
 .vscode/
 .idea/
