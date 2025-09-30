@@ -22,7 +22,6 @@ RUN pnpm install --frozen-lockfile
 
 # Copy studio app source files
 COPY apps/studio/src ./apps/studio/src
-COPY apps/studio/public ./apps/studio/public
 COPY apps/studio/index.html ./apps/studio/
 COPY apps/studio/vite.config.ts ./apps/studio/
 COPY apps/studio/tsconfig.json ./apps/studio/

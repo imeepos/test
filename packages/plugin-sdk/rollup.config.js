@@ -30,7 +30,8 @@ export default [
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        declaration: false,
+        declaration: true,
+        declarationDir: 'dist',
         declarationMap: false,
       }),
     ],
@@ -38,7 +39,7 @@ export default [
   },
   // 类型定义
   {
-    input: 'dist/index.d.ts',
+    input: 'src/index.ts',
     output: [{ file: 'dist/index.d.ts', format: 'esm' }],
     plugins: [dts()],
   },

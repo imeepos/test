@@ -204,7 +204,7 @@ export interface UIHelperAPI {
    * @param form 表单元素
    * @returns 验证结果
    */
-  validateForm(form: HTMLFormElement): Promise<ValidationResult>
+  validateForm(form: HTMLFormElement): Promise<FormValidationResult>
 
   /**
    * 获取表单数据
@@ -506,9 +506,9 @@ export interface FormOptions {
 }
 
 /**
- * 验证结果
+ * 表单验证结果
  */
-export interface ValidationResult {
+export interface FormValidationResult {
   valid: boolean
   errors: Array<{
     field: string

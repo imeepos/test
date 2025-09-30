@@ -275,6 +275,7 @@ export class ContentGenerator {
     }
 
     return {
+      content: optimizedContent, // 统一的内容字段
       optimizedContent,
       improvementSummary,
       confidence: result.confidence,

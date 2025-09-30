@@ -3,7 +3,13 @@ import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
 import { BatchGenerateRequest } from '../types/SpecificTypes'
 import { ResponseMapper } from '../adapters/ResponseMapper'
 import { BaseRouter, RouterDependencies } from './BaseRouter'
-import { AITaskType } from '@sker/models'
+import {
+  UnifiedAITaskType,
+  UnifiedTaskStatus,
+  TaskPriority,
+  UnifiedAITaskMessage,
+  TaskMetadata
+} from '@sker/models'
 
 /**
  * AI服务路由器 - 处理AI内容生成、优化、融合等功能
@@ -54,26 +60,30 @@ export class AIRouter extends BaseRouter {
         return
       }
 
-      // 创建AI任务
+      // 创建AI任务 - 符合UnifiedAITaskMessage接口
       const taskId = this.generateTaskId()
-      const aiTask = {
+      const aiTask: UnifiedAITaskMessage = {
         taskId,
-        type,
-        status: 'queued',
-        priority: 'normal',
-        userId,
+        type: type === 'content_generation' ? 'generate' : 'generate',
+        inputs: inputs || [],
+        context: context,
+        instruction: instruction,
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          temperature: 0.7,
+          maxTokens: 2000
+        },
+        nodeId: req.params.nodeId || '',
         projectId,
-        data: {
-          inputs,
-          context,
-          instruction,
-          type
-        },
+        userId,
+        priority: 'normal' as TaskPriority,
+        timestamp: new Date(),
         metadata: {
-          requestId: req.requestId,
-          source: 'gateway_api'
-        },
-        timestamp: new Date()
+          originalRequestId: req.requestId,
+          sessionId: req.sessionId,
+          tags: ['gateway_api'],
+          model: 'gpt-3.5-turbo'
+        }
       }
 
       // 发布任务到队列
@@ -83,7 +93,7 @@ export class AIRouter extends BaseRouter {
       res.success(ResponseMapper.toAPISuccess(
         {
           taskId,
-          status: 'queued',
+          status: 'queued' as AITaskStatus,
           message: '任务已提交到处理队列，结果将通过WebSocket推送'
         },
         'AI任务已提交',
@@ -121,8 +131,8 @@ export class AIRouter extends BaseRouter {
       const aiTask = {
         taskId,
         type: 'content_optimization' as AITaskType,
-        status: 'queued',
-        priority: 'normal',
+        status: 'queued' as AITaskStatus,
+        priority: 'normal' as TaskPriority,
         userId,
         projectId,
         data: {
@@ -132,7 +142,10 @@ export class AIRouter extends BaseRouter {
         },
         metadata: {
           requestId: req.requestId,
-          source: 'gateway_api'
+          source: 'gateway_api',
+          model: 'gpt-3.5-turbo',
+          retryCount: 0,
+          createdAt: new Date()
         },
         timestamp: new Date()
       }
@@ -144,7 +157,7 @@ export class AIRouter extends BaseRouter {
       res.success(ResponseMapper.toAPISuccess(
         {
           taskId,
-          status: 'queued',
+          status: 'queued' as AITaskStatus,
           message: '优化任务已提交到处理队列，结果将通过WebSocket推送'
         },
         'AI优化任务已提交',
@@ -177,26 +190,29 @@ export class AIRouter extends BaseRouter {
         return
       }
 
-      // 创建AI融合任务
+      // 创建AI融合任务 - 符合UnifiedAITaskMessage接口
       const taskId = this.generateTaskId()
-      const aiTask = {
+      const aiTask: UnifiedAITaskMessage = {
         taskId,
-        type: 'content_fusion' as AITaskType,
-        status: 'queued',
-        priority: 'high', // 融合任务优先级较高
-        userId,
-        projectId,
-        data: {
-          inputs,
-          instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
-          type: 'fusion'
-        },
-        metadata: {
-          requestId: req.requestId,
-          source: 'gateway_api',
+        type: 'fusion' as UnifiedAITaskType,
+        inputs: inputs,
+        context: undefined,
+        instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          temperature: 0.7,
           inputCount: inputs.length
         },
-        timestamp: new Date()
+        nodeId: '',
+        projectId,
+        userId,
+        priority: 'high' as TaskPriority, // 融合任务优先级较高
+        timestamp: new Date(),
+        metadata: {
+          originalRequestId: req.requestId,
+          tags: ['gateway_api', 'fusion'],
+          model: 'gpt-3.5-turbo'
+        }
       }
 
       // 发布任务到队列
@@ -206,7 +222,7 @@ export class AIRouter extends BaseRouter {
       res.success(ResponseMapper.toAPISuccess(
         {
           taskId,
-          status: 'queued',
+          status: 'queued' as AITaskStatus,
           inputCount: inputs.length,
           message: '融合任务已提交到处理队列，结果将通过WebSocket推送'
         },
@@ -309,29 +325,34 @@ export class AIRouter extends BaseRouter {
         return this.batchGenerateDirect(req, res)
       }
 
-      // 创建批量任务
+      // 创建批量任务 - 符合UnifiedAITaskMessage接口
       const batchTaskId = this.generateTaskId()
-      const batchTask = {
+      const batchTask: UnifiedAITaskMessage = {
         taskId: batchTaskId,
-        type: 'batch_processing' as AITaskType,
-        status: 'queued',
-        priority: options.priority || 'normal',
-        userId,
-        projectId,
-        data: {
-          requests,
-          options: {
-            parallel: options.parallel !== false, // 默认并行处理
-            failFast: options.failFast === true, // 默认不快速失败
+        type: 'generate' as UnifiedAITaskType, // 批处理映射为generate
+        inputs: requests.map(req => req.prompt || ''),
+        context: undefined,
+        instruction: 'Batch processing request',
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          batchOptions: {
+            parallel: options.parallel !== false,
+            failFast: options.failFast === true,
             maxConcurrency: Math.min(options.maxConcurrency || 3, requests.length)
-          }
+          },
+          requests: requests
         },
+        nodeId: '',
+        projectId,
+        userId,
+        priority: (options.priority || 'normal') as TaskPriority,
+        timestamp: new Date(),
         metadata: {
-          requestId: req.requestId,
-          source: 'gateway_api_batch',
-          batchSize: requests.length
-        },
-        timestamp: new Date()
+          originalRequestId: req.requestId,
+          tags: ['gateway_api', 'batch'],
+          batchId: batchTaskId,
+          model: 'gpt-3.5-turbo'
+        }
       }
 
       // 发布批量任务到队列
@@ -341,7 +362,7 @@ export class AIRouter extends BaseRouter {
       res.success(ResponseMapper.toAPISuccess(
         {
           batchTaskId,
-          status: 'queued',
+          status: 'queued' as AITaskStatus,
           batchSize: requests.length,
           estimatedTime: requests.length * 2, // 估算处理时间（秒）
           message: '批量任务已提交到处理队列，结果将通过WebSocket推送'

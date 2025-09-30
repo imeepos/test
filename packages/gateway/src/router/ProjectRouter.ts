@@ -440,7 +440,7 @@ export class ProjectRouter extends BaseRouter {
 
       // 计算分页信息
       const totalPages = Math.ceil(totalCount / options.limit)
-      const currentPage = parseInt(page)
+      const currentPage = parseInt(page as string)
       const hasNext = currentPage < totalPages
       const hasPrev = currentPage > 1
 

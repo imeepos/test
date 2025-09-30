@@ -1,6 +1,7 @@
 {
   "name": "@sker/plugin-sdk",
   "version": "1.0.0",
+  "type": "module",
   "description": "SKER 插件开发 SDK - 为第三方开发者提供完整的插件开发接口",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

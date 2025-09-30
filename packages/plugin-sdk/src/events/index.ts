@@ -68,12 +68,13 @@ export interface EventSystemAPI {
 /**
  * 事件系统实现
  */
-export class EventSystem extends EventEmitter implements EventSystemAPI {
+export class EventSystem implements EventSystemAPI {
+  private emitter: EventEmitter
   private namespace: string
   private globalEmitter: EventEmitter
 
   constructor(namespace: string, globalEmitter: EventEmitter) {
-    super()
+    this.emitter = new EventEmitter()
     this.namespace = namespace
     this.globalEmitter = globalEmitter
   }
@@ -83,7 +84,7 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
    */
   on<T = any>(event: string, listener: (data: T) => void): void {
     const namespacedEvent = this.getNamespacedEvent(event)
-    super.on(namespacedEvent, listener)
+    this.emitter.on(namespacedEvent, listener)
 
     // 如果是系统事件，也监听全局事件
     if (this.isSystemEvent(event)) {
@@ -96,7 +97,7 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
    */
   once<T = any>(event: string, listener: (data: T) => void): void {
     const namespacedEvent = this.getNamespacedEvent(event)
-    super.once(namespacedEvent, listener)
+    this.emitter.once(namespacedEvent, listener)
 
     if (this.isSystemEvent(event)) {
       this.globalEmitter.once(event, listener)
@@ -109,12 +110,12 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
   off<T = any>(event: string, listener?: (data: T) => void): void {
     const namespacedEvent = this.getNamespacedEvent(event)
     if (listener) {
-      super.off(namespacedEvent, listener)
+      this.emitter.off(namespacedEvent, listener)
       if (this.isSystemEvent(event)) {
         this.globalEmitter.off(event, listener)
       }
     } else {
-      super.removeAllListeners(namespacedEvent)
+      this.emitter.removeAllListeners(namespacedEvent)
       if (this.isSystemEvent(event)) {
         this.globalEmitter.removeAllListeners(event)
       }
@@ -131,13 +132,13 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
     const eventPacket: EventPacket<T> = {
       event,
       data,
-      namespace: this.namespace,
+      namespace: this.getNamespace(),
       timestamp: Date.now(),
       source: 'plugin',
     }
 
     // 发射命名空间事件
-    super.emit(namespacedEvent, eventPacket.data)
+    this.emitter.emit(namespacedEvent, eventPacket.data)
 
     // 发射全局事件（供其他插件监听）
     this.globalEmitter.emit(`plugin:${event}`, eventPacket)
@@ -146,6 +147,60 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
     if (this.isPluginEvent(event)) {
       this.globalEmitter.emit('plugin.message', eventPacket)
     }
+  }
+
+  /**
+   * 获取事件监听器数量
+   */
+  listenerCount(event: string): number {
+    const namespacedEvent = this.getNamespacedEvent(event)
+    return this.emitter.listenerCount(namespacedEvent)
+  }
+
+  /**
+   * 获取所有事件名称
+   */
+  eventNames(): string[] {
+    return this.emitter.eventNames().map(event => {
+      const str = event.toString()
+      return str.replace(`${this.namespace}:`, '')
+    })
+  }
+
+  /**
+   * 移除所有监听器
+   */
+  removeAllListeners(event?: string): void {
+    if (event) {
+      const namespacedEvent = this.getNamespacedEvent(event)
+      this.emitter.removeAllListeners(namespacedEvent)
+      if (this.isSystemEvent(event)) {
+        this.globalEmitter.removeAllListeners(event)
+      }
+    } else {
+      this.emitter.removeAllListeners()
+    }
+  }
+
+  /**
+   * 设置最大监听器数量
+   */
+  setMaxListeners(count: number): void {
+    this.emitter.setMaxListeners(count)
+  }
+
+  /**
+   * 获取最大监听器数量
+   */
+  getMaxListeners(): number {
+    return this.emitter.getMaxListeners()
+  }
+
+  /**
+   * 获取命名空间
+   */
+  getNamespace(): string {
+    return this.namespace
   }
 
   /**
@@ -189,7 +244,7 @@ export class EventSystem extends EventEmitter implements EventSystemAPI {
     } else if (listener) {
       // 监听特定插件消息
       this.globalEmitter.on('plugin.message', (message: PluginMessage<T>) => {
-        if (message.namespace === fromPlugin) {
+        if (message.fromPlugin === fromPlugin) {
           listener(message)
         }
       })
@@ -442,7 +497,7 @@ export class AdvancedEventSystem extends EventSystem {
     this.history.push({
       event,
       data,
-      namespace: this.namespace,
+      namespace: this.getNamespace(),
       timestamp: Date.now(),
       listenerCount: this.listenerCount(event),
     })
@@ -452,7 +507,7 @@ export class AdvancedEventSystem extends EventSystem {
     this.stats.set(event, count + 1)
 
     // 调用父类方法
-    super.emit(event, data)
+    this.emitter.emit(event, data)
   }
 
   /**

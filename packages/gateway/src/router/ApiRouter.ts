@@ -140,7 +140,7 @@ export class ApiRouter extends BaseRouter {
    */
   addRoute(path: string, handler: RouteHandler): void {
     this.routes.set(path, handler)
-    this.router.use(path, handler)
+    this.router.use(path, handler as any)
   }
 
   /**

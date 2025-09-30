@@ -747,4 +747,59 @@ export class AIEngine extends EventEmitter {
   async enhanceNode(request: ExpandRequest): Promise<ExpandResult> {
     return this.expandContent(request)
   }
+
+  /**
+   * 获取引擎健康状态
+   */
+  async getHealthStatus(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy'
+    provider: string
+    version: string
+    uptime: number
+    lastError?: string
+  }> {
+    try {
+      // 简单的健康检查
+      const uptime = Date.now() - this.stats.startTime
+
+      return {
+        status: 'healthy',
+        provider: this.config.provider,
+        version: '1.0.0',
+        uptime,
+        lastError: this.stats.lastError?.message
+      }
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        provider: this.config.provider,
+        version: '1.0.0',
+        uptime: 0,
+        lastError: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
+   * 获取引擎配置信息
+   */
+  getConfiguration(): {
+    provider: string
+    model: string
+    features: string[]
+    limits: {
+      maxTokens: number
+      requestsPerMinute: number
+    }
+  } {
+    return {
+      provider: this.config.provider,
+      model: this.config.model.name,
+      features: ['generation', 'optimization', 'fusion', 'analysis', 'expansion'],
+      limits: {
+        maxTokens: this.config.model.maxTokens,
+        requestsPerMinute: this.config.rateLimiting?.requestsPerMinute || 60
+      }
+    }
+  }
 }

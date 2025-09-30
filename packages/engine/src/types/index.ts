@@ -108,6 +108,7 @@ export interface OptimizeRequest {
 }
 
 export interface OptimizeResult {
+  content: string // 统一的内容字段
   optimizedContent: string
   improvementSummary: string
   confidence: number
@@ -124,6 +125,7 @@ export interface FusionRequest {
 }
 
 export interface FusionResult {
+  content: string // 统一的内容字段
   fusedContent: string
   keyInsights: string[]
   confidence: number

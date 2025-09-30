@@ -15,7 +15,8 @@ import { RequestEnhancer } from '../middleware/RequestEnhancer'
 import { QueueManager } from '../messaging/QueueManager'
 import {
   QUEUE_NAMES,
-  EXCHANGE_NAMES
+  EXCHANGE_NAMES,
+  ROUTING_KEYS
 } from '@sker/models'
 import type { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store'
@@ -59,6 +60,23 @@ export class GatewayServer {
           websocketBroadcast: QUEUE_NAMES.EVENTS_WEBSOCKET,
           systemNotifications: QUEUE_NAMES.EVENTS_STORAGE,
           deadLetterQueue: 'dlx.queue'
+        },
+        routingKeys: {
+          aiTask: {
+            request: ROUTING_KEYS.AI_PROCESS,
+            result: ROUTING_KEYS.AI_RESULT,
+            progress: ROUTING_KEYS.AI_PROCESS
+          },
+          websocket: {
+            broadcast: ROUTING_KEYS.WEBSOCKET_CONNECTED,
+            userMessage: ROUTING_KEYS.WEBSOCKET_CONNECTED,
+            systemMessage: ROUTING_KEYS.WEBSOCKET_CONNECTED
+          },
+          system: {
+            notification: ROUTING_KEYS.NOTIFICATION_SENT,
+            alert: ROUTING_KEYS.ALERT_SENT,
+            maintenance: ROUTING_KEYS.SYSTEM_UPDATED
+          }
         }
       })
     }
@@ -119,7 +137,7 @@ export class GatewayServer {
 
     // 限流中间件
     const limiter = rateLimit(this.config.rateLimit)
-    this.app.use(limiter)
+    this.app.use(limiter as any)
 
     // 请求增强中间件（添加requestId等）
     this.app.use(RequestEnhancer.enhance())

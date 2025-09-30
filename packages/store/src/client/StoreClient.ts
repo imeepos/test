@@ -303,6 +303,18 @@ export class StoreClient {
   }
 
   /**
+   * 发布实体变更事件
+   */
+  async publishEntityChange(event: any): Promise<void> {
+    try {
+      await this.http.post<ApiResponse>('/api/v1/events/entity-change', event)
+    } catch (error) {
+      console.warn('发布实体变更事件失败:', error)
+      // 不抛出错误，允许操作继续
+    }
+  }
+
+  /**
    * 关闭客户端
    */
   async close(): Promise<void> {
@@ -442,6 +454,30 @@ class ProjectRepositoryClient {
     })
     return response.data.data.total
   }
+
+  async updateLastAccessed(id: string) {
+    const response = await this.http.put<ApiResponse>(`/api/v1/projects/${id}/last-accessed`)
+    return response.data.data
+  }
+
+  async archive(id: string) {
+    const response = await this.http.put<ApiResponse>(`/api/v1/projects/${id}/archive`)
+    return response.data.data
+  }
+
+  async search(query: any, options: any = {}) {
+    const response = await this.http.get<ApiResponse>('/api/v1/projects/search', {
+      params: { ...query, ...options }
+    })
+    return response.data.data
+  }
+
+  async findWithPagination(options: any = {}) {
+    const response = await this.http.get<ApiResponse>('/api/v1/projects/paginated', {
+      params: options
+    })
+    return response.data.data
+  }
 }
 
 /**
@@ -489,6 +525,20 @@ class NodeRepositoryClient {
       params: filter
     })
     return response.data.data.total
+  }
+
+  async findByTags(tags: string[], options: any = {}) {
+    const response = await this.http.get<ApiResponse>('/api/v1/nodes/by-tags', {
+      params: { tags: tags.join(','), ...options }
+    })
+    return response.data.data
+  }
+
+  async findWithPagination(options: any = {}) {
+    const response = await this.http.get<ApiResponse>('/api/v1/nodes/paginated', {
+      params: options
+    })
+    return response.data.data
   }
 }
 

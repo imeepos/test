@@ -10,10 +10,10 @@ import type {
   QueueMessageHandler,
   QueueSubscription,
   MessageMetadata,
-  AITaskMessage,
   WebSocketMessage,
   GatewayQueueConfig
 } from '../types/messaging'
+import type { UnifiedAITaskMessage } from '@sker/models/src/messaging/AITaskTypes'
 
 /**
  * Gateway 队列管理器 - 处理各种消息队列操作
@@ -284,7 +284,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 发布 AI 任务
    */
-  async publishAITask(task: AITaskMessage): Promise<void> {
+  async publishAITask(task: UnifiedAITaskMessage): Promise<void> {
     try {
       const routingKey = `${ROUTING_KEYS.AI_PROCESS}.${task.type}.${task.priority || 'normal'}`
 

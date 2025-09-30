@@ -1,5 +1,3 @@
-import { StorageItem } from '../types'
-
 /**
  * 存储API
  * 提供数据存储和管理的接口
