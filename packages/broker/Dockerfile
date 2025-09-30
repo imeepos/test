@@ -90,7 +90,7 @@ EXPOSE 3002
 
 # 健康检查：检查进程是否存在
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD pgrep -f "node.*dist/index.js" > /dev/null || exit 1
+  CMD pgrep -f "node.*dist/main.js" > /dev/null || exit 1
 
 # 运行应用
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]
