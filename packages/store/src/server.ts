@@ -63,28 +63,37 @@ function createApp(storeService: any): express.Application {
       const isHealthy = healthCheck.postgres.status === 'healthy' &&
                        healthCheck.redis.status === 'healthy'
 
-      const healthStatus = {
+      const healthData = {
         status: isHealthy ? 'healthy' : 'unhealthy',
-        timestamp: new Date().toISOString(),
+        database: healthCheck,
+        timestamp: new Date(),
+        uptime: process.uptime(),
         service: 'store',
         version: '2.0.0',
         connections: connectionStatus,
-        healthCheck: healthCheck,
-        uptime: process.uptime(),
         memory: process.memoryUsage(),
         env: process.env.NODE_ENV || 'development'
       }
 
-      res.status(isHealthy ? 200 : 503).json(healthStatus)
-    } catch (error) {
-      const errorStatus = {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        service: 'store',
-        error: error instanceof Error ? error.message : 'Unknown error'
+      // 返回标准 ApiResponse 格式
+      const response = {
+        success: true,
+        data: healthData,
+        timestamp: new Date().toISOString()
       }
 
-      res.status(503).json(errorStatus)
+      res.status(isHealthy ? 200 : 503).json(response)
+    } catch (error) {
+      const response = {
+        success: false,
+        error: {
+          code: 'HEALTH_CHECK_FAILED',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        },
+        timestamp: new Date().toISOString()
+      }
+
+      res.status(503).json(response)
     }
   })
 

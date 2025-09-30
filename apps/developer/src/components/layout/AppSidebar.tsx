@@ -17,7 +17,7 @@ import {
   CrownOutlined,
   GiftOutlined,
 } from '@ant-design/icons'
-import type { MenuItem } from '@types/index'
+import type { MenuItem } from '../../types'
 
 const { Sider } = Layout
 const { Text } = Typography
@@ -220,7 +220,7 @@ export const AppSidebar: React.FC = () => {
   }
 
   // 转换菜单项格式给 Ant Design Menu 组件
-  const transformMenuItems = (items: MenuItem[]) => {
+  const transformMenuItems = (items: MenuItem[]): any[] => {
     return items.map((item) => ({
       key: item.key,
       label: (

@@ -73,7 +73,6 @@ export class ResponseMapper {
       metadata: {
         requestId: additionalContext?.requestId || this.generateRequestId(),
         source: 'gateway_api',
-        type: frontendRequest.type,
         inputCount: frontendRequest.inputs?.length || 1
       }
     }
@@ -119,26 +118,20 @@ export class ResponseMapper {
    * 转换错误到统一错误格式
    */
   static toAPIError(error: Error | any, requestId?: string): {
-    success: false
-    error: {
-      code: string
-      message: string
-      timestamp: Date
-      requestId?: string
-      details?: any
-    }
+    code: string
+    message: string
+    timestamp: Date
+    requestId: string
+    details?: any
   } {
     const errorCode = this.mapErrorToCode(error)
 
     return {
-      success: false,
-      error: {
-        code: errorCode,
-        message: error.message || '未知错误',
-        timestamp: new Date(),
-        requestId,
-        details: error.details || undefined
-      }
+      code: errorCode,
+      message: error.message || '未知错误',
+      timestamp: new Date(),
+      requestId: requestId || this.generateRequestId(),
+      details: error.details || undefined
     }
   }
 
@@ -238,7 +231,7 @@ export class ResponseMapper {
         'tags': '请为以上内容提取3-5个关键标签'
       }
 
-      const instruction = defaultInstructions[request.type as keyof typeof defaultInstructions] || defaultInstructions.generate
+      const instruction = defaultInstructions.generate
       parts.push(`指令：${instruction}\n`)
     }
 

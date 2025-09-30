@@ -19,14 +19,6 @@ export const GlobalErrorHandler: React.FC<GlobalErrorHandlerProps> = ({ children
         type: 'error',
         title: '操作失败',
         message: event.reason?.message || '发生了意外错误，请稍后重试',
-        persistent: true,
-        actions: [
-          {
-            label: '刷新页面',
-            onClick: () => window.location.reload(),
-            variant: 'primary'
-          }
-        ]
       })
 
       // 阻止浏览器默认错误处理
@@ -46,14 +38,6 @@ export const GlobalErrorHandler: React.FC<GlobalErrorHandlerProps> = ({ children
         type: 'error',
         title: '运行时错误',
         message: '页面遇到了一些问题，建议刷新页面',
-        persistent: true,
-        actions: [
-          {
-            label: '刷新页面',
-            onClick: () => window.location.reload(),
-            variant: 'primary'
-          }
-        ]
       })
     }
 
@@ -73,36 +57,6 @@ export const GlobalErrorHandler: React.FC<GlobalErrorHandlerProps> = ({ children
       type: 'error',
       title: '应用错误',
       message: '应用遇到了严重错误，请尝试刷新页面',
-      persistent: true,
-      copyable: true,
-      actions: [
-        {
-          label: '刷新页面',
-          onClick: () => window.location.reload(),
-          variant: 'primary'
-        },
-        {
-          label: '报告问题',
-          onClick: () => {
-            const title = encodeURIComponent(`应用错误: ${error.message}`)
-            const body = encodeURIComponent(`
-错误详情：
-${error.message}
-
-堆栈信息：
-${error.stack}
-
-组件堆栈：
-${errorInfo.componentStack}
-
-时间：${new Date().toISOString()}
-URL：${window.location.href}
-User Agent：${navigator.userAgent}
-            `)
-            window.open(`https://github.com/your-repo/issues/new?title=${title}&body=${body}`, '_blank')
-          }
-        }
-      ]
     })
   }
 
@@ -156,12 +110,6 @@ export const AIErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ child
         type: 'warning',
         title: 'AI服务暂时不可用',
         message: '请稍后重试，或手动输入内容',
-        actions: [
-          {
-            label: '重试',
-            onClick: () => window.location.reload()
-          }
-        ]
       })
     }
   }

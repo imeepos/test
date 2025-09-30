@@ -69,11 +69,11 @@ RUN chown -R engine:nodejs /app
 USER engine
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 8001
 
 # 健康检查：检查HTTP服务
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1
 
 # 运行应用
-CMD ["node", "dist/server/index.js"]
+CMD ["node", "dist/server.es.js"]

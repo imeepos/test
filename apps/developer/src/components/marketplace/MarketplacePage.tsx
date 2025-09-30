@@ -234,7 +234,7 @@ export const MarketplacePage: React.FC = () => {
                       {plugin.name}
                     </Title>
                     {plugin.trending && (
-                      <Tag color="red" size="small">
+                      <Tag color="red">
                         热门
                       </Tag>
                     )}
@@ -244,7 +244,7 @@ export const MarketplacePage: React.FC = () => {
                     <Text type="secondary" className="text-sm">
                       {plugin.author.displayName}
                     </Text>
-                    <Tag color={getCategoryColor(plugin.category)} size="small">
+                    <Tag color={getCategoryColor(plugin.category)}>
                       {getCategoryText(plugin.category)}
                     </Tag>
                   </div>
@@ -309,7 +309,7 @@ export const MarketplacePage: React.FC = () => {
                     </Text>
                   </div>
                   <div className="flex items-center justify-between">
-                    <Tag color={getCategoryColor(plugin.category)} size="small">
+                    <Tag color={getCategoryColor(plugin.category)}>
                       {getCategoryText(plugin.category)}
                     </Tag>
                     <Space size="small">

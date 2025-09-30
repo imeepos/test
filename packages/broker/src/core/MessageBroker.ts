@@ -1,4 +1,4 @@
-import amqp from 'amqplib'
+import * as amqp from 'amqplib'
 import { EventEmitter } from 'events'
 import { v4 as uuidv4 } from 'uuid'
 import type {
@@ -164,8 +164,8 @@ export class MessageBroker extends EventEmitter {
     content: any,
     options: MessageOptions = {}
   ): Promise<void> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
 
     const messageBuffer = Buffer.from(JSON.stringify(content))
@@ -233,8 +233,8 @@ export class MessageBroker extends EventEmitter {
           return
         }
 
-        // 获取下一个序列号
-        const seqNo = (this.confirmChannel! as any).ch.nextSeqNum()
+        // 获取下一个序列号 - 使用时间戳作为唯一标识
+        const seqNo = Date.now() + Math.random()
 
         // 设置确认超时
         const timer = setTimeout(() => {
@@ -279,8 +279,8 @@ export class MessageBroker extends EventEmitter {
     handler: (message: amqp.ConsumeMessage | null) => Promise<void>,
     options: ConsumerOptions = {}
   ): Promise<amqp.Replies.Consume> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
 
     const consumerOptions: amqp.Options.Consume = {
@@ -312,8 +312,8 @@ export class MessageBroker extends EventEmitter {
    * 确认消息
    */
   ack(message: amqp.ConsumeMessage): void {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     this.channel.ack(message)
   }
@@ -322,8 +322,8 @@ export class MessageBroker extends EventEmitter {
    * 拒绝消息
    */
   nack(message: amqp.ConsumeMessage, requeue: boolean = false): void {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     this.channel.nack(message, false, requeue)
   }
@@ -332,8 +332,8 @@ export class MessageBroker extends EventEmitter {
    * 拒绝消息（单条）
    */
   reject(message: amqp.ConsumeMessage, requeue: boolean = false): void {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     this.channel.reject(message, requeue)
   }
@@ -347,8 +347,8 @@ export class MessageBroker extends EventEmitter {
     content: any,
     timeout: number = 30000
   ): Promise<T> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
 
     return new Promise(async (resolve, reject) => {
@@ -403,8 +403,8 @@ export class MessageBroker extends EventEmitter {
    * 获取队列信息
    */
   async getQueueInfo(queue: string): Promise<amqp.Replies.AssertQueue> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     return await this.channel.checkQueue(queue)
   }
@@ -413,8 +413,8 @@ export class MessageBroker extends EventEmitter {
    * 清空队列
    */
   async purgeQueue(queue: string): Promise<amqp.Replies.PurgeQueue> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     return await this.channel.purgeQueue(queue)
   }
@@ -423,8 +423,8 @@ export class MessageBroker extends EventEmitter {
    * 删除队列
    */
   async deleteQueue(queue: string, options: { ifUnused?: boolean; ifEmpty?: boolean } = {}): Promise<amqp.Replies.DeleteQueue> {
-    if (!this.channel) {
-      throw new Error('Broker not started')
+    if (!this.isReady()) {
+      throw new Error('Broker not ready - connection or channels not available')
     }
     return await this.channel.deleteQueue(queue, options)
   }
@@ -434,6 +434,16 @@ export class MessageBroker extends EventEmitter {
    */
   isConnected(): boolean {
     return this.connectionManager.isConnected()
+  }
+
+  /**
+   * 检查broker是否完全准备就绪（连接已建立且所有channel都可用）
+   */
+  isReady(): boolean {
+    return this.isStarted && 
+           this.isConnected() && 
+           this.channel !== null && 
+           this.confirmChannel !== null
   }
 
   /**

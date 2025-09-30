@@ -1,3 +1,4 @@
+import { io, Socket } from 'socket.io-client'
 import type { WebSocketStatus, AIGenerateRequest, AIGenerateResponse } from '@/types'
 
 interface WebSocketMessage {
@@ -19,15 +20,13 @@ type MessageHandler = (message: WebSocketMessage) => void
 type StatusHandler = (status: WebSocketStatus) => void
 
 class WebSocketService {
-  private ws: WebSocket | null = null
+  private socket: Socket | null = null
   private config: WebSocketConfig
   private messageQueue: WebSocketMessage[] = []
   private pendingMessages: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map()
   private messageHandlers: Map<string, MessageHandler> = new Map()
   private statusHandlers: Set<StatusHandler> = new Set()
   private reconnectAttempts: number = 0
-  private reconnectTimer: number | null = null
-  private heartbeatTimer: number | null = null
   private currentStatus: WebSocketStatus = 'disconnected'
 
   constructor(config: WebSocketConfig) {
@@ -38,7 +37,7 @@ class WebSocketService {
    * 连接WebSocket
    */
   async connect(): Promise<void> {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.socket?.connected) {
       return Promise.resolve()
     }
 
@@ -46,35 +45,53 @@ class WebSocketService {
       this.updateStatus('connecting')
       
       try {
-        this.ws = new WebSocket(this.config.url)
+        this.socket = io(this.config.url, {
+          autoConnect: false,
+          timeout: this.config.messageTimeout,
+          retries: this.config.maxReconnectAttempts,
+          forceNew: true
+        })
         
-        this.ws.onopen = () => {
+        this.socket.on('connect', () => {
           this.updateStatus('connected')
           this.reconnectAttempts = 0
-          this.startHeartbeat()
+          this.authenticate()
           this.processMessageQueue()
           resolve()
-        }
+        })
 
-        this.ws.onmessage = (event) => {
-          this.handleMessage(event.data)
-        }
-
-        this.ws.onclose = (event) => {
+        this.socket.on('disconnect', (reason) => {
           this.updateStatus('disconnected')
-          this.stopHeartbeat()
           
-          if (!event.wasClean && this.reconnectAttempts < this.config.maxReconnectAttempts) {
-            this.scheduleReconnect()
+          if (reason === 'io server disconnect') {
+            // 服务器断开连接，需要手动重连
+            if (this.reconnectAttempts < this.config.maxReconnectAttempts) {
+              this.scheduleReconnect()
+            }
           }
-        }
+        })
 
-        this.ws.onerror = (error) => {
-          console.error('WebSocket错误:', error)
+        this.socket.on('connect_error', (error) => {
+          console.error('Socket.IO连接错误:', error)
           if (this.currentStatus === 'connecting') {
-            reject(new Error('WebSocket连接失败'))
+            reject(new Error('Socket.IO连接失败'))
           }
-        }
+        })
+
+        this.socket.on('authenticated', () => {
+          console.log('Socket.IO认证成功')
+        })
+
+        this.socket.on('error', (error) => {
+          console.error('Socket.IO错误:', error)
+        })
+
+        // 监听响应消息
+        this.socket.onAny((eventName, data) => {
+          this.handleMessage(eventName, data)
+        })
+
+        this.socket.connect()
 
       } catch (error) {
         reject(error)
@@ -86,16 +103,9 @@ class WebSocketService {
    * 断开连接
    */
   disconnect(): void {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-    
-    this.stopHeartbeat()
-    
-    if (this.ws) {
-      this.ws.close(1000, 'Client disconnect')
-      this.ws = null
+    if (this.socket) {
+      this.socket.disconnect()
+      this.socket = null
     }
     
     this.updateStatus('disconnected')
@@ -105,14 +115,18 @@ class WebSocketService {
    * 发送消息
    */
   async sendMessage(type: string, payload: any): Promise<any> {
+    const requestId = this.generateMessageId()
     const message: WebSocketMessage = {
-      id: this.generateMessageId(),
+      id: requestId,
       type,
-      payload,
+      payload: {
+        ...payload,
+        requestId // 确保payload中包含requestId
+      },
       timestamp: Date.now(),
     }
 
-    if (this.ws?.readyState !== WebSocket.OPEN) {
+    if (!this.socket?.connected) {
       // 如果连接不可用，添加到队列
       this.messageQueue.push(message)
       
@@ -121,22 +135,22 @@ class WebSocketService {
         await this.connect()
       }
       
-      return Promise.reject(new Error('WebSocket未连接'))
+      return Promise.reject(new Error('Socket.IO未连接'))
     }
 
     return new Promise((resolve, reject) => {
       // 设置超时
       const timeout = setTimeout(() => {
-        this.pendingMessages.delete(message.id)
+        this.pendingMessages.delete(requestId)
         reject(new Error('消息响应超时'))
       }, this.config.messageTimeout)
 
-      this.pendingMessages.set(message.id, { resolve, reject, timeout })
+      this.pendingMessages.set(requestId, { resolve, reject, timeout })
       
       try {
-        this.ws!.send(JSON.stringify(message))
+        this.socket!.emit(type, message.payload)
       } catch (error) {
-        this.pendingMessages.delete(message.id)
+        this.pendingMessages.delete(requestId)
         clearTimeout(timeout)
         reject(error)
       }
@@ -197,39 +211,59 @@ class WebSocketService {
   }
 
   // 私有方法
-  private handleMessage(data: string): void {
+  private handleMessage(eventName: string, data: any): void {
     try {
-      const message: WebSocketMessage = JSON.parse(data)
-      
       // 处理响应消息
-      if (message.type.endsWith('_RESPONSE') || message.type.endsWith('_ERROR')) {
-        const pendingMessage = this.pendingMessages.get(message.id)
-        if (pendingMessage) {
+      if (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR')) {
+        // 根据requestId匹配对应的请求
+        const requestId = data.requestId || data.taskId
+        if (requestId && this.pendingMessages.has(requestId)) {
+          const pendingMessage = this.pendingMessages.get(requestId)!
           clearTimeout(pendingMessage.timeout)
-          this.pendingMessages.delete(message.id)
+          this.pendingMessages.delete(requestId)
           
-          if (message.type.endsWith('_ERROR')) {
-            pendingMessage.reject(new Error(message.payload.error || '请求失败'))
+          if (eventName.endsWith('_ERROR')) {
+            pendingMessage.reject(new Error(data.error?.message || data.error || '请求失败'))
           } else {
-            pendingMessage.resolve(message.payload)
+            pendingMessage.resolve(data)
           }
           return
+        } else {
+          console.warn(`收到响应消息但找不到对应的请求: ${eventName}, requestId: ${requestId}`)
         }
       }
 
       // 处理广播消息
-      const handler = this.messageHandlers.get(message.type)
+      const handler = this.messageHandlers.get(eventName)
       if (handler) {
+        const message: WebSocketMessage = {
+          id: this.generateMessageId(),
+          type: eventName,
+          payload: data,
+          timestamp: Date.now()
+        }
         handler(message)
       }
 
       // 处理心跳响应
-      if (message.type === 'PONG') {
-        console.log('WebSocket心跳正常')
+      if (eventName === 'pong') {
+        console.log('Socket.IO心跳正常')
       }
       
     } catch (error) {
-      console.error('WebSocket消息解析错误:', error)
+      console.error('Socket.IO消息处理错误:', error)
+    }
+  }
+
+  /**
+   * 认证方法
+   */
+  private authenticate(): void {
+    if (this.socket) {
+      this.socket.emit('authenticate', {
+        userId: 'guest', // 临时使用guest用户
+        token: null
+      })
     }
   }
 
@@ -249,8 +283,6 @@ class WebSocketService {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimer) return
-
     this.reconnectAttempts++
     const delay = Math.min(
       this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1),
@@ -259,8 +291,7 @@ class WebSocketService {
 
     console.log(`${delay}ms后尝试第${this.reconnectAttempts}次重连...`)
     
-    this.reconnectTimer = setTimeout(async () => {
-      this.reconnectTimer = null
+    setTimeout(async () => {
       try {
         await this.connect()
       } catch (error) {
@@ -271,36 +302,28 @@ class WebSocketService {
           console.error('达到最大重连次数，停止重连')
         }
       }
-    }, delay) as any
-  }
-
-  private startHeartbeat(): void {
-    this.stopHeartbeat()
-    
-    this.heartbeatTimer = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-          id: this.generateMessageId(),
-          type: 'PING',
-          payload: {},
-          timestamp: Date.now(),
-        }))
-      }
-    }, this.config.heartbeatInterval) as any
-  }
-
-  private stopHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = null
-    }
+    }, delay)
   }
 
   private processMessageQueue(): void {
-    while (this.messageQueue.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
+    while (this.messageQueue.length > 0 && this.socket?.connected) {
       const message = this.messageQueue.shift()!
       try {
-        this.ws.send(JSON.stringify(message))
+        // 为队列中的消息重新设置Promise处理器
+        const timeout = setTimeout(() => {
+          this.pendingMessages.delete(message.id)
+        }, this.config.messageTimeout)
+
+        // 重新创建Promise处理器（如果还没有的话）
+        if (!this.pendingMessages.has(message.id)) {
+          this.pendingMessages.set(message.id, {
+            resolve: () => {}, // 队列消息的resolve会被忽略
+            reject: () => {},  // 队列消息的reject会被忽略
+            timeout
+          })
+        }
+
+        this.socket.emit(message.type, message.payload)
       } catch (error) {
         console.error('队列消息发送失败:', error)
         // 重新加入队列头部
@@ -317,7 +340,7 @@ class WebSocketService {
 
 // 默认配置
 const defaultConfig: WebSocketConfig = {
-  url: import.meta.env.VITE_WS_URL || 'ws://localhost:8000/socket.io',
+  url: import.meta.env.VITE_WS_URL || 'http://localhost:3000',
   reconnectInterval: 2000, // 2秒
   maxReconnectAttempts: 10,
   heartbeatInterval: 30000, // 30秒

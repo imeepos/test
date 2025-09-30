@@ -20,9 +20,13 @@ import {
   FileText,
   GitMerge,
   BarChart3,
+  Palette,
+  Minus,
+  Circle,
+  Square,
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
-import type { Position, AINode } from '@/types'
+import type { Position, AINode, EdgeStylePresetName } from '@/types'
 
 interface ContextMenuItem {
   id: string
@@ -64,7 +68,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   selectedNodeIds = [],
 }) => {
   const { addToast } = useUIStore()
-  const { getNode, getNodes, duplicateNode, deleteNode } = useNodeStore()
+  const { getNode, getNodes, duplicateNode, deleteNode, getEdge, updateEdgeStyle, setEdgeStylePreset, deleteEdge } = useNodeStore()
   const { clearSelection, selectAll } = useCanvasStore()
   
   const [menuItems, setMenuItems] = useState<ContextMenuItem[]>([])
@@ -430,30 +434,170 @@ ${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
         ]
 
       case 'edge':
+        if (!targetId) return []
+        
+        const edge = getEdge(targetId)
+        if (!edge) return []
+
         return [
+          {
+            id: 'style-solid',
+            label: '实线样式',
+            icon: Minus,
+            onClick: () => {
+              setEdgeStylePreset(targetId, 'solid')
+              addToast({
+                type: 'success',
+                title: '样式已更改',
+                message: '连线已设置为实线样式'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'style-dashed',
+            label: '虚线样式',
+            icon: MoreHorizontal,
+            onClick: () => {
+              setEdgeStylePreset(targetId, 'dashed')
+              addToast({
+                type: 'success',
+                title: '样式已更改',
+                message: '连线已设置为虚线样式'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'style-dotted',
+            label: '点线样式',
+            icon: Circle,
+            onClick: () => {
+              setEdgeStylePreset(targetId, 'dotted')
+              addToast({
+                type: 'success',
+                title: '样式已更改',
+                message: '连线已设置为点线样式'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'divider-1',
+            label: '',
+            icon: MoreHorizontal,
+            divider: true,
+            onClick: () => {}
+          },
+          {
+            id: 'style-thick',
+            label: '粗线',
+            icon: Square,
+            onClick: () => {
+              setEdgeStylePreset(targetId, 'thick')
+              addToast({
+                type: 'success',
+                title: '样式已更改',
+                message: '连线已设置为粗线样式'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'style-thin',
+            label: '细线',
+            icon: Minus,
+            onClick: () => {
+              setEdgeStylePreset(targetId, 'thin')
+              addToast({
+                type: 'success',
+                title: '样式已更改',
+                message: '连线已设置为细线样式'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'divider-2',
+            label: '',
+            icon: MoreHorizontal,
+            divider: true,
+            onClick: () => {}
+          },
+          {
+            id: 'color-blue',
+            label: '蓝色',
+            icon: Palette,
+            onClick: () => {
+              updateEdgeStyle(targetId, { stroke: '#6366f1' })
+              addToast({
+                type: 'success',
+                title: '颜色已更改',
+                message: '连线已设置为蓝色'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'color-green',
+            label: '绿色',
+            icon: Palette,
+            onClick: () => {
+              updateEdgeStyle(targetId, { stroke: '#10b981' })
+              addToast({
+                type: 'success',
+                title: '颜色已更改',
+                message: '连线已设置为绿色'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'color-red',
+            label: '红色',
+            icon: Palette,
+            onClick: () => {
+              updateEdgeStyle(targetId, { stroke: '#ef4444' })
+              addToast({
+                type: 'success',
+                title: '颜色已更改',
+                message: '连线已设置为红色'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'color-yellow',
+            label: '黄色',
+            icon: Palette,
+            onClick: () => {
+              updateEdgeStyle(targetId, { stroke: '#f59e0b' })
+              addToast({
+                type: 'success',
+                title: '颜色已更改',
+                message: '连线已设置为黄色'
+              })
+              onClose()
+            }
+          },
+          {
+            id: 'divider-3',
+            label: '',
+            icon: MoreHorizontal,
+            divider: true,
+            onClick: () => {}
+          },
           {
             id: 'delete-edge',
             label: '删除连接',
             icon: Unlink,
             shortcut: 'Delete',
             onClick: () => {
+              deleteEdge(targetId)
               addToast({
-                type: 'info',
-                title: '功能开发中',
-                message: '删除连接功能即将推出'
-              })
-              onClose()
-            }
-          },
-          {
-            id: 'edit-edge',
-            label: '编辑连接',
-            icon: Link,
-            onClick: () => {
-              addToast({
-                type: 'info',
-                title: '功能开发中',
-                message: '编辑连接功能即将推出'
+                type: 'success',
+                title: '连接已删除',
+                message: '连线已从画布中移除'
               })
               onClose()
             }

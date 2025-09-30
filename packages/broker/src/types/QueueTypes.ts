@@ -1,6 +1,6 @@
-// 队列相关的类型定义
+// 队列相关的类型定义 - 重命名以避免与BrokerConfig.ts冲突
 
-export interface QueueConfig {
+export interface BrokerQueueConfig {
   durable?: boolean
   exclusive?: boolean
   autoDelete?: boolean
@@ -14,7 +14,7 @@ export interface QueueConfig {
   ttl?: number
 }
 
-export interface ExchangeConfig {
+export interface BrokerExchangeConfig {
   type: 'direct' | 'topic' | 'fanout' | 'headers'
   durable?: boolean
   autoDelete?: boolean

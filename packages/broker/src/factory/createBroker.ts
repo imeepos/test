@@ -21,7 +21,7 @@ export function createBroker(userConfig: Partial<BrokerConfig> = {}): MessageBro
  */
 export function createDevelopmentBroker(userConfig: Partial<BrokerConfig> = {}): MessageBroker {
   const devConfig: Partial<BrokerConfig> = {
-    connectionUrl: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
+    connectionUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
     prefetch: 1,
     retry: {
       maxRetries: 3,
@@ -41,7 +41,7 @@ export function createDevelopmentBroker(userConfig: Partial<BrokerConfig> = {}):
  */
 export function createProductionBroker(userConfig: Partial<BrokerConfig> = {}): MessageBroker {
   const prodConfig: Partial<BrokerConfig> = {
-    connectionUrl: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
+    connectionUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
     prefetch: 10,
     heartbeat: 60,
     retry: {
@@ -78,7 +78,7 @@ export function createProductionBroker(userConfig: Partial<BrokerConfig> = {}): 
  */
 export function createTestBroker(userConfig: Partial<BrokerConfig> = {}): MessageBroker {
   const testConfig: Partial<BrokerConfig> = {
-    connectionUrl: process.env.RABBITMQ_TEST_URL || 'amqp://localhost:5672',
+    connectionUrl: process.env.RABBITMQ_TEST_URL || 'amqp://guest:guest@localhost:5672',
     prefetch: 1,
     exchanges: {
       'test.direct': { type: 'direct', durable: false, autoDelete: true }

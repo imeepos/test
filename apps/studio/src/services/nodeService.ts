@@ -79,7 +79,12 @@ class NodeService {
     // 如果没有标题，自动生成
     if (!nodeTitle && nodeContent) {
       try {
-        nodeTitle = await aiService.generateTitle(nodeContent)
+        const titleResponse = await this.generateContentWithAI({
+          inputs: [nodeContent],
+          type: 'title',
+          instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）'
+        })
+        nodeTitle = titleResponse.title || titleResponse.content.slice(0, 20)
       } catch {
         nodeTitle = nodeContent.slice(0, 20) + (nodeContent.length > 20 ? '...' : '')
       }

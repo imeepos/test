@@ -1,7 +1,7 @@
 import { GatewayServer } from '../server/GatewayServer'
 import { DEFAULT_CONFIG, getConfigForEnvironment, mergeConfig } from '../config/defaults'
 import type { GatewayConfig } from '../types/GatewayConfig'
-import { AIEngine } from '@sker/engine'
+import type { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store'
 import { MessageBroker } from '@sker/broker'
 

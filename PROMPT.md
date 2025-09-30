@@ -3,4 +3,6 @@
 # 后端架构文档：ARCHITECTURE.md
 
 
-检查当前实现与设计文档packages\broker\README.md实现是否一致
+apps/studio:
+
+编辑节点的弹框 已经变形了 很窄 应该自适应宽度

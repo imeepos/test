@@ -1,12 +1,21 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import type { AINode, Position, CreateNodeOptions, NodeEdit } from '@/types'
+import type { AINode, Position, CreateNodeOptions, NodeEdit, EdgeStyle, EdgeStylePresetName } from '@/types'
+import { EdgeStylePresets } from '@/types'
+
+// 扩展的边数据结构
+export interface StoreEdge {
+  id: string
+  source: string
+  target: string
+  style?: EdgeStyle
+}
 
 export interface NodeState {
   // 节点数据
   nodes: Map<string, AINode>
-  edges: Array<{ id: string; source: string; target: string }>
+  edges: Array<StoreEdge>
   
   // 节点操作历史
   history: NodeEdit[]
@@ -27,9 +36,15 @@ export interface NodeState {
   getNodes: () => AINode[]
   
   // 连接管理
-  connectNodes: (sourceId: string, targetId: string) => void
+  connectNodes: (sourceId: string, targetId: string, style?: EdgeStyle) => void
   disconnectNodes: (sourceId: string, targetId: string) => void
   getConnections: (nodeId: string) => string[]
+  
+  // 连线样式管理
+  updateEdgeStyle: (edgeId: string, style: EdgeStyle) => void
+  setEdgeStylePreset: (edgeId: string, presetName: EdgeStylePresetName) => void
+  getEdge: (edgeId: string) => StoreEdge | undefined
+  deleteEdge: (edgeId: string) => void
   
   // 批量操作
   deleteNodes: (ids: string[]) => void
@@ -103,6 +118,10 @@ export const useNodeStore = create<NodeState>()(
           }
           
           set((state) => {
+            if (!(state.nodes instanceof Map)) {
+              state.nodes = new Map()
+            }
+            
             state.nodes.set(id, node)
             state.history.push({
               id: generateId(),
@@ -164,11 +183,18 @@ export const useNodeStore = create<NodeState>()(
         },
         
         getNodes: () => {
-          return Array.from(get().nodes.values())
+          const state = get()
+          const nodesMap = state.nodes
+          
+          if (!(nodesMap instanceof Map)) {
+            return []
+          }
+          
+          return Array.from(nodesMap.values())
         },
         
         // 连接管理
-        connectNodes: (sourceId, targetId) => {
+        connectNodes: (sourceId, targetId, style) => {
           if (sourceId === targetId) return
           
           set((state) => {
@@ -178,10 +204,12 @@ export const useNodeStore = create<NodeState>()(
             
             if (!edgeExists) {
               const edgeId = `edge-${sourceId}-${targetId}`
+              const defaultStyle = EdgeStylePresets.solid
               state.edges.push({
                 id: edgeId,
                 source: sourceId,
                 target: targetId,
+                style: style || defaultStyle,
               })
               
               // 更新节点连接信息
@@ -194,6 +222,7 @@ export const useNodeStore = create<NodeState>()(
                   sourceId,
                   targetId,
                   type: 'output',
+                  style: style || defaultStyle,
                 })
               }
               
@@ -203,6 +232,7 @@ export const useNodeStore = create<NodeState>()(
                   sourceId,
                   targetId,
                   type: 'input',
+                  style: style || defaultStyle,
                 })
               }
             }
@@ -350,12 +380,98 @@ export const useNodeStore = create<NodeState>()(
             state.history = []
           })
         },
+        
+        // 连线样式管理
+        updateEdgeStyle: (edgeId, style) => {
+          set((state) => {
+            const edge = state.edges.find(e => e.id === edgeId)
+            if (edge) {
+              edge.style = { ...edge.style, ...style }
+              
+              // 同步更新节点连接信息中的样式
+              const sourceNode = state.nodes.get(edge.source)
+              const targetNode = state.nodes.get(edge.target)
+              
+              if (sourceNode) {
+                const connection = sourceNode.connections.find(c => c.id === edgeId)
+                if (connection) {
+                  connection.style = edge.style
+                }
+              }
+              
+              if (targetNode) {
+                const connection = targetNode.connections.find(c => c.id === edgeId)
+                if (connection) {
+                  connection.style = edge.style
+                }
+              }
+            }
+          })
+        },
+        
+        setEdgeStylePreset: (edgeId, presetName) => {
+          const preset = EdgeStylePresets[presetName]
+          if (preset) {
+            get().updateEdgeStyle(edgeId, preset)
+          }
+        },
+        
+        getEdge: (edgeId) => {
+          return get().edges.find(edge => edge.id === edgeId)
+        },
+        
+        deleteEdge: (edgeId) => {
+          set((state) => {
+            const edgeIndex = state.edges.findIndex(e => e.id === edgeId)
+            if (edgeIndex !== -1) {
+              const edge = state.edges[edgeIndex]
+              state.edges.splice(edgeIndex, 1)
+              
+              // 从节点连接信息中移除
+              const sourceNode = state.nodes.get(edge.source)
+              const targetNode = state.nodes.get(edge.target)
+              
+              if (sourceNode) {
+                sourceNode.connections = sourceNode.connections.filter(c => c.id !== edgeId)
+              }
+              
+              if (targetNode) {
+                targetNode.connections = targetNode.connections.filter(c => c.id !== edgeId)
+              }
+            }
+          })
+        },
       })),
       {
         name: 'node-storage',
         partialize: (state) => ({
           templates: state.templates,
+          // 将Map转换为对象数组进行持久化
+          nodes: Array.from(state.nodes.entries()).map(([id, node]) => node),
+          edges: state.edges,
+          history: state.history,
         }),
+        // 自定义反序列化逻辑
+        merge: (persistedState: any, currentState: NodeState) => {
+          const nodes = new Map<string, AINode>()
+          
+          // 从持久化数据中恢复节点
+          if (persistedState?.nodes && Array.isArray(persistedState.nodes)) {
+            persistedState.nodes.forEach((node: any) => {
+              if (node.id) {
+                nodes.set(node.id, node as AINode)
+              }
+            })
+          }
+          
+          return {
+            ...currentState,
+            ...persistedState,
+            nodes, // 使用恢复的Map
+            edges: persistedState?.edges || [],
+            history: persistedState?.history || [],
+          }
+        },
       }
     ),
     {

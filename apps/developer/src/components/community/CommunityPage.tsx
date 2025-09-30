@@ -1,11 +1,6 @@
 import React from 'react'
-import { Card, Typography, Button, Empty } from 'antd'
-import {
-  TeamOutlined,
-  BookOutlined,
-  HeartOutlined,
-  GiftOutlined,
-} from '@ant-design/icons'
+import { Typography, Button } from 'antd'
+import { TeamOutlined } from '@ant-design/icons'
 
 const { Title, Paragraph } = Typography
 

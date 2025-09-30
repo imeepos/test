@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import {
   Card,
   Button,
@@ -7,32 +7,27 @@ import {
   Table,
   Tag,
   Progress,
-  Alert,
   Input,
   Select,
   Checkbox,
-  Radio,
   Switch,
   Form,
   Modal,
   Statistic,
-  Tree,
   Collapse,
   Timeline,
   Badge,
   Tooltip,
+  Typography,
   message
 } from 'antd'
 import {
   PlayCircleOutlined,
-  StopOutlined,
-  ReloadOutlined,
   DownloadOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   ExclamationCircleOutlined,
   ClockCircleOutlined,
-  BugOutlined,
   SettingOutlined,
   EyeOutlined,
   DeleteOutlined,
@@ -45,6 +40,7 @@ const { TabPane } = Tabs
 const { Option } = Select
 const { Panel } = Collapse
 const { TextArea } = Input
+const { Text } = Typography
 
 /**
  * 测试用例状态
@@ -130,7 +126,6 @@ export interface PluginTesterProps {
  * 插件测试器组件
  */
 export const PluginTester: React.FC<PluginTesterProps> = ({
-  pluginCode,
   onTestStart,
   onTestComplete
 }) => {

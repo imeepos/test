@@ -419,4 +419,4 @@ export const versionService = new VersionService()
 
 // 导出类型和服务
 export { VersionService }
-export type { VersionChangeInfo, VersionDiff, RestoreOptions }
+// export type { VersionChangeInfo, VersionDiff, RestoreOptions }

@@ -15,17 +15,19 @@ import {
   OnConnect,
   OnNodesChange,
   OnEdgesChange,
+  OnConnectStart,
   OnConnectEnd,
   useReactFlow,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
+import type { StoreEdge } from '@/stores/nodeStore'
 import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
 import { ShortcutHandler } from '../interactions/ShortcutHandler'
 import { nodeService } from '@/services'
-import type { Position, AINodeData } from '@/types'
+import type { Position, AINodeData, AINode } from '@/types'
 
 // 自定义节点类型
 const nodeTypes = {
@@ -52,6 +54,11 @@ const Canvas: React.FC<CanvasProps> = ({
   const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null)
   const [connectStartPosition, setConnectStartPosition] = useState<{ x: number; y: number } | null>(null)
   
+  // 双击检测状态
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const clickCountRef = useRef<number>(0)
+  const lastClickEventRef = useRef<React.MouseEvent | null>(null)
+  
   // 右键菜单状态
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean
@@ -72,54 +79,118 @@ const Canvas: React.FC<CanvasProps> = ({
     setSelectedNodes,
   } = useCanvasStore()
 
-  const {
-    getNodes,
-    edges: storeEdges,
-    connectNodes,
-    disconnectNodes,
-    addNode,
-    updateNode,
-  } = useNodeStore()
+  // 直接订阅store中的nodes Map
+  const nodesMap = useNodeStore(state => state.nodes)
+  const storeEdges = useNodeStore(state => state.edges)
+  const getNodes = useNodeStore(state => state.getNodes)
+  const connectNodes = useNodeStore(state => state.connectNodes)
+  const disconnectNodes = useNodeStore(state => state.disconnectNodes)
+  const addNode = useNodeStore(state => state.addNode)
+  const updateNode = useNodeStore(state => state.updateNode)
+  
+  // 直接从Map获取节点数组
+  const storeNodes = React.useMemo(() => {
+    if (!(nodesMap instanceof Map)) {
+      return []
+    }
+    
+    return Array.from(nodesMap.values())
+  }, [nodesMap])
+  
+  // 强制订阅store变化
+  const [forceRender, setForceRender] = React.useState(0)
+  
+  // 监听store的真实状态变化
+  React.useEffect(() => {
+    const unsubscribe = useNodeStore.subscribe((state) => {
+      setForceRender(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [])
 
   const { preferences, addToast } = useUIStore()
 
   // 转换节点数据格式
   const nodes = React.useMemo(() => {
-    return getNodes().map((node): Node<AINodeData> => ({
-      id: node.id,
-      type: 'aiNode',
-      position: node.position,
-      data: {
+    return storeNodes.map((node): Node<AINodeData> => {
+      return {
         id: node.id,
-        content: node.content,
-        title: node.title,
-        importance: node.importance,
-        confidence: node.confidence,
-        status: node.status,
-        tags: node.tags,
-        version: node.version,
-        createdAt: node.createdAt,
-        updatedAt: node.updatedAt,
-      },
-      selected: selectedNodeIds.includes(node.id),
-    }))
-  }, [getNodes, selectedNodeIds])
+        type: 'aiNode',
+        position: node.position,
+        data: {
+          id: node.id,
+          content: node.content,
+          title: node.title,
+          importance: node.importance,
+          confidence: node.confidence,
+          status: node.status,
+          tags: node.tags,
+          version: node.version,
+          createdAt: node.createdAt,
+          updatedAt: node.updatedAt,
+        },
+        selected: selectedNodeIds.includes(node.id),
+      }
+    })
+  }, [storeNodes, selectedNodeIds, forceRender])
 
   // 转换连接数据格式
   const edges = React.useMemo(() => {
-    return storeEdges.map((edge): Edge => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: 'smoothstep',
-      style: { stroke: '#6366f1', strokeWidth: 2 },
-      animated: true,
-    }))
+    return storeEdges.map((edge): Edge => {
+      const defaultStyle = { 
+        stroke: '#6366f1', 
+        strokeWidth: 2,
+        type: 'smoothstep' as const,
+        animated: false,
+        strokeDasharray: undefined
+      }
+      const edgeStyle = edge.style || {}
+      
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edgeStyle.type || defaultStyle.type,
+        style: {
+          stroke: edgeStyle.stroke || defaultStyle.stroke,
+          strokeWidth: edgeStyle.strokeWidth || defaultStyle.strokeWidth,
+          strokeDasharray: edgeStyle.strokeDasharray,
+        },
+        animated: edgeStyle.animated ?? defaultStyle.animated,
+      }
+    })
   }, [storeEdges])
 
   // React Flow状态
-  const [rfNodes, setRfNodes, onNodesChange] = useNodesState(nodes)
+  const [rfNodes, setRfNodes, originalOnNodesChange] = useNodesState(nodes)
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges)
+
+  // 防抖定时器引用
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 自定义节点变化处理器 - 处理位置同步
+  const handleNodesChange = useCallback((changes: any[]) => {
+    // 先调用原始的onNodesChange处理器
+    originalOnNodesChange(changes)
+    
+    // 处理位置变化，同步到store
+    const positionChanges = changes.filter(change => change.type === 'position' && change.position)
+    
+    if (positionChanges.length > 0) {
+      // 清除之前的防抖定时器
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+      
+      // 使用防抖，避免拖拽过程中频繁更新store
+      debounceTimeoutRef.current = setTimeout(() => {
+        positionChanges.forEach(change => {
+          updateNode(change.id, { position: change.position })
+        })
+      }, 300) // 300ms防抖延迟
+    }
+  }, [originalOnNodesChange, updateNode])
 
   // 同步节点状态
   React.useEffect(() => {
@@ -130,6 +201,7 @@ const Canvas: React.FC<CanvasProps> = ({
   React.useEffect(() => {
     setRfEdges(edges)
   }, [edges, setRfEdges])
+
 
   // 连接开始处理
   const onConnectStart = useCallback(
@@ -192,7 +264,6 @@ const Canvas: React.FC<CanvasProps> = ({
           y: clientY - reactFlowBounds.top,
         })
 
-        console.log('Drag expand triggered:', connectingNodeId, position)
         
         // 调用拖拽扩展处理器
         if (onDragExpand) {
@@ -241,7 +312,6 @@ const Canvas: React.FC<CanvasProps> = ({
         }
 
       } catch (error) {
-        console.error('拖拽扩展失败:', error)
         
         // 失败时创建简单的空节点，用户可以手动编辑
         const newNodeId = addNode({
@@ -264,7 +334,6 @@ const Canvas: React.FC<CanvasProps> = ({
           connectNodes(sourceNodeId, newNodeId)
           
           // 显示提示信息
-          console.log('创建了空节点，请手动编辑内容')
         }
       }
     },
@@ -274,7 +343,9 @@ const Canvas: React.FC<CanvasProps> = ({
   // 画布双击事件
   const handleCanvasDoubleClick = useCallback(
     async (event: React.MouseEvent) => {
-      if (!reactFlowInstance || !reactFlowWrapper.current) return
+      if (!reactFlowInstance || !reactFlowWrapper.current) {
+        return
+      }
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
       const position = reactFlowInstance.project({
@@ -355,10 +426,9 @@ const Canvas: React.FC<CanvasProps> = ({
             }
           }
         } catch (error) {
-          console.error('创建节点失败:', error)
           
           // AI失败时回退到空节点
-          addNode({
+          const fallbackNodeId = addNode({
             content: '请输入内容...',
             title: '',
             importance: 3,
@@ -373,6 +443,7 @@ const Canvas: React.FC<CanvasProps> = ({
               editCount: 0,
             },
           })
+
 
           addToast({
             type: 'warning',
@@ -440,6 +511,22 @@ const Canvas: React.FC<CanvasProps> = ({
     []
   )
 
+  // 连线右键菜单
+  const handleEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault()
+      event.stopPropagation()
+      
+      setContextMenu({
+        isOpen: true,
+        position: { x: event.clientX, y: event.clientY },
+        targetType: 'edge',
+        targetId: edge.id
+      })
+    },
+    []
+  )
+
   // 关闭右键菜单
   const closeContextMenu = useCallback(() => {
     setContextMenu(prev => ({ ...prev, isOpen: false }))
@@ -484,7 +571,6 @@ const Canvas: React.FC<CanvasProps> = ({
         onNodeDoubleClick(nodeId)
       } else {
         // 默认编辑逻辑 - 可以触发节点编辑器
-        console.log('Edit node:', nodeId)
         addToast({
           type: 'info',
           title: '编辑节点',
@@ -529,7 +615,6 @@ const Canvas: React.FC<CanvasProps> = ({
           })
         }
       } catch (error) {
-        console.error('AI优化失败:', error)
         addToast({
           type: 'error',
           title: 'AI优化失败',
@@ -538,6 +623,36 @@ const Canvas: React.FC<CanvasProps> = ({
       }
     },
     [getNodes, addToast, updateNode]
+  )
+
+  // 自定义双击检测处理器
+  const handlePaneClickWithDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      // 增加点击计数
+      clickCountRef.current += 1
+      lastClickEventRef.current = event
+      
+      // 如果已有计时器，清除它
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      
+      // 设置新的计时器
+      clickTimeoutRef.current = setTimeout(() => {
+        if (clickCountRef.current === 2) {
+          // 双击处理
+          if (lastClickEventRef.current) {
+            handleCanvasDoubleClick(lastClickEventRef.current)
+          }
+        }
+        
+        // 重置计数器
+        clickCountRef.current = 0
+        lastClickEventRef.current = null
+        clickTimeoutRef.current = null
+      }, 300) // 300ms 内的点击被认为是双击
+    },
+    [handleCanvasDoubleClick]
   )
 
   // 多输入融合处理
@@ -596,7 +711,6 @@ const Canvas: React.FC<CanvasProps> = ({
         }
 
       } catch (error) {
-        console.error('融合生成失败:', error)
         addToast({
           type: 'error',
           title: '融合失败',
@@ -607,20 +721,35 @@ const Canvas: React.FC<CanvasProps> = ({
     [getNodes, addNode, connectNodes, setSelectedNodes, addToast]
   )
 
+  // 清理定时器
+  React.useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+    }
+  }, [])
+
+
   return (
     <div ref={reactFlowWrapper} className="h-full w-full">
+      
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onInit={setReactFlowInstance}
-        onDoubleClick={handleCanvasDoubleClick}
+        onPaneClick={handlePaneClickWithDoubleClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onEdgeContextMenu={handleEdgeContextMenu}
         onSelectionChange={handleSelectionChange}
         nodeTypes={nodeTypes}
         attributionPosition="bottom-left"
@@ -631,6 +760,7 @@ const Canvas: React.FC<CanvasProps> = ({
           includeHiddenNodes: false,
         }}
         onContextMenu={handleContextMenu}
+        deleteKeyCode={null}
       >
         <Background
           color="#1a1b23"
@@ -670,10 +800,10 @@ const Canvas: React.FC<CanvasProps> = ({
         onEditNode={handleEditNodeFromMenu}
         onOptimizeNode={handleOptimizeNodeFromMenu}
         onDeleteNode={(nodeId) => {
-          console.log('Delete node from menu:', nodeId)
+          // TODO: 实现删除节点功能
         }}
         onCopyNode={(nodeId) => {
-          console.log('Copy node from menu:', nodeId)
+          // TODO: 实现复制节点功能
         }}
         onFusionCreate={onFusionCreate || handleFusionCreate}
         selectedNodeIds={selectedNodeIds}

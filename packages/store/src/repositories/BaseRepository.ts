@@ -7,11 +7,12 @@ import { QueryOptions, PaginatedResult, DatabaseError } from '../models'
  */
 export abstract class BaseRepository<T> {
   protected tableName: string
-  protected pool: Pool
+  protected get pool(): Pool {
+    return databaseManager.getPostgresPool()
+  }
 
   constructor(tableName: string) {
     this.tableName = tableName
-    this.pool = databaseManager.getPostgresPool()
   }
 
   /**

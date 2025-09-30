@@ -7,7 +7,6 @@ import {
   Space,
   Dropdown,
   Modal,
-  Input,
   message
 } from 'antd'
 import {
@@ -27,7 +26,6 @@ import {
 } from '@ant-design/icons'
 
 const { Option } = Select
-const { TextArea } = Input
 
 /**
  * 编辑器工具栏配置

@@ -55,6 +55,7 @@ export interface QueueConfig {
 // 重试配置
 export interface RetryConfig {
   maxRetries: number
+  maxAttempts?: number
   initialDelay: number
   maxDelay: number
   backoffMultiplier: number

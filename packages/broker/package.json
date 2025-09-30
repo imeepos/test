@@ -12,6 +12,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
+    "start": "node dist/main.js",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "clean": "rimraf dist"

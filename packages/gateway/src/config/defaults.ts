@@ -106,6 +106,9 @@ export const PRODUCTION_CONFIG: Partial<GatewayConfig> = {
     max: 50 // 生产环境更严格的限流
   },
   websocket: {
+    path: '/socket.io',
+    heartbeatInterval: 30000,
+    timeout: 60000,
     maxConnections: 5000 // 生产环境支持更多连接
   },
   monitoring: {
@@ -131,6 +134,7 @@ export const TEST_CONFIG: Partial<GatewayConfig> = {
     max: 1000 // 测试环境宽松限制
   },
   websocket: {
+    path: '/socket.io',
     heartbeatInterval: 5000, // 5秒
     timeout: 10000, // 10秒
     maxConnections: 100

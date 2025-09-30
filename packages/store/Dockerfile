@@ -79,9 +79,14 @@ USER store
 # 暴露端口
 EXPOSE 3001
 
+# 安装curl用于健康检查
+USER root
+RUN apk add --no-cache curl
+USER store
+
 # 健康检查：尝试HTTP请求到应用
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+  CMD curl -f http://localhost:3001/health || exit 1
 
 # 运行应用
 CMD ["node", "dist/server.js"]

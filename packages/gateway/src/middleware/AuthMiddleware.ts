@@ -197,12 +197,21 @@ export class AuthMiddleware {
    * 生成JWT Token
    */
   static generateToken(payload: any, config: AuthConfig): string {
-    return jwt.sign(payload, config.secret, {
-      expiresIn: config.expiresIn,
-      algorithm: config.algorithm as jwt.Algorithm || 'HS256',
-      issuer: config.issuer,
-      audience: config.audience
-    })
+    const options: jwt.SignOptions = {
+      algorithm: (config.algorithm as jwt.Algorithm) || 'HS256'
+    }
+    
+    if (config.expiresIn) {
+      options.expiresIn = parseInt(config.expiresIn)
+    }
+    if (config.issuer) {
+      options.issuer = config.issuer
+    }
+    if (config.audience) {
+      options.audience = config.audience
+    }
+    
+    return jwt.sign(payload, config.secret, options)
   }
 
   /**

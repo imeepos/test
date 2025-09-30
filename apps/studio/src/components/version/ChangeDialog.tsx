@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import type { VersionChangeInfo, VersionChangeType } from '@/services/versionService'
+import type { VersionChangeInfo } from '@/services/versionService'
+import type { VersionChangeType } from '@/types'
 
 interface ChangeDialogProps {
   currentContent?: string

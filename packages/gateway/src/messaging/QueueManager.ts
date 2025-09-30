@@ -1,5 +1,11 @@
 import { MessageBroker } from '@sker/broker'
 import { EventEmitter } from 'events'
+import {
+  QUEUE_NAMES,
+  EXCHANGE_NAMES,
+  ROUTING_KEYS,
+  MESSAGE_PROPERTIES
+} from '@sker/models'
 import type {
   QueueMessageHandler,
   QueueSubscription,
@@ -90,7 +96,7 @@ export class QueueManager extends EventEmitter {
    */
   private async subscribeToAITaskResults(): Promise<void> {
     const subscription = await this.subscribe(
-      this.config.queues.aiTaskResults,
+      QUEUE_NAMES.AI_RESULTS,
       async (message, metadata) => {
         try {
           const taskResult: AITaskMessage = JSON.parse(message)
@@ -118,7 +124,7 @@ export class QueueManager extends EventEmitter {
         }
       },
       {
-        exchange: this.config.exchanges.aiTasks,
+        exchange: EXCHANGE_NAMES.AI_RESULTS,
         routingKey: 'task.result.*',
         autoAck: false
       }
@@ -132,7 +138,7 @@ export class QueueManager extends EventEmitter {
    */
   private async subscribeToWebSocketBroadcast(): Promise<void> {
     const subscription = await this.subscribe(
-      this.config.queues.websocketBroadcast,
+      QUEUE_NAMES.EVENTS_WEBSOCKET,
       async (message, metadata) => {
         try {
           const wsMessage: WebSocketMessage = JSON.parse(message)
@@ -147,7 +153,7 @@ export class QueueManager extends EventEmitter {
         }
       },
       {
-        exchange: this.config.exchanges.websocket,
+        exchange: EXCHANGE_NAMES.REALTIME_FANOUT,
         routingKey: 'broadcast.*',
         autoAck: false
       }
@@ -161,7 +167,7 @@ export class QueueManager extends EventEmitter {
    */
   private async subscribeToSystemNotifications(): Promise<void> {
     const subscription = await this.subscribe(
-      this.config.queues.systemNotifications,
+      QUEUE_NAMES.EVENTS_STORAGE,
       async (message, metadata) => {
         try {
           const notification = JSON.parse(message)
@@ -176,7 +182,7 @@ export class QueueManager extends EventEmitter {
         }
       },
       {
-        exchange: this.config.exchanges.system,
+        exchange: EXCHANGE_NAMES.EVENTS_TOPIC,
         routingKey: 'notification.*',
         autoAck: false
       }
@@ -280,10 +286,10 @@ export class QueueManager extends EventEmitter {
    */
   async publishAITask(task: AITaskMessage): Promise<void> {
     try {
-      const routingKey = `task.${task.type}.${task.priority || 'normal'}`
+      const routingKey = `${ROUTING_KEYS.AI_PROCESS}.${task.type}.${task.priority || 'normal'}`
 
       await this.broker.publishWithConfirm(
-        this.config.exchanges.aiTasks,
+        EXCHANGE_NAMES.LLM_DIRECT,
         routingKey,
         task,
         {
@@ -315,7 +321,7 @@ export class QueueManager extends EventEmitter {
       const routingKey = `ws.${message.type}.${message.target || 'all'}`
 
       await this.broker.publish(
-        this.config.exchanges.websocket,
+        EXCHANGE_NAMES.REALTIME_FANOUT,
         routingKey,
         message,
         {
@@ -350,7 +356,7 @@ export class QueueManager extends EventEmitter {
       const routingKey = `notification.${notification.type}`
 
       await this.broker.publish(
-        this.config.exchanges.system,
+        EXCHANGE_NAMES.EVENTS_TOPIC,
         routingKey,
         notification,
         {
@@ -510,11 +516,11 @@ export class QueueManager extends EventEmitter {
    */
   private mapPriorityToNumber(priority?: string): number {
     switch (priority) {
-      case 'low': return 1
-      case 'normal': return 5
-      case 'high': return 8
-      case 'urgent': return 10
-      default: return 5
+      case 'low': return MESSAGE_PROPERTIES.PRIORITY.LOW
+      case 'normal': return MESSAGE_PROPERTIES.PRIORITY.NORMAL
+      case 'high': return MESSAGE_PROPERTIES.PRIORITY.HIGH
+      case 'urgent': return MESSAGE_PROPERTIES.PRIORITY.URGENT
+      default: return MESSAGE_PROPERTIES.PRIORITY.NORMAL
     }
   }
 

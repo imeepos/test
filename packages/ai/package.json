@@ -23,7 +23,10 @@
     "@sker/config": "workspace:*"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.10.0"
+    "@types/amqplib": "^0.10.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "typescript": "^5.0.0"
   },
   "keywords": [
     "ai",

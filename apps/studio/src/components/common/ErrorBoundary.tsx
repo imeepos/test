@@ -264,7 +264,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
         {/* 操作按钮 */}
         <div className="flex flex-wrap gap-3 justify-center mb-4">
           <Button
-            variant="outline"
+            variant="primary"
             size="sm"
             icon={RefreshCw}
             onClick={onReset}
@@ -275,7 +275,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
           {level === 'page' && (
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={onReload}
               className="text-red-100 border-red-400/30 hover:bg-red-400/10"
@@ -286,7 +286,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
           {config.showHomeButton && (
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               icon={Home}
               onClick={onGoHome}

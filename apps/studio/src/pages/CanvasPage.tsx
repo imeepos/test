@@ -16,6 +16,8 @@ const CanvasPage: React.FC = () => {
   // 处理画布双击创建节点
   const handleCanvasDoubleClick = React.useCallback(
     async (position: Position) => {
+      console.log('CanvasPage: 处理画布双击创建节点, 位置:', position)
+      
       try {
         // 使用nodeService创建空节点
         const newNode = await nodeService.createNode({
@@ -24,6 +26,8 @@ const CanvasPage: React.FC = () => {
           importance: 3,
           useAI: false, // 双击创建空节点，不使用AI
         })
+
+        console.log('CanvasPage: nodeService创建节点成功:', newNode)
 
         // 添加到store
         const nodeId = addNode({
@@ -47,13 +51,13 @@ const CanvasPage: React.FC = () => {
           duration: 3000,
         })
 
-        console.log('新建节点:', nodeId, '位置:', position)
+        console.log('CanvasPage: 新建节点:', nodeId, '位置:', position)
       } catch (error) {
-        console.error('创建节点失败:', error)
+        console.error('CanvasPage: 创建节点失败:', error)
         addToast({
           type: 'error',
           title: '创建失败',
-          message: '请稍后重试',
+          message: error instanceof Error ? error.message : '请稍后重试',
           duration: 3000,
         })
       }

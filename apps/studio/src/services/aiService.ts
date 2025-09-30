@@ -257,7 +257,7 @@ class AIService {
 
 // 默认配置
 const defaultConfig: AIServiceConfig = {
-  apiUrl: import.meta.env.VITE_AI_API_URL || 'http://localhost:8000/api/ai',
+  apiUrl: import.meta.env.VITE_AI_API_URL || '/api/ai',
   model: 'gpt-3.5-turbo',
   timeout: 30000, // 30秒
   maxRetries: 3,

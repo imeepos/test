@@ -6,7 +6,7 @@ import { createGateway, type GatewayDependencies } from './createGateway'
 import { createStoreClientForGateway } from '../config/store'
 import type { GatewayConfig } from '../types/GatewayConfig'
 import type { StoreClientConfig } from '@sker/store'
-import { AIEngine } from '@sker/engine'
+import type { AIEngine } from '@sker/engine'
 import { MessageBroker } from '@sker/broker'
 
 export interface ExtendedGatewayDependencies {
@@ -139,13 +139,50 @@ export async function startGatewayFromEnvironment() {
     host: process.env.HOST || '0.0.0.0'
   }
 
+  // 创建MessageBroker实例（如果配置了RABBITMQ_URL）
+  let messageBroker: MessageBroker | undefined
+  if (process.env.RABBITMQ_URL) {
+    console.log('📡 初始化MessageBroker连接...')
+    try {
+      const { createBroker, DEFAULT_BROKER_CONFIG } = await import('@sker/broker')
+      
+      messageBroker = createBroker({
+        connectionUrl: process.env.RABBITMQ_URL,
+        exchanges: DEFAULT_BROKER_CONFIG.exchanges,
+        queues: DEFAULT_BROKER_CONFIG.queues,
+        retry: {
+          maxRetries: 5,
+          initialDelay: 3000,
+          maxDelay: 30000,
+          backoffMultiplier: 2,
+          retryableErrors: ['ECONNRESET', 'ENOTFOUND', 'TIMEOUT', 'ECONNREFUSED']
+        }
+      })
+
+      await messageBroker.start()
+      console.log('✅ MessageBroker 已连接')
+    } catch (error) {
+      console.warn('⚠️ MessageBroker 初始化失败:', error)
+      console.log('继续启动Gateway但MessageBroker功能将不可用')
+      messageBroker = undefined
+    }
+  } else {
+    console.log('⚠️ 未配置RABBITMQ_URL，MessageBroker功能将不可用')
+  }
+
+  // 准备依赖对象
+  const dependencies: ExtendedGatewayDependencies = {
+    storeConfig,
+    messageBroker
+  }
+
   // 根据环境选择启动方式
   const env = process.env.NODE_ENV || 'development'
 
   if (env === 'production') {
-    return startProductionGatewayWithStore(gatewayConfig, { storeConfig })
+    return startProductionGatewayWithStore(gatewayConfig, dependencies)
   } else {
-    return startDevelopmentGatewayWithStore(gatewayConfig, { storeConfig })
+    return startDevelopmentGatewayWithStore(gatewayConfig, dependencies)
   }
 }
 

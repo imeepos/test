@@ -385,7 +385,7 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
     const key = event.key
     const ctrl = event.ctrlKey || event.metaKey // Mac兼容性
     const alt = event.altKey
-    const shift = event.shiftEvent
+    const shift = event.shiftKey
     const meta = event.metaKey
 
     return (

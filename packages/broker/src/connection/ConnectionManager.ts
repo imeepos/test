@@ -1,4 +1,4 @@
-import amqp from 'amqplib'
+import * as amqp from 'amqplib'
 import { EventEmitter } from 'events'
 import type { BrokerConfig } from '../types/BrokerConfig'
 
@@ -7,7 +7,7 @@ import type { BrokerConfig } from '../types/BrokerConfig'
  */
 export class ConnectionManager extends EventEmitter {
   private config: BrokerConfig
-  private connection: amqp.Connection | null = null
+  private connection: amqp.ChannelModel | null = null
   private isConnecting: boolean = false
   private reconnectTimer: NodeJS.Timeout | null = null
   private reconnectAttempts: number = 0
@@ -16,6 +16,12 @@ export class ConnectionManager extends EventEmitter {
   constructor(config: BrokerConfig) {
     super()
     this.config = config
+    
+    // 【调试日志5】ConnectionManager构造函数接收到的配置
+    console.log('🔍 ConnectionManager 构造配置:')
+    console.log(`   connectionUrl: ${config.connectionUrl}`)
+    console.log(`   connectionOptions:`, JSON.stringify(config.connectionOptions, null, 2))
+    console.log(`   retry:`, JSON.stringify(config.retry, null, 2))
   }
 
   /**
@@ -29,6 +35,11 @@ export class ConnectionManager extends EventEmitter {
     this.isConnecting = true
 
     try {
+      // 【调试日志6】连接尝试时的详细信息
+      console.log('🔍 正在尝试连接RabbitMQ:')
+      console.log(`   connectionUrl: ${this.config.connectionUrl}`)
+      console.log(`   connectionOptions:`, JSON.stringify(this.config.connectionOptions || {}, null, 2))
+      
       console.log('Connecting to RabbitMQ...')
 
       this.connection = await amqp.connect(
@@ -141,7 +152,7 @@ export class ConnectionManager extends EventEmitter {
   /**
    * 获取连接实例
    */
-  getConnection(): amqp.Connection | null {
+  getConnection(): amqp.ChannelModel | null {
     return this.connection
   }
 

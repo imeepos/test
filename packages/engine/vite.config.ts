@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig({
+  plugins: [dts()],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        server: resolve(__dirname, 'src/server/index.ts')
+      },
       name: 'SkerEngine',
-      fileName: (format) => `index.${format}.js`,
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
       formats: ['es', 'cjs']
     },
     rollupOptions: {
@@ -40,7 +45,8 @@ export default defineConfig({
         '@sker/models',
         '@sker/config',
         '@sker/ai',
-        '@sker/broker'
+        '@sker/broker',
+        '@sker/store'
       ]
     },
     target: 'node16',

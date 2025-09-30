@@ -12,7 +12,7 @@ import {
  */
 export const DEFAULT_BROKER_CONFIG: BrokerConfig = {
   // 连接配置
-  connectionUrl: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
+  connectionUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
   connectionOptions: {
     heartbeat: 60,
     locale: 'en_US'

@@ -60,17 +60,25 @@ export function getBrokerStoreConfigForEnvironment(env?: string): StoreClientCon
 export async function createStoreAdapterForBroker(
   config?: Partial<StoreClientConfig>
 ): Promise<StoreAdapter> {
+  const baseConfig = getBrokerStoreConfigForEnvironment()
   const finalConfig = {
-    ...getBrokerStoreConfigForEnvironment(),
+    ...baseConfig,
     ...config
   }
+
+  // 确保 baseURL 不为空
+  if (!finalConfig.baseURL) {
+    finalConfig.baseURL = baseConfig.baseURL
+  }
+
+  console.log(`🏪 Broker Store适配器配置: ${finalConfig.baseURL}`)
 
   const client = createStoreClient(finalConfig)
   await client.initialize()
 
   const adapter = createStoreAdapter(client)
 
-  console.log(`🏪 Broker Store适配器已配置: ${finalConfig.baseURL}`)
+  console.log(`✅ Broker Store适配器已初始化`)
 
   return adapter
 }

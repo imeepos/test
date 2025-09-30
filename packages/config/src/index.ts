@@ -108,7 +108,7 @@ const envSchema = Joi.object({
   REDIS_DB: Joi.number().default(0),
 
   // 消息队列配置
-  RABBITMQ_URL: Joi.string().default('amqp://localhost:5672'),
+  RABBITMQ_URL: Joi.string().default('amqp://guest:guest@localhost:5672'),
 
   // AI配置
   OPENAI_API_KEY: Joi.string().required(),

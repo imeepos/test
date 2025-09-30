@@ -105,8 +105,8 @@ export interface QueueStats {
   errorRate: number  // 错误率百分比
 }
 
-// 队列配置
-export interface QueueConfig {
+// 队列配置 - 重命名以避免与其他模块冲突
+export interface StudioQueueConfig {
   maxConcurrentTasks: number
   defaultTimeout: number
   defaultRetries: number
@@ -202,8 +202,8 @@ export interface IQueueService {
 
   // 队列管理
   getQueueStats(): Promise<QueueStats>
-  getQueueConfig(): Promise<QueueConfig>
-  updateQueueConfig(config: Partial<QueueConfig>): Promise<boolean>
+  getQueueConfig(): Promise<StudioQueueConfig>
+  updateQueueConfig(config: Partial<StudioQueueConfig>): Promise<boolean>
 
   // 监控和事件
   subscribe(eventType: QueueEventType, callback: (event: QueueMonitorEvent) => void): () => void
