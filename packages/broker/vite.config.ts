@@ -20,7 +20,9 @@ export default defineConfig({
       external: [
         'amqplib',
         'uuid',
-        'events'
+        'events',
+        '@sker/models',
+        '@sker/store'
       ]
     },
     target: 'node16',

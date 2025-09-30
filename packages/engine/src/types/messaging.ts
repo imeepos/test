@@ -11,10 +11,13 @@ import type {
   AIProcessingError,
   UnifiedBatchTaskMessage,
   UnifiedBatchResultMessage,
-  TaskMetadata,
+  TaskMetadata
+} from '@sker/models/src/messaging/AITaskTypes.js'
+
+import {
   dbToUnifiedTaskType,
   unifiedToDbTaskType
-} from '@sker/models'
+} from '@sker/models/src/messaging/AITaskTypes.js'
 
 // 重新导出统一类型以保持向后兼容
 export type AITaskMessage = UnifiedAITaskMessage

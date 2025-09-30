@@ -41,9 +41,20 @@ export async function createBrokerWithStore(
 
   // 创建消息代理
   const messageBroker = new MessageBroker({
-    url: config.rabbitmq?.url || process.env.RABBITMQ_URL || 'amqp://localhost',
-    reconnectDelay: config.rabbitmq?.reconnectDelay || 5000,
-    maxReconnectAttempts: config.rabbitmq?.maxReconnectAttempts || 10
+    connectionUrl: config.rabbitmq?.url || process.env.RABBITMQ_URL || 'amqp://localhost',
+    retry: {
+      maxRetries: config.rabbitmq?.maxReconnectAttempts || 10,
+      initialDelay: config.rabbitmq?.reconnectDelay || 5000,
+      maxDelay: 30000,
+      backoffMultiplier: 2,
+      retryableErrors: ['ECONNRESET', 'ENOTFOUND', 'TIMEOUT', 'ECONNREFUSED']
+    },
+    exchanges: {},
+    queues: {},
+    prefetch: 5,
+    heartbeat: 60,
+    deadLetter: { enabled: false, exchange: 'dlx', routingKey: 'failed' },
+    monitoring: { enabled: false, metricsInterval: 60000, healthCheckInterval: 30000, alertThresholds: { queueLength: 100, processingDelay: 10000, errorRate: 0.1 } }
   })
 
   // 创建AI任务调度器
@@ -131,7 +142,7 @@ export async function startBrokerWithStore(
   const { messageBroker, aiTaskScheduler, storeAdapter } = await createBrokerWithStore(config, dependencies)
 
   // 初始化消息代理
-  await messageBroker.connect()
+  await messageBroker.start()
   console.log('✅ MessageBroker已连接')
 
   // 初始化AI任务调度器
@@ -150,7 +161,7 @@ export async function startBrokerWithStore(
       aiTaskScheduler.cleanup()
 
       // 断开消息代理
-      await messageBroker.disconnect()
+      await messageBroker.stop()
 
       // 关闭Store适配器
       await storeAdapter.close()

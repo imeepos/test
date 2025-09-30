@@ -11,7 +11,7 @@ import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,
   ROUTING_KEYS
-} from '@sker/models'
+} from '@sker/models/src/messaging/QueueContracts.js'
 
 /**
  * AI 任务队列处理器 - 处理来自消息队列的 AI 任务
@@ -318,39 +318,43 @@ export class AITaskQueueProcessor extends EventEmitter {
           inputs: taskData.inputs,
           context: taskData.context,
           instruction: taskData.instruction,
-          options: taskData.metadata
+          model: taskData.metadata?.model
         })
 
       case 'optimize':
         return await this.aiEngine.optimizeContent({
           content: taskData.inputs[0],
-          instruction: taskData.instruction,
+          instruction: taskData.instruction || '',
           context: taskData.context,
-          options: taskData.metadata
+          model: taskData.metadata?.model
         })
 
       case 'analyze':
         return await this.aiEngine.analyzeSemantics(
           taskData.inputs[0],
-          { context: taskData.context }
+          {
+            extractTags: true,
+            assessImportance: true,
+            calculateConfidence: true
+          }
         )
 
       case 'fusion':
         return await this.aiEngine.fuseContent({
           inputs: taskData.inputs,
-          instruction: taskData.instruction,
+          instruction: taskData.instruction || '',
           context: taskData.context,
           fusionType: 'synthesis',
-          options: taskData.metadata
+          model: taskData.metadata?.model
         })
 
       case 'expand':
         return await this.aiEngine.enhanceNode({
           baseContent: taskData.inputs[0],
-          instruction: taskData.instruction,
+          instruction: taskData.instruction || '',
           context: taskData.context,
           expansionType: 'detail',
-          options: taskData.metadata
+          model: taskData.metadata?.model
         })
 
       default:

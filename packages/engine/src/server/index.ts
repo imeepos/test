@@ -16,31 +16,23 @@ async function main() {
 
     // 创建 AI 引擎实例
     const aiEngine = new AIEngine({
-      openai: {
-        apiKey: process.env.OPENAI_API_KEY || '',
-        baseURL: process.env.OPENAI_BASE_URL,
-        defaultModel: process.env.OPENAI_DEFAULT_MODEL || 'gpt-3.5-turbo',
-        timeout: parseInt(process.env.OPENAI_TIMEOUT || '30000'),
-        maxRetries: parseInt(process.env.OPENAI_MAX_RETRIES || '3')
+      provider: 'openai',
+      apiKey: process.env.OPENAI_API_KEY || '',
+      baseURL: process.env.OPENAI_BASE_URL,
+      defaultModel: process.env.OPENAI_DEFAULT_MODEL || 'gpt-3.5-turbo',
+      temperature: 0.7,
+      maxTokens: 4000,
+      timeout: parseInt(process.env.OPENAI_TIMEOUT || '30000'),
+      models: {
+        generation: 'gpt-3.5-turbo',
+        optimization: 'gpt-3.5-turbo',
+        analysis: 'gpt-3.5-turbo',
+        fusion: 'gpt-3.5-turbo'
       },
-      cache: {
-        enabled: process.env.CACHE_ENABLED !== 'false',
-        maxSize: parseInt(process.env.CACHE_MAX_SIZE || '1000'),
-        ttl: parseInt(process.env.CACHE_TTL || '3600000') // 1小时
-      },
-      rateLimit: {
-        enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
-        requestsPerMinute: parseInt(process.env.RATE_LIMIT_RPM || '60'),
-        tokensPerMinute: parseInt(process.env.RATE_LIMIT_TPM || '90000')
-      },
-      monitoring: {
-        enabled: process.env.MONITORING_ENABLED === 'true',
-        metricsRetention: parseInt(process.env.METRICS_RETENTION || '86400000') // 24小时
-      },
-      concurrency: {
-        maxConcurrentRequests: parseInt(process.env.MAX_CONCURRENT_REQUESTS || '10'),
-        queueSize: parseInt(process.env.QUEUE_SIZE || '100'),
-        batchSize: parseInt(process.env.BATCH_SIZE || '5')
+      retryConfig: {
+        maxRetries: parseInt(process.env.OPENAI_MAX_RETRIES || '3'),
+        backoffMultiplier: 2,
+        retryableErrors: ['ECONNRESET', 'ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT']
       }
     })
 
