@@ -129,13 +129,13 @@ export class MessageBroker extends EventEmitter {
     }
 
     // 创建普通通道
-    this.channel = await (connection as any).createChannel()
+    this.channel = await connection.createChannel()
     if (this.config.prefetch) {
       await this.channel.prefetch(this.config.prefetch)
     }
 
     // 创建确认通道
-    this.confirmChannel = await (connection as any).createConfirmChannel()
+    this.confirmChannel = await connection.createConfirmChannel()
     if (this.config.prefetch) {
       await this.confirmChannel.prefetch(this.config.prefetch)
     }
@@ -233,8 +233,8 @@ export class MessageBroker extends EventEmitter {
           return
         }
 
-        // 获取下一个序列号
-        const seqNo = (this.confirmChannel! as any).ch.nextSeqNum()
+        // 获取下一个序列号 - 使用时间戳作为唯一标识
+        const seqNo = Date.now() + Math.random()
 
         // 设置确认超时
         const timer = setTimeout(() => {

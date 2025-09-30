@@ -3,7 +3,7 @@ export { Button } from './Button'
 export type { ButtonProps } from './Button'
 
 export { Modal, ModalHeader, ModalBody, ModalFooter, ConfirmModal, useModal } from './Modal'
-export type { ModalProps, ConfirmModalProps } from './Modal'
+export type { ModalProps } from './Modal'
 
 export { Toast, ToastContainer, useToast } from './Toast'
 export type { ToastProps } from './Toast'
@@ -14,13 +14,8 @@ export {
   InlineLoading,
   Skeleton
 } from './Loading'
-export type {
-  LoadingProps,
-  AILoadingProps
-} from './Loading'
 
 export { SearchInput } from './SearchInput'
-export type { SearchInputProps } from './SearchInput'
 
 export { Input } from './Input'
 export type { InputProps } from './Input'

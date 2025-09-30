@@ -60,6 +60,6 @@ export default defineConfig({
   // 环境变量
   define: {
     'process.env.NODE_ENV': '"test"',
-    'process.env.RABBITMQ_TEST_URL': '"amqp://localhost:5672"'
+    'process.env.RABBITMQ_TEST_URL': '"amqp://guest:guest@localhost:5672"'
   }
 })

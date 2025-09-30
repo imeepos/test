@@ -27,7 +27,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import type { Project } from '@types/index'
+import type { Project } from '../../types'
 
 const { Title } = Typography
 const { Option } = Select

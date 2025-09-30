@@ -1,10 +1,7 @@
 import React from 'react'
-import { Card, Typography, Button, Empty } from 'antd'
+import { Typography, Button } from 'antd'
 import {
   SettingOutlined,
-  UserOutlined,
-  SecurityScanOutlined,
-  CreditCardOutlined,
 } from '@ant-design/icons'
 
 const { Title, Paragraph } = Typography

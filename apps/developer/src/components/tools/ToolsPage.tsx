@@ -4,7 +4,7 @@ import {
   BugOutlined,
   ToolOutlined,
   CodeOutlined,
-  ShieldCheckOutlined,
+  CheckOutlined,
   PlayCircleOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
@@ -100,7 +100,7 @@ export const ToolsPage: React.FC = () => {
     {
       key: 'security',
       title: '安全工具',
-      icon: <ShieldCheckOutlined className="text-2xl text-purple-500" />,
+      icon: <CheckOutlined className="text-2xl text-purple-500" />,
       description: '全面的安全检查和保护机制',
       tools: [
         {
@@ -194,7 +194,6 @@ export const ToolsPage: React.FC = () => {
                         <Text strong>{tool.name}</Text>
                         <Tag
                           color={getStatusColor(tool.status)}
-                          size="small"
                         >
                           {getStatusText(tool.status)}
                         </Tag>
@@ -283,7 +282,7 @@ export const ToolsPage: React.FC = () => {
               className="text-center"
               bodyStyle={{ padding: '24px 16px' }}
             >
-              <ShieldCheckOutlined className="text-3xl text-purple-500 mb-3" />
+              <CheckOutlined className="text-3xl text-purple-500 mb-3" />
               <Title level={5} className="mb-2">
                 安全扫描
               </Title>

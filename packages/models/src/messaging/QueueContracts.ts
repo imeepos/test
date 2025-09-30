@@ -88,8 +88,8 @@ export interface MessageTypeMap {
   [QUEUE_NAMES.TASK_CANCEL]: TaskCancelMessage
 }
 
-// 队列配置
-export interface QueueConfig {
+// 队列配置 - 重命名以避免与其他模块冲突
+export interface ModelQueueConfig {
   name: string
   durable: boolean
   exclusive: boolean
@@ -97,8 +97,8 @@ export interface QueueConfig {
   arguments?: Record<string, any>
 }
 
-// 交换机配置
-export interface ExchangeConfig {
+// 交换机配置 - 重命名以避免与其他模块冲突
+export interface ModelExchangeConfig {
   name: string
   type: 'direct' | 'topic' | 'fanout' | 'headers'
   durable: boolean
@@ -131,7 +131,7 @@ export interface ConsumeOptions {
 }
 
 // 默认队列配置
-export const DEFAULT_QUEUE_CONFIGS: Record<string, QueueConfig> = {
+export const DEFAULT_QUEUE_CONFIGS: Record<string, ModelQueueConfig> = {
   [QUEUE_NAMES.AI_TASKS]: {
     name: QUEUE_NAMES.AI_TASKS,
     durable: true,
@@ -169,7 +169,7 @@ export const DEFAULT_QUEUE_CONFIGS: Record<string, QueueConfig> = {
 }
 
 // 默认交换机配置
-export const DEFAULT_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
+export const DEFAULT_EXCHANGE_CONFIGS: Record<string, ModelExchangeConfig> = {
   [EXCHANGE_NAMES.LLM_DIRECT]: {
     name: EXCHANGE_NAMES.LLM_DIRECT,
     type: 'direct',

@@ -105,8 +105,8 @@ export interface QueueStats {
   errorRate: number  // 错误率百分比
 }
 
-// 队列配置
-export interface QueueConfig {
+// 队列配置 - 重命名以避免与其他模块冲突
+export interface StudioQueueConfig {
   maxConcurrentTasks: number
   defaultTimeout: number
   defaultRetries: number

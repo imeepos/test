@@ -10,7 +10,7 @@ export { ConnectionManager } from './connection/ConnectionManager'
 export type { BrokerConfig } from './types/BrokerConfig'
 export type { AITaskMessage, AIResultMessage } from './types/AITypes'
 export type { EventMessage } from './types/EventTypes'
-export type { QueueConfig, ExchangeConfig } from './types/QueueTypes'
+export type { BrokerQueueConfig, BrokerExchangeConfig } from './types/QueueTypes'
 
 // 便捷创建函数
 export { createBroker } from './factory/createBroker'

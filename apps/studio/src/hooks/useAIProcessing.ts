@@ -173,15 +173,6 @@ export const useAIProcessing = () => {
         type: 'error',
         title: 'AI处理失败',
         message: error.message || '处理过程中发生错误',
-        persistent: true,
-        actions: [
-          {
-            label: '重试',
-            onClick: () => {
-              // 这里可以实现重试逻辑
-            }
-          }
-        ]
       })
 
       throw error

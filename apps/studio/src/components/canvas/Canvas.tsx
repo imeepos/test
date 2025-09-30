@@ -25,7 +25,7 @@ import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
 import { ShortcutHandler } from '../interactions/ShortcutHandler'
 import { nodeService } from '@/services'
-import type { Position, AINodeData } from '@/types'
+import type { Position, AINodeData, AINode } from '@/types'
 
 // 自定义节点类型
 const nodeTypes = {

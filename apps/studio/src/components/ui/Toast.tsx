@@ -344,7 +344,6 @@ const promiseToast = async <T extends any>(
   const loadingId = addToast({
     type: 'info',
     title: messages.loading,
-    persistent: true,
     duration: 0
   })
 
@@ -374,7 +373,6 @@ const promiseToast = async <T extends any>(
     addToast({
       type: 'error',
       title: errorMessage,
-      persistent: true
     })
 
     throw error
@@ -390,7 +388,7 @@ export const useToast = () => {
       addToast({ type: 'success', title, message, ...options }),
 
     error: (title: string, message?: string, options?: Partial<ToastProps>) =>
-      addToast({ type: 'error', title, message, persistent: true, ...options }),
+      addToast({ type: 'error', title, message, ...options }),
 
     warning: (title: string, message?: string, options?: Partial<ToastProps>) =>
       addToast({ type: 'warning', title, message, ...options }),
@@ -404,8 +402,7 @@ export const useToast = () => {
         type: 'info',
         title,
         message: message || '处理中...',
-        persistent: true,
-        duration: 0
+            duration: 0
       }),
 
     promise: promiseToast

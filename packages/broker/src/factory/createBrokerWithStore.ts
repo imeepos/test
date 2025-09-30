@@ -45,7 +45,7 @@ export async function createBrokerWithStore(
   const storeAdapter = await createStoreAdapterForBroker(config.store)
 
   // 【调试日志4】确定最终的连接URL
-  const finalConnectionUrl = config.rabbitmq?.url || 'amqp://localhost'
+  const finalConnectionUrl = config.rabbitmq?.url || 'amqp://guest:guest@localhost:5672'
   console.log('🔍 MessageBroker 连接配置:')
   console.log(`   config.rabbitmq?.url: ${config.rabbitmq?.url}`)
   console.log(`   最终connectionUrl: ${finalConnectionUrl}`)

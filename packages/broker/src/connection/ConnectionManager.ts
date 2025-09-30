@@ -45,7 +45,7 @@ export class ConnectionManager extends EventEmitter {
       this.connection = await amqp.connect(
         this.config.connectionUrl,
         this.config.connectionOptions || {}
-      ) as unknown as amqp.Connection
+      )
 
       this.setupConnectionEventHandlers()
       this.isConnecting = false
@@ -76,7 +76,7 @@ export class ConnectionManager extends EventEmitter {
 
     if (this.connection) {
       try {
-        await (this.connection as any).close()
+        await this.connection.close()
       } catch (error) {
         console.error('Error closing connection:', error)
       }

@@ -14,7 +14,7 @@ describe('SKER System Integration Tests', () => {
   beforeAll(async () => {
     // 测试配置
     config = {
-      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://localhost',
+      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
       databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://localhost/sker_test',
       redisUrl: process.env.TEST_REDIS_URL || 'redis://localhost',
       openaiApiKey: process.env.OPENAI_API_KEY || 'test-key',
@@ -301,7 +301,7 @@ describe('End-to-End Scenarios', () => {
 
   beforeAll(async () => {
     const config: SkerSystemConfig = {
-      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://localhost',
+      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
       databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://localhost/sker_test',
       redisUrl: process.env.TEST_REDIS_URL || 'redis://localhost',
       openaiApiKey: process.env.OPENAI_API_KEY || 'test-key',
@@ -381,7 +381,7 @@ describe('Fault Tolerance Tests', () => {
 
   beforeAll(async () => {
     const config: SkerSystemConfig = {
-      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://localhost',
+      brokerUrl: process.env.TEST_RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
       databaseUrl: process.env.TEST_DATABASE_URL || 'postgresql://localhost/sker_test',
       redisUrl: process.env.TEST_REDIS_URL || 'redis://localhost',
       openaiApiKey: 'invalid-key', // 故意使用无效的API Key

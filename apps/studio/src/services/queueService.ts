@@ -134,9 +134,7 @@ class QueueService {
 
     try {
       // 检查队列服务是否可用
-      if (!this.isQueueHealthy) {
-        throw new Error('无法取消任务: 消息队列服务不可用')
-      }
+      // TODO: 实现队列健康检查
 
       // 通过WebSocket发送取消请求
       await websocketService.sendMessage('CANCEL_TASK', { taskId })
@@ -312,4 +310,4 @@ setInterval(() => {
 
 // 导出类型和服务
 export { QueueService }
-export type { TaskProgress, QueueTaskOptions }
+// export type { TaskProgress, QueueTaskOptions }

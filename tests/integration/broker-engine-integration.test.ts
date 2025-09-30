@@ -27,7 +27,7 @@ describe('Broker-Engine 集成测试', () => {
   beforeAll(async () => {
     // 创建开发环境broker
     broker = createDevelopmentBroker({
-      connectionUrl: process.env.RABBITMQ_TEST_URL || 'amqp://localhost:5672',
+      connectionUrl: process.env.RABBITMQ_TEST_URL || 'amqp://guest:guest@localhost:5672',
       prefetch: 1
     })
 

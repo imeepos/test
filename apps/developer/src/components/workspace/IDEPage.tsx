@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Layout, Tabs, Button, Space, Dropdown, Spin, Typography } from 'antd'
 import {
   PlayCircleOutlined,
@@ -6,7 +6,7 @@ import {
   SettingOutlined,
   FolderOutlined,
   BugOutlined,
-  TerminalOutlined,
+  TeamOutlined,
   MoreOutlined,
 } from '@ant-design/icons'
 import MonacoEditor from '@monaco-editor/react'
@@ -330,7 +330,7 @@ import MyPlugin from 'my-plugin'
               <TabPane
                 tab={
                   <span>
-                    <TerminalOutlined />
+                    <TeamOutlined />
                     终端
                   </span>
                 }
