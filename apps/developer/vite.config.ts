@@ -23,12 +23,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          antd: ['antd', '@ant-design/icons'],
-          monaco: ['monaco-editor', '@monaco-editor/react'],
+          'react-vendor': ['react', 'react-dom'],
+          'antd-core': ['antd'],
+          'antd-icons': ['@ant-design/icons'],
+          'monaco-editor': ['monaco-editor', '@monaco-editor/react'],
         },
       },
     },

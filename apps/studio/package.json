@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.8.4",
+    "axios": "^1.6.2",
     "clsx": "^2.1.1",
     "framer-motion": "^10.16.16",
     "immer": "^10.1.3",

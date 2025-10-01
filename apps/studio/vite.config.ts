@@ -30,14 +30,20 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          reactflow: ['reactflow'],
-          state: ['zustand', '@tanstack/react-query'],
+          'react-vendor': ['react', 'react-dom'],
+          'reactflow': ['reactflow'],
+          'state-management': ['zustand', '@tanstack/react-query'],
+          'ui-icons': ['lucide-react'],
+          'framer': ['framer-motion']
         },
       },
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'reactflow', 'zustand']
   },
 })

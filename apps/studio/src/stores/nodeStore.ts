@@ -3,6 +3,8 @@ import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { AINode, Position, CreateNodeOptions, NodeEdit, EdgeStyle, EdgeStylePresetName } from '@/types'
 import { EdgeStylePresets } from '@/types'
+import { nodeAPIService } from '@/services/nodeApiService'
+import type { CreateNodeParams, UpdateNodeParams } from '@/services/nodeApiService'
 
 // 扩展的边数据结构
 export interface StoreEdge {
@@ -16,10 +18,10 @@ export interface NodeState {
   // 节点数据
   nodes: Map<string, AINode>
   edges: Array<StoreEdge>
-  
+
   // 节点操作历史
   history: NodeEdit[]
-  
+
   // 节点创建模板
   templates: Array<{
     name: string
@@ -27,13 +29,26 @@ export interface NodeState {
     importance: 1 | 2 | 3 | 4 | 5
     tags: string[]
   }>
-  
+
+  // 同步状态
+  currentProjectId: string | null
+  isSyncing: boolean
+  lastSyncTime: Date | null
+  syncError: string | null
+
   // Actions
   addNode: (node: Omit<AINode, 'id' | 'createdAt' | 'updatedAt'>) => string
   updateNode: (id: string, updates: Partial<AINode>) => void
   deleteNode: (id: string) => void
   getNode: (id: string) => AINode | undefined
   getNodes: () => AINode[]
+
+  // 后端同步Actions
+  setCurrentProject: (projectId: string) => void
+  syncFromBackend: (projectId: string) => Promise<void>
+  createNodeWithSync: (params: CreateNodeParams) => Promise<AINode>
+  updateNodeWithSync: (id: string, updates: UpdateNodeParams) => Promise<void>
+  deleteNodeWithSync: (id: string, permanent?: boolean) => Promise<void>
   
   // 连接管理
   connectNodes: (sourceId: string, targetId: string, style?: EdgeStyle) => void
@@ -99,6 +114,10 @@ export const useNodeStore = create<NodeState>()(
             tags: ['计划', '任务'],
           },
         ],
+        currentProjectId: null,
+        isSyncing: false,
+        lastSyncTime: null,
+        syncError: null,
         
         // 节点CRUD操作
         addNode: (nodeData) => {
@@ -426,20 +445,158 @@ export const useNodeStore = create<NodeState>()(
             if (edgeIndex !== -1) {
               const edge = state.edges[edgeIndex]
               state.edges.splice(edgeIndex, 1)
-              
+
               // 从节点连接信息中移除
               const sourceNode = state.nodes.get(edge.source)
               const targetNode = state.nodes.get(edge.target)
-              
+
               if (sourceNode) {
                 sourceNode.connections = sourceNode.connections.filter(c => c.id !== edgeId)
               }
-              
+
               if (targetNode) {
                 targetNode.connections = targetNode.connections.filter(c => c.id !== edgeId)
               }
             }
           })
+        },
+
+        // 后端同步相关方法
+        setCurrentProject: (projectId) => {
+          set({ currentProjectId: projectId })
+        },
+
+        syncFromBackend: async (projectId) => {
+          set({ isSyncing: true, syncError: null })
+
+          try {
+            // 从后端加载节点数据
+            const nodes = await nodeAPIService.getNodesByProject(projectId)
+            const connections = await nodeAPIService.getProjectConnections(projectId)
+
+            set((state) => {
+              // 清空当前节点
+              state.nodes.clear()
+
+              // 加载后端节点
+              nodes.forEach((node) => {
+                state.nodes.set(node.id, node)
+              })
+
+              // 重建边数据
+              state.edges = connections.map((conn) => ({
+                id: `edge-${conn.source_node_id}-${conn.target_node_id}`,
+                source: conn.source_node_id,
+                target: conn.target_node_id,
+                style: conn.style || EdgeStylePresets.solid,
+              }))
+
+              state.lastSyncTime = new Date()
+              state.isSyncing = false
+            })
+
+            console.log(`✅ 成功从后端同步 ${nodes.length} 个节点`)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '同步失败'
+            set({ syncError: errorMessage, isSyncing: false })
+            console.error('❌ 同步节点数据失败:', error)
+            throw error
+          }
+        },
+
+        createNodeWithSync: async (params) => {
+          set({ isSyncing: true, syncError: null })
+
+          try {
+            // 调用后端API创建节点
+            const node = await nodeAPIService.createNode(params)
+
+            // 更新本地状态
+            set((state) => {
+              state.nodes.set(node.id, node)
+              state.history.push({
+                id: generateId(),
+                type: 'create',
+                data: node,
+                timestamp: new Date(),
+              })
+              state.isSyncing = false
+              state.lastSyncTime = new Date()
+            })
+
+            console.log('✅ 节点创建成功:', node.id)
+            return node
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '创建节点失败'
+            set({ syncError: errorMessage, isSyncing: false })
+            console.error('❌ 创建节点失败:', error)
+            throw error
+          }
+        },
+
+        updateNodeWithSync: async (id, updates) => {
+          set({ isSyncing: true, syncError: null })
+
+          try {
+            // 调用后端API更新节点
+            const updatedNode = await nodeAPIService.updateNode(id, updates)
+
+            // 更新本地状态
+            set((state) => {
+              state.nodes.set(id, updatedNode)
+              state.history.push({
+                id: generateId(),
+                type: 'update',
+                data: updates,
+                timestamp: new Date(),
+              })
+              state.isSyncing = false
+              state.lastSyncTime = new Date()
+            })
+
+            console.log('✅ 节点更新成功:', id)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '更新节点失败'
+            set({ syncError: errorMessage, isSyncing: false })
+            console.error('❌ 更新节点失败:', error)
+            throw error
+          }
+        },
+
+        deleteNodeWithSync: async (id, permanent = false) => {
+          set({ isSyncing: true, syncError: null })
+
+          try {
+            // 调用后端API删除节点
+            await nodeAPIService.deleteNode(id, permanent)
+
+            // 更新本地状态
+            set((state) => {
+              const node = state.nodes.get(id)
+              if (node) {
+                state.nodes.delete(id)
+                // 删除相关连接
+                state.edges = state.edges.filter(
+                  edge => edge.source !== id && edge.target !== id
+                )
+                state.history.push({
+                  id: generateId(),
+                  type: 'delete',
+                  data: { id },
+                  timestamp: new Date(),
+                })
+              }
+              state.isSyncing = false
+              state.lastSyncTime = new Date()
+            })
+
+            console.log('✅ 节点删除成功:', id)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '删除节点失败'
+            set({ syncError: errorMessage, isSyncing: false })
+            console.error('❌ 删除节点失败:', error)
+            throw error
+          }
         },
       })),
       {

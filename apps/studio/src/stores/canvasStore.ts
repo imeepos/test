@@ -1,23 +1,31 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import type { Viewport, ViewMode, CanvasStats, CanvasControls } from '@/types'
+import { projectService } from '@/services/projectService'
+import type { Project, CanvasState as ProjectCanvasState } from '@/services/projectService'
 
-export interface CanvasState {
+export interface CanvasStoreState {
   // 视图状态
   viewport: Viewport
   viewMode: ViewMode
   isFullscreen: boolean
-  
+
   // 搜索和筛选
   searchQuery: string
   filteredNodeIds: string[]
-  
+
   // 画布统计
   stats: CanvasStats
-  
+
   // 选择状态
   selectedNodeIds: string[]
-  
+
+  // 项目管理
+  currentProject: Project | null
+  projects: Project[]
+  isLoadingProject: boolean
+  projectError: string | null
+
   // Actions
   setViewport: (viewport: Viewport) => void
   setViewMode: (mode: ViewMode) => void
@@ -30,15 +38,23 @@ export interface CanvasState {
   removeSelectedNode: (id: string) => void
   clearSelection: () => void
   selectAll: (getAllNodeIds: () => string[]) => void
-  
+
   // 画布操作
   zoomIn: () => void
   zoomOut: () => void
   resetZoom: () => void
   fitView: () => void
+
+  // 项目管理Actions
+  loadProjects: (userId?: string) => Promise<void>
+  loadProject: (projectId: string) => Promise<void>
+  createProject: (name: string, description?: string) => Promise<Project>
+  saveCurrentProject: () => Promise<void>
+  saveCanvasState: () => Promise<void>
+  closeProject: () => void
 }
 
-export const useCanvasStore = create<CanvasState>()(
+export const useCanvasStore = create<CanvasStoreState>()(
   devtools(
     persist(
       (set, get) => ({
@@ -54,6 +70,10 @@ export const useCanvasStore = create<CanvasState>()(
           averageConfidence: 0,
         },
         selectedNodeIds: [],
+        currentProject: null,
+        projects: [],
+        isLoadingProject: false,
+        projectError: null,
         
         // Actions
         setViewport: (viewport) =>
@@ -151,6 +171,135 @@ export const useCanvasStore = create<CanvasState>()(
             false,
             'canvas/fitView'
           ),
+
+        // 项目管理Actions实现
+        loadProjects: async (userId) => {
+          set({ isLoadingProject: true, projectError: null })
+
+          try {
+            const projects = await projectService.getProjects({ userId })
+            set({ projects, isLoadingProject: false })
+            console.log(`✅ 加载了 ${projects.length} 个项目`)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '加载项目失败'
+            set({ projectError: errorMessage, isLoadingProject: false })
+            console.error('❌ 加载项目失败:', error)
+            throw error
+          }
+        },
+
+        loadProject: async (projectId) => {
+          set({ isLoadingProject: true, projectError: null })
+
+          try {
+            // 加载项目详情
+            const project = await projectService.getProject(projectId)
+
+            // 更新画布状态
+            const canvasData = project.canvas_data
+            set({
+              currentProject: project,
+              viewport: canvasData.viewport,
+              viewMode: canvasData.displayMode,
+              isLoadingProject: false,
+            })
+
+            // 更新最后访问时间
+            await projectService.updateLastAccessed(projectId)
+
+            console.log('✅ 项目加载成功:', project.name)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '加载项目失败'
+            set({ projectError: errorMessage, isLoadingProject: false })
+            console.error('❌ 加载项目失败:', error)
+            throw error
+          }
+        },
+
+        createProject: async (name, description) => {
+          set({ isLoadingProject: true, projectError: null })
+
+          try {
+            const project = await projectService.createProject({
+              name,
+              description,
+              canvas_data: {
+                viewport: get().viewport,
+                displayMode: get().viewMode,
+                filters: {},
+              },
+            })
+
+            set((state) => ({
+              currentProject: project,
+              projects: [...state.projects, project],
+              isLoadingProject: false,
+            }))
+
+            console.log('✅ 项目创建成功:', project.name)
+            return project
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '创建项目失败'
+            set({ projectError: errorMessage, isLoadingProject: false })
+            console.error('❌ 创建项目失败:', error)
+            throw error
+          }
+        },
+
+        saveCurrentProject: async () => {
+          const project = get().currentProject
+          if (!project) {
+            console.warn('没有当前项目,无法保存')
+            return
+          }
+
+          try {
+            await projectService.updateProject(project.id, {
+              canvas_data: {
+                viewport: get().viewport,
+                displayMode: get().viewMode,
+                filters: {},
+              },
+            })
+
+            console.log('✅ 项目保存成功')
+          } catch (error) {
+            console.error('❌ 项目保存失败:', error)
+            throw error
+          }
+        },
+
+        saveCanvasState: async () => {
+          const project = get().currentProject
+          if (!project) {
+            return
+          }
+
+          try {
+            const canvasState: ProjectCanvasState = {
+              viewport: get().viewport,
+              displayMode: get().viewMode,
+              filters: {},
+              selectedNodeIds: get().selectedNodeIds,
+              timestamp: new Date(),
+            }
+
+            await projectService.saveCanvasState(project.id, canvasState)
+            console.log('✅ 画布状态保存成功')
+          } catch (error) {
+            console.error('❌ 画布状态保存失败:', error)
+          }
+        },
+
+        closeProject: () => {
+          set({
+            currentProject: null,
+            viewport: { x: 0, y: 0, zoom: 1 },
+            viewMode: 'preview',
+            selectedNodeIds: [],
+          })
+          console.log('✅ 项目已关闭')
+        },
       }),
       {
         name: 'canvas-storage',

@@ -27,6 +27,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.2",
     "socket.io": "^4.8.1",
+    "tsup": "^8.5.0",
     "turbo": "^2.0.0"
   },
   "dependencies": {
