@@ -6,7 +6,7 @@ import { MessageBroker } from '../core/MessageBroker.js'
 import { AITaskScheduler } from '../scheduler/AITaskScheduler.js'
 import { createStoreAdapterForBroker, createStoreAdapterFromEnv } from '../config/store.js'
 import { DEFAULT_BROKER_CONFIG } from '../config/defaults.js'
-import type { StoreClientConfig } from '@sker/store'
+import type { StoreClientConfig } from '@sker/store-client'
 import type { StoreAdapter } from '../adapters/StoreAdapter.js'
 
 export interface BrokerFactoryConfig {

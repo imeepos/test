@@ -2,7 +2,7 @@
  * Broker的Store客户端配置
  */
 
-import { createStoreClient, type StoreClientConfig } from '@sker/store'
+import { createStoreClient, type StoreClientConfig } from '@sker/store-client'
 import { createStoreAdapter, type StoreAdapter } from '../adapters/StoreAdapter.js'
 
 /**

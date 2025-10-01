@@ -2,7 +2,7 @@
  * Store适配器 - 将StoreClient适配为Broker需要的接口
  */
 
-import type { StoreClient } from '@sker/store'
+import type { StoreClient } from '@sker/store-client'
 
 /**
  * 适配StoreClient为Broker所需的StoreService接口

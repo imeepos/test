@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@sker/models": "workspace:*",
-    "@sker/store": "workspace:*",
+    "@sker/store-client": "workspace:*",
     "amqplib": "^0.10.0",
     "uuid": "^9.0.0"
   },
