@@ -12,9 +12,9 @@ LABEL org.opencontainers.image.version="1.0.0"
 
 WORKDIR /app
 
-# 安装 pnpm 和构建工具
+# 安装 pnpm、node-gyp 和构建工具
 ARG PNPM_VERSION
-RUN npm install -g pnpm@${PNPM_VERSION} && \
+RUN npm install -g pnpm@${PNPM_VERSION} node-gyp && \
     apk add --no-cache python3 make g++
 
 # 复制工作区配置文件
@@ -86,6 +86,10 @@ WORKDIR /app
 ARG PNPM_VERSION
 RUN npm install -g pnpm@${PNPM_VERSION}
 
+# 创建非root用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S gateway -u 1001
+
 # 复制工作区配置文件
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
@@ -98,14 +102,10 @@ COPY packages/store/package.json ./packages/store/
 COPY packages/store-client/package.json ./packages/store-client/
 COPY packages/engine/package.json ./packages/engine/
 
-# 仅安装生产依赖
+# 安装生产依赖
 RUN pnpm install --prod --frozen-lockfile
 
-# 创建非root用户
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S gateway -u 1001
-
-# 从构建阶段复制构建产物(使用 --chown 避免额外的 chown 命令)
+# 从构建阶段复制构建产物
 COPY --from=builder --chown=gateway:nodejs /app/packages/config/dist/ ./packages/config/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/store/dist/ ./packages/store/dist/
@@ -124,7 +124,7 @@ USER gateway
 EXPOSE 8000
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # 运行应用

@@ -1,0 +1,34 @@
+# Gateway 专用 .dockerignore
+
+# 构建产物（在容器内构建）
+dist/
+.turbo/
+
+# 开发依赖
+node_modules/
+
+# 日志
+*.log
+logs/
+
+# 测试
+__tests__/
+*.test.ts
+*.spec.ts
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.swp
+*.swo
+*~
+
+# 文档（除了README）
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore

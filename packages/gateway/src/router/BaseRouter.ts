@@ -4,7 +4,7 @@ import { ResponseMapper } from '../adapters/ResponseMapper.js'
 import { QueueManager } from '../messaging/QueueManager.js'
 import { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store-client'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
 export interface RouterDependencies {
