@@ -38,7 +38,7 @@ interface BackendNode {
   parent_id?: string
   created_at: Date
   updated_at: Date
-  ai_generated: boolean
+  ai_generated?: boolean // 改为可选
 }
 
 /**

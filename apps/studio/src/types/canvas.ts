@@ -8,7 +8,7 @@ export interface Viewport {
 }
 
 // 画布显示模式
-export type ViewMode = 'preview' | 'detail'
+export type ViewMode = 'preview' | 'detail' | 'overview'
 
 // 画布控制状态
 export interface CanvasControls {
