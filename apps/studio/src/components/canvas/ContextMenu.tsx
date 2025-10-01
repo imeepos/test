@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
 import type { Position, AINode, EdgeStylePresetName } from '@/types'
+import { VersionHistory } from '@/components/version/VersionHistory'
 
 interface ContextMenuItem {
   id: string
@@ -68,10 +69,56 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   selectedNodeIds = [],
 }) => {
   const { addToast } = useUIStore()
-  const { getNode, getNodes, duplicateNode, deleteNode, getEdge, updateEdgeStyle, setEdgeStylePreset, deleteEdge } = useNodeStore()
+  const { getNode, getNodes, duplicateNode, deleteNode, getEdge, updateEdgeStyle, setEdgeStylePreset, deleteEdge, updateNodeWithSync } = useNodeStore()
   const { clearSelection, selectAll } = useCanvasStore()
-  
+
   const [menuItems, setMenuItems] = useState<ContextMenuItem[]>([])
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
+  const [versionHistoryNodeId, setVersionHistoryNodeId] = useState<string | null>(null)
+  const [adjustedPosition, setAdjustedPosition] = useState(position)
+
+  // 智能边界检测定位
+  useEffect(() => {
+    if (!isOpen) return
+
+    const MENU_WIDTH = 200
+    const MENU_HEIGHT = 400 // 估算最大高度
+    const PADDING = 8
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    let x = position.x
+    let y = position.y
+
+    // 右侧边界检测
+    if (x + MENU_WIDTH > viewportWidth - PADDING) {
+      x = Math.max(PADDING, viewportWidth - MENU_WIDTH - PADDING)
+    }
+
+    // 底部边界检测
+    if (y + MENU_HEIGHT > viewportHeight - PADDING) {
+      y = Math.max(PADDING, viewportHeight - MENU_HEIGHT - PADDING)
+    }
+
+    setAdjustedPosition({ x, y })
+  }, [isOpen, position])
+
+  // 监听全局版本历史事件
+  useEffect(() => {
+    const handleShowVersionHistory = (event: any) => {
+      const { nodeId } = event.detail
+      if (nodeId) {
+        setVersionHistoryNodeId(nodeId)
+        setShowVersionHistory(true)
+      }
+    }
+
+    window.addEventListener('show-version-history', handleShowVersionHistory)
+    return () => {
+      window.removeEventListener('show-version-history', handleShowVersionHistory)
+    }
+  }, [])
 
   // 根据上下文类型生成菜单项
   const generateMenuItems = useCallback((): ContextMenuItem[] => {
@@ -351,27 +398,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           },
           {
             id: 'view-history',
-            label: '版本历史',
+            label: '查看历史',
             icon: History,
+            shortcut: 'Ctrl+H',
             onClick: () => {
               const node = getNode(targetId)
               if (node) {
-                // 显示版本信息
-                const versionInfo = `
-节点版本: v${node.version}
-创建时间: ${new Date(node.createdAt).toLocaleString()}
-更新时间: ${new Date(node.updatedAt).toLocaleString()}
-编辑次数: ${node.metadata?.editCount || 0}
-${node.metadata?.lastModified ? `最后修改: ${new Date(node.metadata.lastModified).toLocaleString()}` : ''}
-${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
-                `.trim()
-
-                addToast({
-                  type: 'info',
-                  title: `节点版本信息 - ${node.title || '未命名'}`,
-                  message: versionInfo,
-                  duration: 8000
-                })
+                setVersionHistoryNodeId(targetId)
+                setShowVersionHistory(true)
               } else {
                 addToast({
                   type: 'error',
@@ -655,23 +689,53 @@ ${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
     }
   }, [isOpen, onClose])
 
+  // 版本回滚回调
+  const handleVersionRestore = async (version: number) => {
+    if (!versionHistoryNodeId) return
+
+    try {
+      // 重新加载节点数据
+      const node = getNode(versionHistoryNodeId)
+      if (node) {
+        addToast({
+          type: 'success',
+          title: '回滚成功',
+          message: `节点已回滚到版本 ${version}`
+        })
+
+        // 关闭版本历史对话框
+        setShowVersionHistory(false)
+        setVersionHistoryNodeId(null)
+      }
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: '回滚失败',
+        message: error instanceof Error ? error.message : '回滚失败，请重试'
+      })
+    }
+  }
+
   if (!isOpen) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed z-50 min-w-[200px] bg-sidebar-surface border border-sidebar-border rounded-lg shadow-xl py-2"
-        style={{
-          left: position.x,
-          top: position.y,
-        }}
-        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-        transition={{ duration: 0.15 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {menuItems.map((item, index) => {
+    <>
+      <AnimatePresence>
+        <motion.div
+          role="menu"
+          aria-label="上下文菜单"
+          className="fixed z-50 min-w-[200px] bg-sidebar-surface border border-sidebar-border rounded-lg shadow-xl py-2"
+          style={{
+            left: adjustedPosition.x,
+            top: adjustedPosition.y,
+          }}
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.15 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {menuItems.map((item, index) => {
           if (item.divider) {
             return (
               <div
@@ -706,6 +770,27 @@ ${node.metadata?.autoSaved ? '(自动保存)' : '(手动保存)'}
         })}
       </motion.div>
     </AnimatePresence>
+
+      {/* 版本历史对话框 */}
+      {showVersionHistory && versionHistoryNodeId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => {
+          setShowVersionHistory(false)
+          setVersionHistoryNodeId(null)
+        }}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <VersionHistory
+              nodeId={versionHistoryNodeId}
+              currentVersion={getNode(versionHistoryNodeId)?.version || 1}
+              onVersionRestore={handleVersionRestore}
+              onClose={() => {
+                setShowVersionHistory(false)
+                setVersionHistoryNodeId(null)
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

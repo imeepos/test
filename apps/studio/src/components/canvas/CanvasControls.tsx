@@ -102,17 +102,22 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      role="toolbar"
+      aria-label="画布控制工具栏"
     >
       {/* 缩放控制组 */}
-      <div className="flex flex-col gap-1 p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+      <div className="flex flex-col gap-1 p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg"
+           role="group"
+           aria-label="缩放控制">
         <Button
           variant="ghost"
           size="sm"
           icon={ZoomIn}
           onClick={handleZoomIn}
           disabled={viewport.zoom >= 2}
-          className="h-8 w-8 p-0"
+          className={`h-8 w-8 p-0 ${viewport.zoom >= 2 ? 'opacity-40 cursor-not-allowed' : ''}`}
           title="放大 (Ctrl + +)"
+          aria-label="放大画布"
         />
         
         <div className="text-xs text-center text-sidebar-text-muted py-1 min-w-[3rem]">
@@ -125,8 +130,9 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           icon={ZoomOut}
           onClick={handleZoomOut}
           disabled={viewport.zoom <= 0.1}
-          className="h-8 w-8 p-0"
+          className={`h-8 w-8 p-0 ${viewport.zoom <= 0.1 ? 'opacity-40 cursor-not-allowed' : ''}`}
           title="缩小 (Ctrl + -)"
+          aria-label="缩小画布"
         />
       </div>
 

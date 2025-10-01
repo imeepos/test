@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { MessageBroker } from '@sker/broker'
-import { StoreClient } from '@sker/store'
+import { StoreClient } from '@sker/store-client'
 import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,

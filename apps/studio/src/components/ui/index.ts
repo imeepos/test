@@ -11,9 +11,19 @@ export type { ToastProps } from './Toast'
 export {
   Loading,
   AILoading,
-  InlineLoading,
-  Skeleton
+  InlineLoading
 } from './Loading'
+
+export {
+  Skeleton,
+  NodeSkeleton,
+  TextSkeleton,
+  ListSkeleton,
+  CardSkeleton,
+  TableSkeleton,
+  CanvasSkeleton
+} from './Skeleton'
+export type { SkeletonProps } from './Skeleton'
 
 export { SearchInput } from './SearchInput'
 

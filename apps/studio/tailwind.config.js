@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // MVP深色主题色彩系统
+        // 统一的深色主题色彩系统
         sidebar: {
           bg: '#1a1b23',
           surface: '#252631',
@@ -25,20 +25,38 @@ export default {
           'node-border': '#343640',
           connection: '#6366f1',
         },
-        component: {
-          // 重要性等级颜色
-          importance: {
-            1: '#6b7280', // 灰色 - 低重要性
-            2: '#84cc16', // 绿色 - 较低重要性
-            3: '#f59e0b', // 黄色 - 中等重要性
-            4: '#f97316', // 橙色 - 较高重要性
-            5: '#dc2626', // 红色 - 高重要性
-          },
-          confidence: {
-            low: '#ef4444',    // 红色 - 低置信度
-            medium: '#f59e0b', // 黄色 - 中等置信度
-            high: '#10b981',   // 绿色 - 高置信度
-          }
+        // 重要性等级颜色（统一管理）
+        importance: {
+          1: '#6b7280',  // 灰色 - 低优先级
+          2: '#10b981',  // 绿色 - 较低优先级
+          3: '#f59e0b',  // 黄色 - 中等优先级
+          4: '#f97316',  // 橙色 - 较高优先级
+          5: '#dc2626',  // 红色 - 高优先级
+        },
+        // 置信度颜色
+        confidence: {
+          low: '#ef4444',     // 红色 - 低置信度
+          medium: '#f59e0b',  // 黄色 - 中等置信度
+          high: '#10b981',    // 绿色 - 高置信度
+        },
+        // 状态颜色
+        status: {
+          idle: '#6b7280',      // 灰色 - 待处理
+          processing: '#3b82f6', // 蓝色 - 处理中
+          completed: '#10b981',  // 绿色 - 已完成
+          error: '#ef4444',      // 红色 - 错误
+        },
+        // 语义类型颜色
+        semantic: {
+          requirement: '#8b5cf6',
+          solution: '#10b981',
+          plan: '#3b82f6',
+          analysis: '#f59e0b',
+          idea: '#ec4899',
+          question: '#06b6d4',
+          answer: '#84cc16',
+          decision: '#f97316',
+          fusion: '#6366f1',
         }
       },
       fontFamily: {

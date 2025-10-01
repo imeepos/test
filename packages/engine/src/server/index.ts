@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import { AIEngine } from '../core/AIEngine.js'
 import { StudioAPIServer } from './StudioAPIServer.js'
 import { MessageBroker } from '@sker/broker'
-import { StoreClient } from '@sker/store'
+import { StoreClient } from '@sker/store-client'
 import { AITaskQueueConsumer } from '../messaging/AITaskQueueConsumer.js'
 
 // 加载环境变量

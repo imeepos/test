@@ -87,11 +87,17 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # 复制包配置文件
 COPY packages/engine/package.json ./packages/engine/
 COPY packages/broker/package.json ./packages/broker/
+COPY packages/config/package.json ./packages/config/
+COPY packages/models/package.json ./packages/models/
+COPY packages/store/package.json ./packages/store/
 
 # 仅安装生产依赖
 RUN pnpm install --prod --frozen-lockfile
 
 # 从构建阶段复制构建产物(使用 --chown)
+COPY --from=builder --chown=engine:nodejs /app/packages/config/dist/ ./packages/config/dist/
+COPY --from=builder --chown=engine:nodejs /app/packages/models/dist/ ./packages/models/dist/
+COPY --from=builder --chown=engine:nodejs /app/packages/store/dist/ ./packages/store/dist/
 COPY --from=builder --chown=engine:nodejs /app/packages/broker/dist/ ./packages/broker/dist/
 COPY --from=builder --chown=engine:nodejs /app/packages/engine/dist/ ./packages/engine/dist/
 
@@ -109,4 +115,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # 运行应用
-CMD ["node", "dist/server.es.js"]
+CMD ["node", "dist/server/index.js"]

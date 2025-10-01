@@ -1,0 +1,38 @@
+{
+  "name": "@sker/store-client",
+  "version": "0.1.0",
+  "description": "SKER Store HTTP Client - 轻量级 Store 服务 HTTP 客户端",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "jest",
+    "lint": "echo 'Linting store-client package...'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "store",
+    "client",
+    "http",
+    "microservice"
+  ],
+  "author": "SKER Team",
+  "license": "MIT"
+}

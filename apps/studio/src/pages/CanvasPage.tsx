@@ -531,6 +531,31 @@ const CanvasPage: React.FC = () => {
               })
             }
             break
+          case 'h':
+            // Ctrl+H 查看版本历史
+            event.preventDefault()
+            if (selectedNodeIds.length === 1) {
+              // 触发查看历史的自定义事件
+              const historyEvent = new CustomEvent('show-version-history', {
+                detail: { nodeId: selectedNodeIds[0] }
+              })
+              window.dispatchEvent(historyEvent)
+            } else if (selectedNodeIds.length === 0) {
+              addToast({
+                type: 'warning',
+                title: '未选中节点',
+                message: '请先选中一个节点查看其版本历史',
+                duration: 3000,
+              })
+            } else {
+              addToast({
+                type: 'warning',
+                title: '选中过多',
+                message: '请只选中一个节点查看版本历史',
+                duration: 3000,
+              })
+            }
+            break
         }
       }
     }
@@ -583,9 +608,10 @@ const CanvasPage: React.FC = () => {
           <CanvasControls />
         </div>
 
-        {/* 快捷操作提示 */}
+        {/* 快捷操作提示 - 响应式隐藏 */}
         <motion.div
-          className="absolute top-4 left-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg p-3 text-xs text-sidebar-text-muted max-w-xs"
+          className="absolute top-4 left-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg p-3 text-xs text-sidebar-text-muted max-w-xs
+                     hidden md:block"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2, duration: 0.5 }}

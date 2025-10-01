@@ -1,9 +1,12 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Result, Button } from 'antd'
+import { logErrorBoundary } from '@/utils/error'
 
 interface Props {
   children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }
 
 interface State {
@@ -23,11 +26,16 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    // 记录错误到日志系统
+    logErrorBoundary(error, errorInfo)
+
     this.setState({
       error,
       errorInfo,
     })
+
+    // 调用自定义错误处理
+    this.props.onError?.(error, errorInfo)
   }
 
   handleReload = () => {
@@ -40,6 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      // 如果提供了自定义 fallback，使用它
+      if (this.props.fallback) {
+        return this.props.fallback
+      }
+
+      // 默认错误页面
       return (
         <div className="flex items-center justify-center min-h-screen p-8">
           <Result
@@ -55,13 +69,33 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>,
             ]}
           >
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left">
-                <h4 className="font-semibold text-red-600 mb-2">错误详情：</h4>
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto">
-                  {this.state.error.toString()}
-                  {this.state.errorInfo?.componentStack}
-                </pre>
+            {import.meta.env.DEV && this.state.error && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left max-w-3xl">
+                <h4 className="font-semibold text-red-600 mb-2">错误详情 (仅开发环境)：</h4>
+                <div className="space-y-2">
+                  <div>
+                    <strong>错误消息:</strong>
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap mt-1">
+                      {this.state.error.toString()}
+                    </pre>
+                  </div>
+                  {this.state.error.stack && (
+                    <div>
+                      <strong>堆栈跟踪:</strong>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap mt-1 max-h-60 overflow-auto">
+                        {this.state.error.stack}
+                      </pre>
+                    </div>
+                  )}
+                  {this.state.errorInfo?.componentStack && (
+                    <div>
+                      <strong>组件堆栈:</strong>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap mt-1 max-h-40 overflow-auto">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </Result>

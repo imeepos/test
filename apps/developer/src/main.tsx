@@ -6,6 +6,10 @@ import { ConfigProvider } from 'antd'
 import zhCN from 'antd/es/locale/zh_CN'
 import App from './App.tsx'
 import './index.css'
+import { setupGlobalErrorHandler } from '@/utils/error'
+
+// 初始化全局错误处理
+setupGlobalErrorHandler()
 
 // 创建 React Query 客户端
 const queryClient = new QueryClient({
@@ -14,6 +18,9 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 分钟
+    },
+    mutations: {
+      retry: 0,
     },
   },
 })

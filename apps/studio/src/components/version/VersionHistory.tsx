@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import type { NodeVersion, VersionChangeType } from '@/types'
-import { versionService } from '@/services/versionService'
+import { nodeAPIService } from '@/services/nodeApiService'
 import { DiffViewer } from './DiffViewer'
-import { ChangeDialog } from './ChangeDialog'
+import { RollbackDialog } from './RollbackDialog'
+import { Spinner } from '@/components/ui'
 
 interface VersionHistoryProps {
   nodeId: string
@@ -17,27 +18,48 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   onVersionRestore,
   onClose
 }) => {
-  const [versions, setVersions] = useState<NodeVersion[]>([])
+  const [versions, setVersions] = useState<any[]>([])
   const [selectedVersions, setSelectedVersions] = useState<[number, number] | null>(null)
   const [showDiffViewer, setShowDiffViewer] = useState(false)
-  const [showChangeDialog, setShowChangeDialog] = useState(false)
+  const [rollbackTarget, setRollbackTarget] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const limit = 10
 
   useEffect(() => {
     loadVersionHistory()
   }, [nodeId])
 
-  const loadVersionHistory = async () => {
+  const loadVersionHistory = async (append = false) => {
     try {
-      setLoading(true)
-      const history = versionService.getVersionHistory(nodeId)
-      setVersions(history)
-    } catch (error) {
-      console.error('加载版本历史失败:', error)
+      if (!append) {
+        setLoading(true)
+        setError(null)
+      }
+
+      const loadedVersions = await nodeAPIService.getNodeVersions(nodeId, append ? page * limit : limit)
+
+      if (append) {
+        setVersions(prev => [...prev, ...loadedVersions])
+      } else {
+        setVersions(loadedVersions)
+      }
+
+      setHasMore(loadedVersions.length === limit)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载版本历史失败')
+      console.error('加载版本历史失败:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1)
+    loadVersionHistory(true)
   }
 
   const handleVersionCompare = (fromVersion: number, toVersion: number) => {
@@ -46,8 +68,27 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   }
 
   const handleVersionRestore = (version: number) => {
-    if (onVersionRestore) {
-      onVersionRestore(version)
+    setRollbackTarget(version)
+  }
+
+  const handleConfirmRollback = async (reason: string) => {
+    if (!rollbackTarget) return
+
+    try {
+      await nodeAPIService.rollbackNode(nodeId, rollbackTarget, reason)
+
+      // 刷新版本历史
+      await loadVersionHistory()
+
+      // 通知父组件
+      if (onVersionRestore) {
+        onVersionRestore(rollbackTarget)
+      }
+
+      setRollbackTarget(null)
+    } catch (err) {
+      console.error('回滚失败:', err)
+      throw err
     }
   }
 
@@ -93,10 +134,25 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     version.changeType.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (loading) {
+  if (loading && versions.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">加载版本历史中...</div>
+        <Spinner size="lg" />
+        <span className="ml-2 text-gray-500">加载版本历史中...</span>
+      </div>
+    )
+  }
+
+  if (error && versions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <div className="text-red-500 mb-4">❌ {error}</div>
+        <button
+          onClick={() => loadVersionHistory()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          重试
+        </button>
       </div>
     )
   }
@@ -230,15 +286,27 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
         )}
       </div>
 
+      {/* 加载更多按钮 */}
+      {hasMore && filteredVersions.length > 0 && (
+        <div className="px-6 pb-6">
+          <button
+            onClick={handleLoadMore}
+            className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            加载更多版本...
+          </button>
+        </div>
+      )}
+
       {/* 版本统计 */}
       <div className="px-6 py-4 bg-gray-50 border-t">
         <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>共 {versions.length} 个版本</span>
+          <span>共 {versions.length} 个版本{hasMore ? '+' : ''}</span>
           <div className="flex gap-4">
-            <span>创建: {versions.filter(v => v.changeType === 'create').length}</span>
-            <span>编辑: {versions.filter(v => v.changeType === 'edit').length}</span>
-            <span>优化: {versions.filter(v => v.changeType === 'optimize').length}</span>
-            <span>回滚: {versions.filter(v => v.changeType === 'rollback').length}</span>
+            <span>创建: {versions.filter(v => v.change_type === 'create' || v.changeType === 'create').length}</span>
+            <span>编辑: {versions.filter(v => v.change_type === 'edit' || v.changeType === 'edit').length}</span>
+            <span>优化: {versions.filter(v => v.change_type === 'optimize' || v.changeType === 'optimize').length}</span>
+            <span>回滚: {versions.filter(v => v.change_type === 'rollback' || v.changeType === 'rollback').length}</span>
           </div>
         </div>
       </div>
@@ -253,14 +321,14 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
         />
       )}
 
-      {/* 变更对话框 */}
-      {showChangeDialog && (
-        <ChangeDialog
-          onConfirm={(changeInfo) => {
-            setShowChangeDialog(false)
-            // 处理变更确认
-          }}
-          onCancel={() => setShowChangeDialog(false)}
+      {/* 回滚确认对话框 */}
+      {rollbackTarget !== null && (
+        <RollbackDialog
+          nodeId={nodeId}
+          targetVersion={rollbackTarget}
+          currentVersion={currentVersion}
+          onConfirm={handleConfirmRollback}
+          onClose={() => setRollbackTarget(null)}
         />
       )}
     </div>

@@ -26,6 +26,7 @@ COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/broker/package.json ./packages/broker/
 COPY packages/store/package.json ./packages/store/
+COPY packages/engine/package.json ./packages/engine/
 
 # 安装所有依赖
 RUN pnpm install --frozen-lockfile
@@ -50,6 +51,10 @@ COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/tsup.config.ts ./packages/broker/tsup.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
 
+COPY packages/engine/src/ ./packages/engine/src/
+COPY packages/engine/tsup.config.ts ./packages/engine/tsup.config.ts
+COPY packages/engine/tsconfig.json ./packages/engine/tsconfig.json
+
 COPY packages/gateway/src/ ./packages/gateway/src/
 COPY packages/gateway/tsup.config.ts ./packages/gateway/tsup.config.ts
 COPY packages/gateway/tsconfig.json ./packages/gateway/tsconfig.json
@@ -59,6 +64,7 @@ RUN pnpm --filter @sker/config run build && \
     pnpm --filter @sker/models run build && \
     pnpm --filter @sker/store run build && \
     pnpm --filter @sker/broker run build && \
+    pnpm --filter @sker/engine run build && \
     pnpm --filter @sker/gateway run build
 
 # 生产阶段：运行时镜像
@@ -96,6 +102,7 @@ COPY --from=builder --chown=gateway:nodejs /app/packages/config/dist/ ./packages
 COPY --from=builder --chown=gateway:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/store/dist/ ./packages/store/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/broker/dist/ ./packages/broker/dist/
+COPY --from=builder --chown=gateway:nodejs /app/packages/engine/dist/ ./packages/engine/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/gateway/dist/ ./packages/gateway/dist/
 
 # 切换到gateway包目录
@@ -112,4 +119,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # 运行应用
-CMD ["node", "dist/server.cjs.js"]
+CMD ["node", "dist/server.js"]

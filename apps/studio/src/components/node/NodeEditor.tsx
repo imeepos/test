@@ -334,7 +334,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-5xl mx-4 bg-sidebar-surface rounded-lg shadow-2xl border border-sidebar-border"
+            className="w-full max-w-5xl mx-4 max-h-[90vh] flex flex-col bg-sidebar-surface rounded-lg shadow-2xl border border-sidebar-border overflow-hidden"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -422,7 +422,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
             </div>
 
             {/* 编辑器内容 */}
-            <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* 标题编辑 */}
               <div>
                 <label className="block text-sm font-medium text-sidebar-text mb-2">
@@ -451,8 +451,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
                       placeholder="请输入节点内容...&#10;&#10;支持Markdown格式：&#10;# 标题&#10;**粗体** *斜体*&#10;```代码块```&#10;- 列表项&#10;[链接](URL)"
-                      rows={12}
-                      className="w-full px-3 py-2 bg-sidebar-bg text-sidebar-text placeholder-sidebar-text-muted resize-none
+                      className="w-full h-full min-h-[300px] px-3 py-2 bg-sidebar-bg text-sidebar-text placeholder-sidebar-text-muted resize-none overflow-y-auto
                                focus:outline-none focus:ring-2 focus:ring-sidebar-accent focus:border-transparent border-none"
                     />
                   )}
@@ -465,26 +464,25 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   )}
 
                   {editorMode === 'split' && (
-                    <div className="flex">
-                      <div className="w-1/2 border-r border-sidebar-border">
-                        <div className="px-2 py-1 bg-sidebar-bg border-b border-sidebar-border text-xs text-sidebar-text-muted font-medium">
+                    <div className="flex h-[400px]">
+                      <div className="w-1/2 border-r border-sidebar-border flex flex-col">
+                        <div className="flex-shrink-0 px-2 py-1 bg-sidebar-bg border-b border-sidebar-border text-xs text-sidebar-text-muted font-medium">
                           编辑
                         </div>
                         <textarea
                           value={content}
                           onChange={(e) => setContent(e.target.value)}
                           placeholder="请输入内容..."
-                          rows={12}
-                          className="w-full px-3 py-2 bg-sidebar-bg text-sidebar-text placeholder-sidebar-text-muted resize-none
+                          className="flex-1 w-full px-3 py-2 bg-sidebar-bg text-sidebar-text placeholder-sidebar-text-muted resize-none overflow-y-auto
                                    focus:outline-none border-none"
                         />
                       </div>
-                      <div className="w-1/2">
-                        <div className="px-2 py-1 bg-sidebar-surface border-b border-sidebar-border text-xs text-sidebar-text-muted font-medium">
+                      <div className="w-1/2 flex flex-col">
+                        <div className="flex-shrink-0 px-2 py-1 bg-sidebar-surface border-b border-sidebar-border text-xs text-sidebar-text-muted font-medium">
                           预览
                         </div>
                         <div
-                          className="px-3 py-2 bg-sidebar-surface text-sidebar-text min-h-[300px] overflow-y-auto"
+                          className="flex-1 px-3 py-2 bg-sidebar-surface text-sidebar-text overflow-y-auto"
                           dangerouslySetInnerHTML={{ __html: renderMarkdown(content || '请输入内容以查看预览...') }}
                         />
                       </div>

@@ -166,29 +166,35 @@ const Canvas: React.FC<CanvasProps> = ({
   const [rfNodes, setRfNodes, originalOnNodesChange] = useNodesState(nodes)
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges)
 
-  // 防抖定时器引用
+  // 防抖定时器引用和RAF引用
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const rafRef = useRef<number | null>(null)
 
-  // 自定义节点变化处理器 - 处理位置同步
+  // 自定义节点变化处理器 - 使用RAF优化性能
   const handleNodesChange = useCallback((changes: any[]) => {
     // 先调用原始的onNodesChange处理器
     originalOnNodesChange(changes)
-    
+
     // 处理位置变化，同步到store
     const positionChanges = changes.filter(change => change.type === 'position' && change.position)
-    
+
     if (positionChanges.length > 0) {
-      // 清除之前的防抖定时器
+      // 取消之前的RAF和防抖
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+      }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
       }
-      
-      // 使用防抖，避免拖拽过程中频繁更新store
-      debounceTimeoutRef.current = setTimeout(() => {
-        positionChanges.forEach(change => {
-          updateNode(change.id, { position: change.position })
-        })
-      }, 300) // 300ms防抖延迟
+
+      // 使用RAF + 防抖优化拖拽性能
+      rafRef.current = requestAnimationFrame(() => {
+        debounceTimeoutRef.current = setTimeout(() => {
+          positionChanges.forEach(change => {
+            updateNode(change.id, { position: change.position })
+          })
+        }, 150) // 150ms防抖延迟（从300ms优化）
+      })
     }
   }, [originalOnNodesChange, updateNode])
 
@@ -721,7 +727,7 @@ const Canvas: React.FC<CanvasProps> = ({
     [getNodes, addNode, connectNodes, setSelectedNodes, addToast]
   )
 
-  // 清理定时器
+  // 清理定时器和RAF
   React.useEffect(() => {
     return () => {
       if (clickTimeoutRef.current) {
@@ -729,6 +735,9 @@ const Canvas: React.FC<CanvasProps> = ({
       }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
       }
     }
   }, [])
