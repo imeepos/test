@@ -1,8 +1,8 @@
-import * as dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 import Joi from 'joi'
 
 // 加载环境变量
-dotenv.config()
+dotenvConfig()
 
 // 数据库配置接口
 export interface DatabaseConfig {

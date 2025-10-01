@@ -22,7 +22,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy all package.json files first for better layer caching
 COPY apps/studio/package.json ./apps/studio/
-COPY packages/*/package.json ./packages/
+COPY packages/config/package.json ./packages/config/
+COPY packages/models/package.json ./packages/models/
+COPY packages/store/package.json ./packages/store/
+COPY packages/store-client/package.json ./packages/store-client/
 
 # Install all workspace dependencies with cache mount
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \

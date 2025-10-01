@@ -101,4 +101,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
 
 # 运行应用（直接在服务启动前执行迁移）
-CMD sh -c "npm run migrate && node dist/server.js"
+CMD sh -c "node dist/cli-migrate.js && node dist/server.js"
