@@ -10,7 +10,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "up": "docker compose down && docker compose up --force-recreate -d"
+    "up": "docker compose down && docker compose up --force-recreate -d",
+    "claude": "claude --dangerously-skip-permissions"
   },
   "keywords": [],
   "author": "",
