@@ -1,7 +1,7 @@
 import { BaseRepository } from './BaseRepository.js'
 import { User, UserStats, QueryOptions, DatabaseError } from '../models/index.js'
-import * as bcrypt from 'bcryptjs'
-import * as jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 /**
  * 用户仓库 - 处理用户相关的数据库操作
