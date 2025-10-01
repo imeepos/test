@@ -28,10 +28,12 @@
 ### 开发规范（必读）
 - **[构建规范](docs/development/BUILD_STANDARDS.md)** - tsup/Vite配置、构建标准
 - **[前端架构规范](docs/development/FRONTEND_ARCHITECTURE.md)** - 服务层、状态管理、环境配置
+- **[Dockerfile 最佳实践](docs/development/DOCKERFILE_BEST_PRACTICES.md)** - Docker镜像构建规范
 
 ### 架构与部署
 - [系统架构](docs/architecture/ARCHITECTURE.md) - 整体系统设计
 - [部署指南](docs/DEPLOYMENT.md) - 完整的部署指南
+- [Docker 指南](docs/guides/DOCKER.md) - Docker 部署和使用
 - [微服务架构](docs/guides/README-MICROSERVICES.md) - 微服务部署
 
 ### 功能开发
@@ -118,8 +120,10 @@ cd apps && pnpm create vite new-app --template react-ts
 
 - [ ] 遵循了构建规范（tsup/Vite配置正确）
 - [ ] 遵循了前端架构规范（Service/Store设计合理）
+- [ ] Dockerfile 符合最佳实践（如有修改）
 - [ ] 类型检查通过（`pnpm typecheck`）
 - [ ] 代码检查通过（`pnpm lint`）
 - [ ] 测试通过（`pnpm test`）
 - [ ] 构建成功（`pnpm build`）
+- [ ] Docker 镜像构建成功（如有修改）
 - [ ] 更新了相关文档

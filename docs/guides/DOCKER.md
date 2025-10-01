@@ -93,12 +93,16 @@ Frontend → Gateway → Broker → Engine
 ├── docker-compose.yml          # 生产环境编排
 ├── docker-compose.dev.yml      # 开发环境基础设施
 ├── .env.example               # 环境变量模板
+├── .dockerignore              # Docker 构建忽略文件
 ├── scripts/docker-start.sh     # 启动脚本
-└── packages/
-    ├── store/Dockerfile       # 数据存储服务
-    ├── gateway/Dockerfile     # API 网关服务
-    ├── broker/Dockerfile      # 消息代理服务
-    └── engine/Dockerfile      # AI 引擎服务
+├── packages/
+│   ├── gateway/Dockerfile     # API 网关服务
+│   ├── broker/Dockerfile      # 消息代理服务
+│   ├── engine/Dockerfile      # AI 引擎服务
+│   └── store/Dockerfile       # 数据存储服务
+└── apps/
+    ├── studio/Dockerfile      # 前端管理应用
+    └── research/Dockerfile    # 研究分析应用
 ```
 
 ## 🔧 配置说明
@@ -136,6 +140,48 @@ postgres_data      # PostgreSQL 数据
 redis_data         # Redis 数据
 rabbitmq_data      # RabbitMQ 数据
 ```
+
+## 🏗️ Dockerfile 配置
+
+### 版本参数
+
+所有 Dockerfile 支持版本参数化：
+
+```bash
+# 默认版本
+ARG NODE_VERSION=18.20.5
+ARG ALPINE_VERSION=3.20
+ARG PNPM_VERSION=10.15.0
+ARG NGINX_VERSION=1.27  # 仅前端应用
+
+# 自定义版本构建
+docker build \
+  --build-arg NODE_VERSION=20.0.0 \
+  --build-arg PNPM_VERSION=9.0.0 \
+  -f packages/gateway/Dockerfile .
+```
+
+### 镜像标签
+
+所有镜像包含 OCI 标准元数据：
+
+- `maintainer`: sker-team
+- `org.opencontainers.image.source`: 代码仓库地址
+- `org.opencontainers.image.version`: 镜像版本号
+
+### 多阶段构建
+
+采用多阶段构建优化镜像大小：
+
+- **builder 阶段**: 安装依赖、构建代码
+- **runtime 阶段**: 仅包含运行时文件，镜像体积减少 60%+
+
+### 安全特性
+
+- ✅ 非 root 用户运行
+- ✅ 固定版本号避免意外更新
+- ✅ 最小化运行时依赖
+- ✅ 健康检查确保服务可用
 
 ## 🛠️ 开发指南
 

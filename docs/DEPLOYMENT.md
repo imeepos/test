@@ -20,13 +20,16 @@
 
 | 软件 | 版本要求 | 用途 |
 |------|----------|------|
-| Node.js | 18.0.0+ | JavaScript 运行时 |
-| pnpm | 8.0.0+ | 包管理器 |
+| Node.js | 18.20.5 | JavaScript 运行时 |
+| pnpm | 10.15.0 | 包管理器 |
 | Docker | 20.0.0+ | 容器化 |
 | Docker Compose | 2.0.0+ | 多容器编排 |
 | PostgreSQL | 14.0+ | 主数据库 |
 | Redis | 6.0+ | 缓存和会话存储 |
 | RabbitMQ | 3.11+ | 消息队列 |
+| Nginx | 1.27+ | 前端应用服务器 |
+
+**注意**: Dockerfile 中的版本号已固定，确保构建一致性。
 
 ## 🐳 Docker 部署 (推荐)
 
@@ -73,9 +76,22 @@
    ```bash
    # 使用 Docker Compose 启动所有服务
    docker-compose up -d
+
+   # 或使用脚本启动
+   ./scripts/docker-start.sh prod
    ```
 
-4. **验证部署**
+4. **自定义镜像构建**
+   ```bash
+   # 使用自定义版本构建
+   docker build \
+     --build-arg NODE_VERSION=20.0.0 \
+     --build-arg PNPM_VERSION=9.0.0 \
+     -f packages/gateway/Dockerfile \
+     -t sker-gateway:custom .
+   ```
+
+5. **验证部署**
    ```bash
    # 检查服务状态
    docker-compose ps

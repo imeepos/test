@@ -1,11 +1,21 @@
 # Multi-stage build for @sker/studio
-FROM node:18-alpine AS builder
+ARG NODE_VERSION=18.20.5
+ARG ALPINE_VERSION=3.20
+ARG PNPM_VERSION=10.15.0
+
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+LABEL maintainer="sker-team"
+LABEL description="Studio application for sker platform"
+LABEL org.opencontainers.image.source="https://github.com/sker-team/sker"
+LABEL org.opencontainers.image.version="1.0.0"
 
 # Set working directory
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm
+ARG PNPM_VERSION
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 # Copy root workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -33,9 +43,9 @@ COPY apps/studio/postcss.config.js ./apps/studio/
 RUN pnpm --filter @sker/studio build
 
 # Production stage with nginx
-FROM nginx:alpine AS production
+FROM nginx:1.27-alpine AS production
 
-# Install curl for health checks
+# Install curl for health checks (nginx user already exists in nginx:alpine image)
 RUN apk add --no-cache curl
 
 # Copy built application
@@ -47,10 +57,6 @@ RUN mkdir -p /etc/nginx/conf.d
 # Copy nginx configuration (will be created next)
 COPY apps/studio/nginx.conf /etc/nginx/nginx.conf
 COPY apps/studio/default.conf /etc/nginx/conf.d/default.conf
-
-# Create nginx user and set permissions
-RUN addgroup -g 1001 -S nginx || true && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx || true
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/cache/nginx /var/log/nginx /tmp && \
