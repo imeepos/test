@@ -161,7 +161,7 @@ export class MigrationManager {
 }
 
 // 如果直接运行此文件，执行迁移
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const migrationManager = new MigrationManager()
 
   const command = process.argv[2] || 'migrate'
