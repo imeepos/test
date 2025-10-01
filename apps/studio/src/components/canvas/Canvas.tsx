@@ -30,13 +30,10 @@ import { getOptimizedReactFlowProps } from './PerformanceOptimizer'
 import { nodeService } from '@/services'
 import type { Position, AINodeData, AINode } from '@/types'
 
-// 自定义节点类型 - 使用React.memo避免不必要的重渲染
-const nodeTypes = React.useMemo(
-  () => ({
-    aiNode: AINodeComponent,
-  }),
-  []
-)
+// 自定义节点类型 - 在组件外部定义，避免每次渲染都重新创建
+const nodeTypes = {
+  aiNode: AINodeComponent,
+}
 
 export interface CanvasProps {
   onNodeDoubleClick?: (nodeId: string) => void
