@@ -154,6 +154,7 @@ export class MigrationManager {
       } else {
         allMigrations = [
           '001_initial_schema.sql',
+          '002_add_node_fields.sql',
           // 在这里添加新的迁移文件
         ]
       }
@@ -227,6 +228,7 @@ export class MigrationManager {
       } else {
         allMigrations = [
           '001_initial_schema.sql',
+          '002_add_node_fields.sql',
           // 在这里添加新的迁移文件
         ]
       }

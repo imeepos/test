@@ -83,7 +83,7 @@ export class NodeRepository extends BaseRepository<Node> {
     options: QueryOptions = {}
   ): Promise<Node[]> {
     const importanceFilter = Array.isArray(importance) ? importance : [importance]
-    const filters = { importance: importanceFilter, ...options.filters }
+    const filters = { importance_level: importanceFilter, ...options.filters }
     return this.findMany({ ...options, filters })
   }
 
@@ -194,22 +194,22 @@ export class NodeRepository extends BaseRepository<Node> {
 
       // 按重要性统计
       const importanceQuery = `
-        SELECT importance, COUNT(*) as count
+        SELECT importance_level, COUNT(*) as count
         FROM ${this.tableName} ${baseFilter}
-        GROUP BY importance
-        ORDER BY importance
+        GROUP BY importance_level
+        ORDER BY importance_level
       `
       const importanceResult = await this.pool.query(importanceQuery, params)
       const byImportance: Record<string, number> = {}
       importanceResult.rows.forEach(row => {
-        byImportance[row.importance] = parseInt(row.count)
+        byImportance[row.importance_level] = parseInt(row.count)
       })
 
       // 平均值统计
       const avgQuery = `
         SELECT
-          AVG(confidence) as avg_confidence,
-          AVG(importance) as avg_importance,
+          AVG(confidence_score) as avg_confidence,
+          AVG(importance_level) as avg_importance,
           SUM(CASE WHEN ai_generated = true THEN 1 ELSE 0 END) as ai_generated,
           SUM(CASE WHEN ai_generated = false THEN 1 ELSE 0 END) as user_created
         FROM ${this.tableName} ${baseFilter}
@@ -412,10 +412,10 @@ export class NodeRepository extends BaseRepository<Node> {
 
       const query = `
         INSERT INTO ${this.tableName} (
-          project_id, user_id, content, title, importance, confidence,
-          status, tags, version, position, size, metadata, ai_generated
+          project_id, user_id, content, title, importance_level, confidence_score,
+          status, tags, version, position, size, metadata, ai_generated, semantic_type
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *
       `
 
@@ -432,7 +432,8 @@ export class NodeRepository extends BaseRepository<Node> {
         originalNode.position,
         originalNode.size,
         originalNode.metadata,
-        originalNode.ai_generated
+        originalNode.ai_generated,
+        'text' // semantic_type - 复制时重置为默认值
       ]
 
       const result = await client.query(query, values)
@@ -496,12 +497,12 @@ export class NodeRepository extends BaseRepository<Node> {
   async getHighPriorityNodes(projectId: string): Promise<Node[]> {
     const filters = {
       project_id: projectId,
-      importance: [4, 5], // 高重要性
+      importance_level: [4, 5], // 高重要性
       status: ['idle', 'processing'] // 活跃状态
     }
     return this.findMany({
       filters,
-      orderBy: 'importance',
+      orderBy: 'importance_level',
       orderDirection: 'DESC'
     })
   }
