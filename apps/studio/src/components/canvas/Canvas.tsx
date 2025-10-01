@@ -366,9 +366,13 @@ const Canvas: React.FC<CanvasProps> = ({
         y: event.clientY - reactFlowBounds.top,
       })
 
-      onCanvasDoubleClick?.(position)
+      // 如果提供了回调，则由父组件处理，不在这里创建节点
+      if (onCanvasDoubleClick) {
+        onCanvasDoubleClick(position)
+        return
+      }
 
-      // 创建新节点
+      // 创建新节点（仅当没有提供回调时）
       if (onNodeCreate) {
         onNodeCreate(position)
       } else {

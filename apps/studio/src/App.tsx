@@ -201,8 +201,9 @@ function App() {
     )
   }
 
-  // 显示项目选择器(如果没有当前项目)
-  if (isReady && !currentProject) {
+  // 显示项目选择器(如果没有当前项目且不在加载中)
+  // 注意：只有在确实需要选择项目时才显示选择器，而不是在加载过程中
+  if (isReady && !currentProject && !isLoading) {
     return (
       <ErrorBoundary
         onError={(error: Error, errorInfo: React.ErrorInfo) => {

@@ -117,7 +117,8 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
  */
 export const rateLimitMiddleware = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW || '900000'), // 15分钟
-  max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // 限制每个IP 15分钟内最多100个请求
+  max: parseInt(process.env.RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? '100' : '999999')), // 开发环境无限制
+  skip: () => process.env.NODE_ENV === 'development', // 开发环境完全跳过限流
   message: {
     success: false,
     error: {
@@ -135,7 +136,8 @@ export const rateLimitMiddleware = rateLimit({
  */
 export const strictRateLimitMiddleware = rateLimit({
   windowMs: parseInt(process.env.STRICT_RATE_LIMIT_WINDOW || '900000'), // 15分钟
-  max: parseInt(process.env.STRICT_RATE_LIMIT_MAX || '10'), // 限制每个IP 15分钟内最多10个请求
+  max: parseInt(process.env.STRICT_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? '10' : '999999')), // 开发环境无限制
+  skip: () => process.env.NODE_ENV === 'development', // 开发环境完全跳过限流
   message: {
     success: false,
     error: {

@@ -98,85 +98,15 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
 
   return (
     <motion.div
-      className="fixed bottom-4 right-4 z-10 flex flex-col gap-2"
-      initial={{ opacity: 0, y: 20 }}
+      className="fixed top-4 right-4 z-10"
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       role="toolbar"
       aria-label="画布控制工具栏"
     >
-      {/* 缩放控制组 */}
-      <div className="flex flex-col gap-1 p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg"
-           role="group"
-           aria-label="缩放控制">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ZoomIn}
-          onClick={handleZoomIn}
-          disabled={(viewport?.zoom ?? 1) >= 2}
-          className={`h-8 w-8 p-0 ${(viewport?.zoom ?? 1) >= 2 ? 'opacity-40 cursor-not-allowed' : ''}`}
-          title="放大 (Ctrl + +)"
-          aria-label="放大画布"
-        />
-        
-        <div className="text-xs text-center text-sidebar-text-muted py-1 min-w-[3rem]">
-          {zoomPercentage}%
-        </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ZoomOut}
-          onClick={handleZoomOut}
-          disabled={(viewport?.zoom ?? 1) <= 0.1}
-          className={`h-8 w-8 p-0 ${(viewport?.zoom ?? 1) <= 0.1 ? 'opacity-40 cursor-not-allowed' : ''}`}
-          title="缩小 (Ctrl + -)"
-          aria-label="缩小画布"
-        />
-      </div>
-
-      {/* 视图控制组 */}
-      <div className="flex flex-col gap-1 p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={RotateCcw}
-          onClick={handleResetZoom}
-          className="h-8 w-8 p-0"
-          title="重置缩放 (Ctrl + 0)"
-        />
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={MousePointer2}
-          onClick={handleFitView}
-          className="h-8 w-8 p-0"
-          title="适应画布 (Ctrl + 1)"
-        />
-      </div>
-
-      {/* 显示选项组 */}
-      <div className="flex flex-col gap-1 p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={Eye}
-          onClick={handleViewModeToggle}
-          className={`h-8 w-8 p-0 ${viewMode === 'detail' ? 'bg-sidebar-accent/20 text-sidebar-accent' : ''}`}
-          title={`切换到${viewMode === 'preview' ? '详细' : '预览'}模式 (Tab)`}
-        />
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={Grid}
-          onClick={handleGridToggle}
-          className={`h-8 w-8 p-0 ${preferences.showGrid ? 'bg-sidebar-accent/20 text-sidebar-accent' : ''}`}
-          title="显示/隐藏网格 (G)"
-        />
-        
+      {/* 全屏按钮 */}
+      <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
         <Button
           variant="ghost"
           size="sm"

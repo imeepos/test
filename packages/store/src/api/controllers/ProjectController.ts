@@ -70,19 +70,27 @@ export class ProjectController extends BaseController {
   createProject = this.asyncHandler(async (req: Request, res: Response) => {
     const allowedFields = [
       'name', 'description', 'type', 'status', 'visibility',
-      'owner_id', 'canvas_data', 'settings', 'metadata'
+      'owner_id', 'user_id', 'canvas_data', 'settings', 'metadata'
     ]
     const projectData = this.sanitizeInput(req.body, allowedFields)
 
-    const requiredErrors = this.validateRequired(projectData, ['name', 'owner_id'])
+    // 字段映射：owner_id -> user_id (兼容前端API命名)
+    if (projectData.owner_id && !projectData.user_id) {
+      projectData.user_id = projectData.owner_id
+      delete projectData.owner_id
+    }
+
+    const requiredErrors = this.validateRequired(projectData, ['name', 'user_id'])
     if (requiredErrors.length > 0) {
       return this.validationError(res, requiredErrors)
     }
 
     // 设置默认值
     projectData.status = projectData.status || 'active'
-    projectData.visibility = projectData.visibility || 'private'
-    projectData.type = projectData.type || 'general'
+
+    // 移除数据库表中不存在的字段
+    delete projectData.visibility
+    delete projectData.type
 
     const project = await this.projectRepo.create(projectData)
     this.created(res, project)

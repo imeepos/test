@@ -71,7 +71,7 @@ const CanvasStats: React.FC = () => {
               {Array.from({ length: 5 }, (_, i) => (
                 <Star
                   key={i}
-                  className={`h-3 w-3 ${
+                  className={`h-4 w-4 ${
                     i < primaryImportance
                       ? 'text-yellow-400 fill-yellow-400'
                       : 'text-gray-600'
@@ -117,7 +117,7 @@ const CanvasStats: React.FC = () => {
       {stats.total > 0 && (
         <div className="p-3 bg-sidebar-surface rounded-lg border border-sidebar-border">
           <div className="flex items-center gap-2 mb-3">
-            <BarChart3 className="h-4 w-4 text-sidebar-text" />
+            <BarChart3 className="h-5 w-5 text-sidebar-text" />
             <span className="text-sm font-medium text-sidebar-text">状态分布</span>
           </div>
           

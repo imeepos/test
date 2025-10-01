@@ -99,7 +99,7 @@ services:
       context: .
       dockerfile: packages/store/Dockerfile
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3001
       - DATABASE_URL=postgresql://sker_user:sker_password@postgres:5432/sker_db
       - REDIS_URL=redis://redis:6379

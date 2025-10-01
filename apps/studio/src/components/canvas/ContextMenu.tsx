@@ -69,7 +69,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   selectedNodeIds = [],
 }) => {
   const { addToast } = useUIStore()
-  const { getNode, getNodes, duplicateNode, deleteNode, getEdge, updateEdgeStyle, setEdgeStylePreset, deleteEdge, updateNodeWithSync } = useNodeStore()
+  const { getNode, getNodes, duplicateNode, deleteNode, getEdge, updateEdgeStyle, setEdgeStylePreset, deleteEdge, updateNodeWithSync, deleteNodeWithSync, currentProjectId } = useNodeStore()
   const { clearSelection, selectAll } = useCanvasStore()
 
   const [menuItems, setMenuItems] = useState<ContextMenuItem[]>([])
@@ -454,14 +454,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             label: '删除节点',
             icon: Trash2,
             shortcut: 'Delete',
-            onClick: () => {
-              onDeleteNode?.(targetId)
-              deleteNode(targetId)
-              addToast({
-                type: 'success',
-                title: '节点已删除',
-                message: '节点已从画布中移除'
-              })
+            onClick: async () => {
+              try {
+                // 如果有项目ID,使用后端同步删除
+                if (currentProjectId) {
+                  await deleteNodeWithSync(targetId, false)
+                } else {
+                  // 否则只删除本地
+                  deleteNode(targetId)
+                }
+
+                onDeleteNode?.(targetId)
+                addToast({
+                  type: 'success',
+                  title: '节点已删除',
+                  message: '节点已从画布中移除'
+                })
+              } catch (error) {
+                addToast({
+                  type: 'error',
+                  title: '删除失败',
+                  message: error instanceof Error ? error.message : '删除节点失败'
+                })
+              }
               onClose()
             }
           }

@@ -440,9 +440,6 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
               <div>
                 <label className="block text-sm font-medium text-sidebar-text mb-2">
                   内容
-                  <span className="text-xs text-sidebar-text-muted ml-2">
-                    (支持Markdown格式，Ctrl+Tab切换模式)
-                  </span>
                 </label>
 
                 <div className="border border-sidebar-border rounded-md overflow-hidden">
@@ -450,7 +447,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                     <textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      placeholder="请输入节点内容...&#10;&#10;支持Markdown格式：&#10;# 标题&#10;**粗体** *斜体*&#10;```代码块```&#10;- 列表项&#10;[链接](URL)"
+                      placeholder="请输入节点内容..."
                       className="w-full h-full min-h-[300px] px-3 py-2 bg-sidebar-bg text-sidebar-text placeholder-sidebar-text-muted resize-none overflow-y-auto
                                focus:outline-none focus:ring-2 focus:ring-sidebar-accent focus:border-transparent border-none"
                     />
@@ -510,9 +507,6 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       <Star className="h-4 w-4" fill={importance >= level ? 'currentColor' : 'none'} />
                     </button>
                   ))}
-                  <span className="text-sm text-sidebar-text-muted ml-2">
-                    {importance}/5
-                  </span>
                 </div>
               </div>
 
@@ -571,17 +565,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
             </div>
 
             {/* 编辑器底部 */}
-            <div className="flex items-center justify-between p-4 border-t border-sidebar-border">
-              <div className="text-sm text-sidebar-text-muted">
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  <span>Esc 取消</span>
-                  <span>Ctrl+Enter 保存</span>
-                  <span>Ctrl+Tab 切换模式</span>
-                  <span>Ctrl+O AI优化</span>
-                  <span>Ctrl+Shift+S 切换自动保存</span>
-                </div>
-              </div>
-              
+            <div className="flex items-center justify-end p-4 border-t border-sidebar-border">
               <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"

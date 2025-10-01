@@ -105,12 +105,6 @@ const ZoomIndicator: React.FC = () => {
         />
       </div>
 
-      {/* 视图信息 */}
-      <div className="flex items-center justify-between text-xs text-sidebar-text-muted">
-        <span>视图: {getZoomLevel()}</span>
-        <span>模式: {viewMode === 'preview' ? '预览' : '详细'}</span>
-      </div>
-
       {/* 视图选项 */}
       <div className="flex gap-1">
         <Button
@@ -133,27 +127,6 @@ const ZoomIndicator: React.FC = () => {
         />
       </div>
 
-      {/* 快捷键提示 */}
-      <div className="p-2 bg-sidebar-surface/50 rounded text-xs text-sidebar-text-muted">
-        <div className="space-y-1">
-          <div className="flex justify-between">
-            <span>放大:</span>
-            <code className="text-sidebar-accent">Ctrl + +</code>
-          </div>
-          <div className="flex justify-between">
-            <span>缩小:</span>
-            <code className="text-sidebar-accent">Ctrl + -</code>
-          </div>
-          <div className="flex justify-between">
-            <span>重置:</span>
-            <code className="text-sidebar-accent">Ctrl + 0</code>
-          </div>
-          <div className="flex justify-between">
-            <span>切换模式:</span>
-            <code className="text-sidebar-accent">Tab</code>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -147,7 +147,7 @@ const SearchBox: React.FC = () => {
       // Ctrl/Cmd + F 聚焦搜索框
       if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
         event.preventDefault()
-        const searchInput = document.querySelector('input[placeholder*="搜索"]') as HTMLInputElement
+        const searchInput = document.querySelector('input[placeholder*="检索"]') as HTMLInputElement
         if (searchInput) {
           searchInput.focus()
           searchInput.select()
@@ -165,33 +165,35 @@ const SearchBox: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      {/* 搜索框 */}
-      <div className="relative">
-        <SearchInput
-          value={localValue}
-          onChange={handleInputChange}
-          onClear={handleClear}
-          placeholder="搜索组件内容、标题、标签..."
-          className="w-full"
-          title="快捷键: Ctrl + F"
-        />
+      {/* 搜索框容器 */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <SearchInput
+            value={localValue}
+            onChange={handleInputChange}
+            onClear={handleClear}
+            placeholder="检索"
+            className="w-full"
+            title="快捷键: Ctrl + F"
+          />
+        </div>
 
-        {/* 筛选按钮 */}
+        {/* 筛选按钮 - 独立放置在搜索框右侧 */}
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`
-            absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded
+            relative flex-shrink-0 p-2 rounded-lg border
             transition-colors duration-200
             ${showFilters
-              ? 'text-sidebar-accent bg-sidebar-accent/10'
-              : 'text-sidebar-text-muted hover:text-sidebar-text hover:bg-sidebar-hover'
+              ? 'text-sidebar-accent bg-sidebar-accent/10 border-sidebar-accent'
+              : 'text-sidebar-text-muted hover:text-sidebar-text hover:bg-sidebar-hover border-sidebar-border'
             }
           `}
           title="高级筛选"
         >
           <Filter className="h-4 w-4" />
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-sidebar-accent text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-sidebar-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
               {activeFilterCount}
             </span>
           )}
@@ -219,7 +221,7 @@ const SearchBox: React.FC = () => {
               {/* 筛选标题 */}
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium text-sidebar-text flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
+                  <Filter className="h-5 w-5" />
                   高级筛选
                 </h4>
                 {activeFilterCount > 0 && (
@@ -227,7 +229,7 @@ const SearchBox: React.FC = () => {
                     onClick={handleClearAllFilters}
                     className="text-xs text-sidebar-text-muted hover:text-sidebar-accent flex items-center gap-1"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-4 w-4" />
                     清空
                   </button>
                 )}
@@ -236,7 +238,7 @@ const SearchBox: React.FC = () => {
               {/* 重要性筛选 */}
               <div>
                 <label className="text-xs text-sidebar-text-muted mb-2 flex items-center gap-1">
-                  <Star className="h-3 w-3" />
+                  <Star className="h-4 w-4" />
                   重要性
                 </label>
                 <div className="flex flex-wrap gap-1">
@@ -267,7 +269,7 @@ const SearchBox: React.FC = () => {
               {allTags.length > 0 && (
                 <div>
                   <label className="text-xs text-sidebar-text-muted mb-2 flex items-center gap-1">
-                    <Hash className="h-3 w-3" />
+                    <Hash className="h-4 w-4" />
                     标签
                   </label>
                   <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
@@ -298,7 +300,7 @@ const SearchBox: React.FC = () => {
               {/* 排序 */}
               <div>
                 <label className="text-xs text-sidebar-text-muted mb-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-4 w-4" />
                   排序方式
                 </label>
                 <div className="flex gap-1">

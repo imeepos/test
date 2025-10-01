@@ -114,9 +114,17 @@ class ProjectService {
    * 创建项目
    */
   async createProject(params: CreateProjectParams): Promise<Project> {
+    // 从认证 store 获取当前用户 ID
+    const { useAuthStore } = await import('@/stores')
+    const user = useAuthStore.getState().user
+    if (!user?.id) {
+      throw new Error('用户未登录，无法创建项目')
+    }
+
     const projectData = {
       name: params.name,
       description: params.description || '',
+      owner_id: user.id, // 添加 owner_id 字段
       canvas_data: params.canvas_data || {
         viewport: { x: 0, y: 0, zoom: 1 },
         displayMode: 'preview' as const,

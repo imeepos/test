@@ -52,15 +52,23 @@ export function useProjectInit() {
         }
       }
 
-      // 4. 如果有保存的项目ID,尝试恢复
+      // 4. 如果有保存的项目ID,尝试自动恢复
       const savedProjectId = localStorage.getItem('last_project_id')
-      if (isMounted && savedProjectId && !currentProject) {
-        try {
-          console.log('🔄 恢复上次打开的项目:', savedProjectId)
-          // 这里不直接加载,让用户通过ProjectSelector选择
-          // 或者可以实现自动恢复逻辑
-        } catch (error) {
-          console.error('❌ 恢复项目失败:', error)
+      if (isMounted && savedProjectId) {
+        // 如果当前没有项目或项目ID不匹配，则加载保存的项目
+        if (!currentProject || currentProject.id !== savedProjectId) {
+          try {
+            console.log('🔄 自动恢复上次打开的项目:', savedProjectId)
+            const { loadProject } = useCanvasStore.getState()
+            await loadProject(savedProjectId)
+            console.log('✅ 项目自动恢复成功')
+          } catch (error) {
+            console.error('❌ 恢复项目失败，可能项目已被删除:', error)
+            // 清除无效的项目ID
+            localStorage.removeItem('last_project_id')
+          }
+        } else {
+          console.log('📌 使用已加载的项目:', currentProject.name)
         }
       }
 

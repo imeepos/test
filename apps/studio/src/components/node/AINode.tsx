@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Tag,
   Zap,
-  Edit,
   Clock
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
@@ -35,7 +34,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // 状态管理
   const [isEditorOpen, setIsEditorOpen] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
 
   // 键盘导航支持
   useKeyboardNavigation({
@@ -127,13 +125,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     setIsEditorOpen(true)
   }, [])
 
-  /**
-   * 快速编辑按钮点击
-   */
-  const handleEditClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsEditorOpen(true)
-  }, [])
 
   // ============= 样式计算 =============
 
@@ -188,8 +179,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
         `}
         style={{ willChange: 'box-shadow' }}
         onDoubleClick={handleDoubleClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         tabIndex={selected ? 0 : -1}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -284,23 +273,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
           </div>
         )}
 
-        {/* 快速编辑按钮 - 仅悬停或选中时显示 */}
-        {(isHovered || selected) && (
-          <motion.button
-            onClick={handleEditClick}
-            className="absolute top-2 right-2 p-1.5 rounded-md bg-sidebar-surface/90 hover:bg-sidebar-hover
-                     text-sidebar-text-muted hover:text-sidebar-text transition-colors
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: ANIMATION_DURATION.fast / 1000 }}
-            aria-label="编辑节点"
-            title="编辑节点 (Enter)"
-          >
-            <Edit className="h-3.5 w-3.5" aria-hidden="true" />
-          </motion.button>
-        )}
 
         {/* 处理状态遮罩 - 使用透明度而非全屏遮罩 */}
         {data.status === 'processing' && (

@@ -155,6 +155,19 @@ export function createApiRouter(): Router {
   router.get('/ai-tasks/performance-analysis', aiTaskController.getPerformanceAnalysis)
   router.post('/ai-tasks/cleanup-old', aiTaskController.cleanupOldAITasks)
 
+  // ===== 事件管理路由 =====
+  // 实体变更事件 - 用于发布实体变更通知
+  router.post('/events/entity-change', (req, res) => {
+    // 这是一个简单的事件接收端点
+    // 当前仅记录事件，未来可以扩展为真正的事件系统
+    console.log('收到实体变更事件:', req.body)
+    res.json({
+      success: true,
+      data: { received: true },
+      timestamp: new Date().toISOString()
+    })
+  })
+
   return router
 }
 

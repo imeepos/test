@@ -57,13 +57,7 @@ const CanvasPage: React.FC = () => {
 
         console.log('CanvasPage: 创建节点成功:', newNode)
 
-        // 显示创建成功提示
-        addToast({
-          type: 'success',
-          title: '节点已创建',
-          message: '双击节点开始编辑内容',
-          duration: 3000,
-        })
+        // 成功时不显示toast，静默创建
       } catch (error) {
         console.error('CanvasPage: 创建节点失败:', error)
         addToast({
@@ -133,13 +127,7 @@ const CanvasPage: React.FC = () => {
           metadata: newNode.metadata,
         })
 
-        // 显示成功提示
-        addToast({
-          type: 'success',
-          title: '扩展节点已创建',
-          message: connectionStatus === 'connected' ? 'AI正在生成内容...' : '已创建扩展节点',
-          duration: 3000,
-        })
+        // 成功时不显示toast，静默创建
 
         console.log('拖拽扩展创建节点成功')
       } catch (error) {
@@ -204,13 +192,7 @@ const CanvasPage: React.FC = () => {
           context: `${typeMap[fusionType]} ${inputNodes.length} 个节点的内容`,
         })
 
-        // 显示开始处理的提示
-        addToast({
-          type: 'info',
-          title: `开始${typeMap[fusionType]}`,
-          message: `正在处理 ${inputNodes.length} 个节点的内容，请稍候...`,
-          duration: 3000,
-        })
+        // 开始处理时不显示toast
 
         // 使用nodeService创建融合节点(本地AI生成)
         const newNode = await nodeService.fusionGenerate(inputNodes, fusionType, position)
@@ -226,14 +208,7 @@ const CanvasPage: React.FC = () => {
           metadata: newNode.metadata,
         })
 
-        // 显示成功提示
-        const confidencePercent = Math.round((newNode.confidence || 0) * 100)
-        addToast({
-          type: 'success',
-          title: `${typeMap[fusionType]}完成`,
-          message: `已成功融合 ${inputNodes.length} 个节点（置信度: ${confidencePercent}%）`,
-          duration: 4000,
-        })
+        // 成功时不显示toast，静默创建
 
         console.log('融合节点创建成功, 类型:', fusionType, '源节点:', selectedNodeIds)
       } catch (error) {
@@ -274,12 +249,7 @@ const CanvasPage: React.FC = () => {
         switch (event.key) {
           case 's':
             event.preventDefault()
-            addToast({
-              type: 'info',
-              title: '保存功能',
-              message: '自动保存已启用，无需手动保存',
-              duration: 3000,
-            })
+            // 不显示保存提示，静默保存
             break
           case 'c':
             // 复制选中的节点
@@ -304,12 +274,7 @@ const CanvasPage: React.FC = () => {
 
                   await navigator.clipboard.writeText(JSON.stringify(clipboardData, null, 2))
 
-                  addToast({
-                    type: 'success',
-                    title: '复制成功',
-                    message: `已复制 ${selectedNodes.length} 个节点`,
-                    duration: 3000,
-                  })
+                  // 成功时不显示toast
                 }
               } catch (error) {
                 addToast({
@@ -363,14 +328,7 @@ const CanvasPage: React.FC = () => {
                       }
                     }
 
-                    if (pastedCount > 0) {
-                      addToast({
-                        type: 'success',
-                        title: '粘贴成功',
-                        message: `已粘贴 ${pastedCount} 个节点`,
-                        duration: 3000,
-                      })
-                    }
+                    // 成功时不显示toast
                   } else if (clipboardData.type === 'sker-node' && clipboardData.node) {
                     // 粘贴单个节点
                     const nodeData = clipboardData.node
@@ -397,12 +355,7 @@ const CanvasPage: React.FC = () => {
                       metadata: newNode.metadata,
                     })
 
-                    addToast({
-                      type: 'success',
-                      title: '粘贴成功',
-                      message: `已粘贴节点: ${nodeData.title || '未命名'}`,
-                      duration: 3000,
-                    })
+                    // 成功时不显示toast
                   } else {
                     // 作为普通文本创建新节点
                     const newNode = await nodeService.createNode({
@@ -425,12 +378,7 @@ const CanvasPage: React.FC = () => {
                       metadata: newNode.metadata,
                     })
 
-                    addToast({
-                      type: 'success',
-                      title: '粘贴文本',
-                      message: '已将文本内容创建为新节点',
-                      duration: 3000,
-                    })
+                    // 成功时不显示toast
                   }
                 } catch {
                   // 作为普通文本处理
@@ -454,12 +402,7 @@ const CanvasPage: React.FC = () => {
                     metadata: newNode.metadata,
                   })
 
-                  addToast({
-                    type: 'success',
-                    title: '粘贴文本',
-                    message: '已将文本内容创建为新节点',
-                    duration: 3000,
-                  })
+                  // 成功时不显示toast
                 }
               } else {
                 addToast({
@@ -485,22 +428,7 @@ const CanvasPage: React.FC = () => {
               const getAllNodeIds = () => getNodes().map(node => node.id)
               selectAll(getAllNodeIds)
 
-              const nodeCount = getNodes().length
-              if (nodeCount > 0) {
-                addToast({
-                  type: 'success',
-                  title: '全选成功',
-                  message: `已选中 ${nodeCount} 个节点`,
-                  duration: 3000,
-                })
-              } else {
-                addToast({
-                  type: 'info',
-                  title: '画布为空',
-                  message: '当前画布没有节点',
-                  duration: 3000,
-                })
-              }
+              // 成功时不显示toast
             } catch (error) {
               addToast({
                 type: 'error',
@@ -511,25 +439,8 @@ const CanvasPage: React.FC = () => {
             }
             break
           case 'z':
-            if (event.shiftKey) {
-              // Ctrl+Shift+Z 重做
-              event.preventDefault()
-              addToast({
-                type: 'info',
-                title: '重做',
-                message: '重做功能正在开发中...',
-                duration: 2000,
-              })
-            } else {
-              // Ctrl+Z 撤销
-              event.preventDefault()
-              addToast({
-                type: 'info',
-                title: '撤销',
-                message: '撤销功能正在开发中...',
-                duration: 2000,
-              })
-            }
+            event.preventDefault()
+            // 撤销/重做功能静默处理
             break
           case 'h':
             // Ctrl+H 查看版本历史
@@ -564,19 +475,7 @@ const CanvasPage: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [addToast, selectedNodeIds, getNode, getNodes, addNode, selectAll])
 
-  // 初始化提示
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      addToast({
-        type: 'info',
-        title: '欢迎使用 SKER Studio',
-        message: '双击画布空白处创建第一个AI组件',
-        duration: 5000,
-      })
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [addToast])
+  // 移除初始化提示
 
   return (
     <div className="h-screen bg-canvas-bg overflow-hidden">
@@ -608,29 +507,10 @@ const CanvasPage: React.FC = () => {
           <CanvasControls />
         </div>
 
-        {/* 快捷操作提示 - 响应式隐藏 */}
-        <motion.div
-          className="absolute top-4 left-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg p-3 text-xs text-sidebar-text-muted max-w-xs
-                     hidden md:block"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2, duration: 0.5 }}
-        >
-          <h4 className="text-sidebar-text font-medium mb-2">快速开始</h4>
-          <ul className="space-y-1">
-            <li>• 双击空白处创建组件</li>
-            <li>• 拖拽连线扩展思维</li>
-            <li>• 右键获取更多操作</li>
-            <li>• Ctrl+C/V 复制粘贴节点</li>
-            <li>• Ctrl+A 全选所有节点</li>
-            <li>• 悬停版本信息查看历史</li>
-          </ul>
-        </motion.div>
-
         {/* 同步状态指示器 */}
         {currentProject && (
           <motion.div
-            className="absolute top-4 right-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg px-3 py-2 text-xs"
+            className="absolute top-4 right-20 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg px-3 py-2 text-xs"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 1, duration: 0.5 }}

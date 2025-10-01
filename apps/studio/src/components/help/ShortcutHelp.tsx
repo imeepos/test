@@ -78,7 +78,7 @@ export const ShortcutHelp: React.FC<ShortcutHelpProps> = ({ isOpen, onClose }) =
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
+    <Modal isOpen={isOpen} onClose={onClose} showCloseButton={false}>
       <div className="max-w-3xl">
         {/* 头部 */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-sidebar-border">

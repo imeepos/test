@@ -112,15 +112,15 @@ const Toast: React.FC<ToastProps> = ({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -50, scale: 0.9 }}
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`
-        relative flex w-full max-w-sm flex-col gap-3 rounded-lg border p-4
-        backdrop-blur-sm shadow-lg transition-all duration-200
-        ${isHovered ? 'scale-[1.02]' : ''} ${colorScheme.bg}
+        relative flex w-full max-w-xs flex-col gap-2 rounded-md border p-2.5
+        backdrop-blur-sm transition-all duration-200
+        ${colorScheme.bg}
       `}
     >
       {/* 进度条 */}
@@ -135,14 +135,14 @@ const Toast: React.FC<ToastProps> = ({
         </div>
       )}
 
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         {/* 图标 */}
-        <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${colorScheme.icon}`} />
+        <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${colorScheme.icon}`} />
 
         {/* 内容 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
-            <h4 className={`text-sm font-medium ${colorScheme.text}`}>
+            <h4 className={`text-xs font-medium ${colorScheme.text}`}>
               {title}
             </h4>
 
@@ -159,77 +159,78 @@ const Toast: React.FC<ToastProps> = ({
           </div>
 
           {message && (
-            <p className={`mt-1 text-sm opacity-90 whitespace-pre-wrap ${colorScheme.text}`}>
+            <p className={`mt-0.5 text-xs opacity-90 whitespace-pre-wrap ${colorScheme.text}`}>
               {message}
             </p>
           )}
 
           {/* 操作按钮 */}
-          <div className="flex items-center gap-2 mt-3">
-            {/* 复制按钮 */}
-            {copyable && message && (
-              <button
-                onClick={handleCopy}
-                className={`
-                  flex items-center gap-1 px-2 py-1 text-xs rounded
-                  hover:bg-white/10 transition-colors
-                  ${colorScheme.text}
-                `}
-                title="复制内容"
-              >
-                <Copy className="h-3 w-3" />
-                {copied ? '已复制' : '复制'}
-              </button>
-            )}
+          {(copyable || link || actions.length > 0) && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {/* 复制按钮 */}
+              {copyable && message && (
+                <button
+                  onClick={handleCopy}
+                  className={`
+                    flex items-center gap-1 px-1.5 py-0.5 text-xs rounded
+                    hover:bg-white/10 transition-colors
+                    ${colorScheme.text}
+                  `}
+                  title="复制内容"
+                >
+                  <Copy className="h-3 w-3" />
+                  {copied ? '已复制' : '复制'}
+                </button>
+              )}
 
-            {/* 外部链接 */}
-            {link && (
-              <button
-                onClick={handleLinkClick}
-                className={`
-                  flex items-center gap-1 px-2 py-1 text-xs rounded
-                  hover:bg-white/10 transition-colors
-                  ${colorScheme.text}
-                `}
-                title="打开链接"
-              >
-                <ExternalLink className="h-3 w-3" />
-                查看详情
-              </button>
-            )}
+              {/* 外部链接 */}
+              {link && (
+                <button
+                  onClick={handleLinkClick}
+                  className={`
+                    flex items-center gap-1 px-1.5 py-0.5 text-xs rounded
+                    hover:bg-white/10 transition-colors
+                    ${colorScheme.text}
+                  `}
+                  title="打开链接"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  详情
+                </button>
+              )}
 
-            {/* 自定义操作 */}
-            {actions.map((action, index) => (
-              <button
-                key={index}
-                onClick={action.onClick}
-                className={`
-                  px-2 py-1 text-xs rounded transition-colors
-                  ${action.variant === 'primary'
-                    ? 'bg-white/20 hover:bg-white/30'
-                    : 'hover:bg-white/10'
-                  }
-                  ${colorScheme.text}
-                `}
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
+              {/* 自定义操作 */}
+              {actions.map((action, index) => (
+                <button
+                  key={index}
+                  onClick={action.onClick}
+                  className={`
+                    px-1.5 py-0.5 text-xs rounded transition-colors
+                    ${action.variant === 'primary'
+                      ? 'bg-white/20 hover:bg-white/30'
+                      : 'hover:bg-white/10'
+                    }
+                    ${colorScheme.text}
+                  `}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 关闭按钮 */}
         <button
           onClick={onClose}
           className={`
-            flex-shrink-0 rounded-md p-1.5
-            hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20
-            transition-colors
+            flex-shrink-0 rounded p-0.5
+            hover:bg-white/10 focus:outline-none transition-colors
             ${colorScheme.text}
           `}
           title="关闭"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
     </motion.div>

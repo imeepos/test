@@ -132,95 +132,70 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       {/* 内容区域 */}
       {!sidebarCollapsed && (
         <motion.div
-          className="flex-1 overflow-y-auto p-4 space-y-6"
+          className="flex-1 overflow-y-auto p-4 space-y-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ delay: 0.1 }}
         >
           {/* 搜索框 */}
-          <div>
-            <h3 className="text-sm font-medium text-sidebar-text mb-2">
-              搜索组件
-            </h3>
-            <SearchBox />
-          </div>
+          <SearchBox />
 
           {/* 缩放指示器 */}
-          <div>
-            <h3 className="text-sm font-medium text-sidebar-text mb-2">
-              视图控制
-            </h3>
-            <ZoomIndicator />
-          </div>
+          <ZoomIndicator />
 
           {/* 画布统计 */}
-          <div>
-            <h3 className="text-sm font-medium text-sidebar-text mb-2">
-              画布状态
-            </h3>
-            <CanvasStats />
-          </div>
+          <CanvasStats />
 
           {/* 快捷键帮助 */}
-          <div>
-            <h3 className="text-sm font-medium text-sidebar-text mb-2">
-              帮助
-            </h3>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Keyboard}
-              onClick={openShortcutHelp}
-              className="w-full justify-start"
-            >
-              快捷键帮助 <kbd className="ml-auto text-xs opacity-60">Ctrl+?</kbd>
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Keyboard}
+            onClick={openShortcutHelp}
+            className="w-full justify-start"
+          >
+            快捷键
+          </Button>
 
           {/* 用户信息和登出 */}
           {user && (
-            <div className="pt-4 border-t border-sidebar-border">
-              <h3 className="text-sm font-medium text-sidebar-text mb-3">
-                用户信息
-              </h3>
-              <div className="space-y-3">
-                {/* 用户资料 */}
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-bg-secondary">
-                  <div className="flex-shrink-0">
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="h-10 w-10 rounded-full"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
-                        <User className="h-5 w-5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-sidebar-text truncate">
-                      {user.name}
-                    </p>
-                    <p className="text-xs text-sidebar-text-muted truncate">
-                      {user.email}
-                    </p>
-                  </div>
+            <div className="pt-4 mt-auto border-t border-sidebar-border space-y-2">
+              {/* 用户资料 */}
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-bg-secondary">
+                <div className="flex-shrink-0">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="h-10 w-10 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                  )}
                 </div>
-
-                {/* 登出按钮 */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={LogOut}
-                  onClick={handleLogout}
-                  className="w-full justify-start text-red-500 hover:bg-red-500/10"
-                >
-                  退出登录
-                </Button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-text truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-sidebar-text-muted truncate">
+                    {user.email}
+                  </p>
+                </div>
               </div>
+
+              {/* 登出按钮 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={LogOut}
+                onClick={handleLogout}
+                className="w-full justify-start text-red-500 hover:bg-red-500/10"
+              >
+                退出登录
+              </Button>
             </div>
           )}
         </motion.div>

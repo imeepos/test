@@ -44,7 +44,7 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
   disabled = false,
 }) => {
   const { selectedNodeIds, clearSelection } = useCanvasStore()
-  const { getNodes, deleteNode } = useNodeStore()
+  const { getNodes, deleteNodeWithSync } = useNodeStore()
   const { addToast } = useUIStore()
 
   // 默认处理器
@@ -136,7 +136,7 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
       })
     }, [onOptimize, selectedNodeIds.length, addToast]),
 
-    delete: useCallback(() => {
+    delete: useCallback(async () => {
       if (onDelete) {
         onDelete()
         return
@@ -151,19 +151,27 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
         return
       }
 
-      // 删除选中的节点
-      selectedNodeIds.forEach(nodeId => {
-        deleteNode(nodeId)
-      })
+      try {
+        // 删除选中的节点
+        await Promise.all(
+          selectedNodeIds.map(nodeId => deleteNodeWithSync(nodeId))
+        )
 
-      addToast({
-        type: 'success',
-        title: '删除成功',
-        message: `已删除 ${selectedNodeIds.length} 个节点`
-      })
+        addToast({
+          type: 'success',
+          title: '删除成功',
+          message: `已删除 ${selectedNodeIds.length} 个节点`
+        })
 
-      clearSelection()
-    }, [onDelete, selectedNodeIds, deleteNode, clearSelection, addToast]),
+        clearSelection()
+      } catch (error) {
+        addToast({
+          type: 'error',
+          title: '删除失败',
+          message: error instanceof Error ? error.message : '请稍后重试'
+        })
+      }
+    }, [onDelete, selectedNodeIds, deleteNodeWithSync, clearSelection, addToast]),
 
     edit: useCallback(() => {
       if (onEdit) {
