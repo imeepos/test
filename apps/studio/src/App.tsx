@@ -1,16 +1,22 @@
 import React from 'react'
 import { CanvasPage } from '@/pages/CanvasPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { RegisterPage } from '@/pages/RegisterPage'
 import { ToastContainer } from '@/components/ui'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { useUIStore, useAIStore, useCanvasStore } from '@/stores'
+import { useUIStore, useAIStore, useCanvasStore, useAuthStore } from '@/stores'
 import { initializeServices, cleanupServices } from '@/services'
 import { useProjectInit } from '@/hooks/useProjectInit'
 
 function App() {
-  const { theme, setTheme } = useUIStore()
+  const { theme } = useUIStore()
   const { initializeWebSocket } = useAIStore()
   const { currentProject } = useCanvasStore()
+  const { status: authStatus, initialize: initializeAuth } = useAuthStore()
+
+  // 页面状态：'login' | 'register' | 'app'
+  const [page, setPage] = React.useState<'login' | 'register' | 'app'>('login')
 
   // 初始化项目系统
   const { isReady, isLoading, error: projectError } = useProjectInit()
@@ -61,8 +67,24 @@ function App() {
     }
   }, [])
 
-  // 初始化服务
+  // 初始化认证状态
   React.useEffect(() => {
+    initializeAuth()
+  }, [initializeAuth])
+
+  // 根据认证状态决定显示的页面
+  React.useEffect(() => {
+    if (authStatus === 'authenticated') {
+      setPage('app')
+    } else if (authStatus === 'unauthenticated') {
+      setPage('login')
+    }
+  }, [authStatus])
+
+  // 初始化服务（仅在认证成功后）
+  React.useEffect(() => {
+    if (authStatus !== 'authenticated') return
+
     let cleanup: (() => void) | undefined
 
     const init = async () => {
@@ -77,7 +99,7 @@ function App() {
           cleanup = result
         }
         console.log('✅ WebSocket服务初始化完成')
-        
+
       } catch (error) {
         console.warn('⚠️ 服务初始化部分失败:', error)
         // 不阻止应用启动，允许在部分服务不可用的情况下继续运行
@@ -93,11 +115,11 @@ function App() {
       }
       cleanupServices()
     }
-  }, [initializeWebSocket])
+  }, [authStatus, initializeWebSocket])
 
   // 开发环境调试信息
   React.useEffect(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && authStatus === 'authenticated') {
       console.log('🚀 SKER Studio 开发模式已启动')
       console.log('📋 可用的全局快捷键:')
       console.log('  • Ctrl + F: 聚焦搜索')
@@ -107,7 +129,41 @@ function App() {
       console.log('  • Tab: 切换视图模式')
       console.log('  • F11: 全屏切换')
     }
-  }, [])
+  }, [authStatus])
+
+  // 显示认证加载状态
+  if (authStatus === 'loading') {
+    return (
+      <div className="h-screen flex items-center justify-center bg-canvas-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <div className="text-sidebar-text">正在验证身份...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // 显示登录页面
+  if (page === 'login') {
+    return (
+      <ErrorBoundary>
+        <LoginPage onSwitchToRegister={() => setPage('register')} />
+        <ToastContainer />
+      </ErrorBoundary>
+    )
+  }
+
+  // 显示注册页面
+  if (page === 'register') {
+    return (
+      <ErrorBoundary>
+        <RegisterPage onSwitchToLogin={() => setPage('login')} />
+        <ToastContainer />
+      </ErrorBoundary>
+    )
+  }
+
+  // 以下是已认证用户的应用主体
 
   // 显示项目初始化错误
   if (projectError) {

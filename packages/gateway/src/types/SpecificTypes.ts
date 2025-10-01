@@ -95,6 +95,14 @@ export interface LoginRequest {
   password: string
 }
 
+// 用户注册请求
+export interface RegisterRequest {
+  email: string
+  password: string
+  name: string
+  avatar?: string
+}
+
 // 用户资料更新请求
 export interface ProfileUpdateRequest {
   name?: string

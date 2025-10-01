@@ -1,8 +1,8 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { useUIStore } from '@/stores'
+import { useUIStore, useAuthStore } from '@/stores'
 import { SearchBox } from './SearchBox'
 import { CanvasStats } from './CanvasStats'
 import { ZoomIndicator } from './ZoomIndicator'
@@ -19,9 +19,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     setSidebarWidth,
   } = useUIStore()
 
+  const { user, logout } = useAuthStore()
+
   // 拖拽调整宽度
   const [isResizing, setIsResizing] = React.useState(false)
   const sidebarRef = React.useRef<HTMLDivElement>(null)
+
+  // 处理登出
+  const handleLogout = async () => {
+    if (confirm('确定要退出登录吗？')) {
+      await logout()
+    }
+  }
 
   const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -140,6 +149,52 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             </h3>
             <CanvasStats />
           </div>
+
+          {/* 用户信息和登出 */}
+          {user && (
+            <div className="pt-4 border-t border-sidebar-border">
+              <h3 className="text-sm font-medium text-sidebar-text mb-3">
+                用户信息
+              </h3>
+              <div className="space-y-3">
+                {/* 用户资料 */}
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-bg-secondary">
+                  <div className="flex-shrink-0">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-10 w-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-sidebar-text truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-sidebar-text-muted truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 登出按钮 */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={LogOut}
+                  onClick={handleLogout}
+                  className="w-full justify-start text-red-500 hover:bg-red-500/10"
+                >
+                  退出登录
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 

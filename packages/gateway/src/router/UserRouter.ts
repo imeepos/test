@@ -2,6 +2,7 @@ import { Router } from 'express'
 import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
 import {
   LoginRequest,
+  RegisterRequest,
   ProfileUpdateRequest,
   RefreshTokenRequest
 } from '../types/SpecificTypes.js'
@@ -18,6 +19,7 @@ export class UserRouter extends BaseRouter {
 
   protected setupRoutes(): void {
     // 用户认证
+    this.router.post('/auth/register', this.register.bind(this))
     this.router.post('/auth/login', this.login.bind(this))
     this.router.post('/auth/logout', this.logout.bind(this))
     this.router.post('/auth/refresh', this.refreshToken.bind(this))
@@ -25,6 +27,147 @@ export class UserRouter extends BaseRouter {
     // 用户资料
     this.router.get('/profile', this.getProfile.bind(this))
     this.router.put('/profile', this.updateProfile.bind(this))
+  }
+
+  private async register(req: ApiRequest<RegisterRequest>, res: ApiResponse): Promise<void> {
+    try {
+      if (!this.checkStoreService(req, res)) return
+
+      const { email, password, name, avatar } = req.body
+
+      // 验证输入
+      if (!email || !password || !name) {
+        res.error({
+          code: 'MISSING_REQUIRED_FIELDS',
+          message: '缺少必填字段：邮箱、密码或用户名',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      // 验证邮箱格式
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        res.error({
+          code: 'INVALID_EMAIL_FORMAT',
+          message: '邮箱格式不正确',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      // 验证密码强度（至少6位）
+      if (password.length < 6) {
+        res.error({
+          code: 'WEAK_PASSWORD',
+          message: '密码至少需要6个字符',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      // 验证用户名长度
+      if (name.trim().length < 2 || name.trim().length > 50) {
+        res.error({
+          code: 'INVALID_NAME_LENGTH',
+          message: '用户名长度应在2-50个字符之间',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      try {
+        // 检查邮箱是否已存在
+        const existingUser = await this.storeClient!.users.findByEmail(email.toLowerCase().trim())
+        if (existingUser) {
+          res.error({
+            code: 'EMAIL_ALREADY_EXISTS',
+            message: '该邮箱已被注册',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 哈希密码
+        const password_hash = await this.hashPassword(password)
+
+        // 创建用户
+        const newUser = await this.storeClient!.users.create({
+          email: email.toLowerCase().trim(),
+          password_hash,
+          name: name.trim(),
+          avatar: avatar || null,
+          role: 'user',
+          status: 'active',
+          preferences: {},
+          login_count: 0,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+
+        if (!newUser) {
+          res.error({
+            code: 'USER_CREATION_FAILED',
+            message: '用户创建失败',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 生成JWT Token
+        const tokenPayload = {
+          id: newUser.id,
+          username: newUser.name,
+          email: newUser.email,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24小时过期
+        }
+
+        const token = this.generateJWTToken(tokenPayload)
+        const refreshToken = this.generateRefreshToken(newUser.id)
+
+        // 记录注册日志
+        console.log(`User registered successfully: ${newUser.email} (${newUser.id})`)
+
+        res.success({
+          token,
+          refresh_token: refreshToken,
+          expires_in: 86400, // 24小时（秒）
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            avatar: newUser.avatar,
+            created_at: newUser.created_at
+          }
+        }, 'Registration successful', 201)
+
+      } catch (dbError) {
+        console.error('数据库操作失败:', dbError)
+        res.error({
+          code: 'DATABASE_ERROR',
+          message: '注册服务暂时不可用',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+      }
+
+    } catch (error) {
+      console.error('注册失败:', error)
+      res.error({
+        code: 'REGISTER_ERROR',
+        message: error instanceof Error ? error.message : 'Registration failed',
+        timestamp: new Date(),
+        requestId: req.requestId
+      })
+    }
   }
 
   private async login(req: ApiRequest<LoginRequest>, res: ApiResponse): Promise<void> {

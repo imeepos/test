@@ -260,10 +260,23 @@ class WebSocketService {
    */
   private authenticate(): void {
     if (this.socket) {
-      this.socket.emit('authenticate', {
-        userId: 'guest', // 临时使用guest用户
-        token: null
-      })
+      // 从localStorage获取认证token
+      const token = localStorage.getItem('auth_token')
+
+      if (token) {
+        // 使用真实用户token进行认证
+        this.socket.emit('authenticate', {
+          token
+        })
+        console.log('WebSocket: 使用认证Token连接')
+      } else {
+        // 没有token时使用guest用户
+        console.warn('WebSocket: 未找到认证Token，使用guest用户')
+        this.socket.emit('authenticate', {
+          userId: 'guest',
+          token: null
+        })
+      }
     }
   }
 
