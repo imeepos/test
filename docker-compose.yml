@@ -52,6 +52,26 @@ services:
       timeout: 10s
       retries: 5
 
+  mongodb:
+    image: mongo:7-jammy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-sker_user}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-sker_password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-sker_db}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: mongod --auth
+
   # Application Services
   store:
     build:
@@ -273,3 +293,5 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  mongodb_data:
+  mongodb_config:
