@@ -31,7 +31,20 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # Copy configuration files
 COPY tsconfig.json ./
 
-# Copy packages source code
+# Copy and build packages separately for better cache granularity
+COPY packages/config/ ./packages/config/
+RUN pnpm --filter @sker/config build
+
+COPY packages/models/ ./packages/models/
+RUN pnpm --filter @sker/models build
+
+COPY packages/store/ ./packages/store/
+RUN pnpm --filter @sker/store build
+
+COPY packages/store-client/ ./packages/store-client/
+RUN pnpm --filter @sker/store-client build
+
+# Copy remaining packages if any (for future dependencies)
 COPY packages/ ./packages/
 
 # Copy studio app source files

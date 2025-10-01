@@ -72,6 +72,27 @@ services:
       retries: 5
     command: mongod --auth
 
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sker_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-sker_password_2024}
+      MINIO_DOMAIN: ${MINIO_DOMAIN:-minio}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://localhost:9001}
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - sker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: server /data --console-address ":9001"
+
   # Application Services
   store:
     build:
@@ -295,3 +316,4 @@ volumes:
   rabbitmq_data:
   mongodb_data:
   mongodb_config:
+  minio_data:

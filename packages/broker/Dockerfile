@@ -24,6 +24,7 @@ COPY packages/broker/package.json ./packages/broker/
 COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/store/package.json ./packages/store/
+COPY packages/store-client/package.json ./packages/store-client/
 
 # 安装所有依赖（使用缓存挂载）
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
@@ -32,28 +33,32 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # 复制根目录 tsconfig.json
 COPY tsconfig.json ./
 
-# 复制所有包的源代码和配置文件
+# 复制依赖包源码并逐个构建（优化缓存层）
 COPY packages/config/src/ ./packages/config/src/
 COPY packages/config/tsup.config.ts ./packages/config/tsup.config.ts
 COPY packages/config/tsconfig.json ./packages/config/tsconfig.json
+RUN pnpm --filter @sker/config run build
 
 COPY packages/models/src/ ./packages/models/src/
 COPY packages/models/tsup.config.ts ./packages/models/tsup.config.ts
 COPY packages/models/tsconfig.json ./packages/models/tsconfig.json
+RUN pnpm --filter @sker/models run build
 
 COPY packages/store/src/ ./packages/store/src/
 COPY packages/store/tsup.config.ts ./packages/store/tsup.config.ts
 COPY packages/store/tsconfig.json ./packages/store/tsconfig.json
+RUN pnpm --filter @sker/store run build
 
+COPY packages/store-client/src/ ./packages/store-client/src/
+COPY packages/store-client/tsup.config.ts ./packages/store-client/tsup.config.ts
+COPY packages/store-client/tsconfig.json ./packages/store-client/tsconfig.json
+RUN pnpm --filter @sker/store-client run build
+
+# 最后复制和构建 broker（确保源码变更能触发重新构建）
 COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/tsup.config.ts ./packages/broker/tsup.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
-
-# 按依赖顺序构建包
-RUN pnpm --filter @sker/config run build && \
-    pnpm --filter @sker/models run build && \
-    pnpm --filter @sker/store run build && \
-    pnpm --filter @sker/broker run build
+RUN pnpm --filter @sker/broker run build
 
 # 生产阶段：运行时镜像
 ARG NODE_VERSION=18.20.5
@@ -81,6 +86,7 @@ COPY packages/broker/package.json ./packages/broker/
 COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/store/package.json ./packages/store/
+COPY packages/store-client/package.json ./packages/store-client/
 
 # 仅安装生产依赖
 RUN pnpm install --prod --frozen-lockfile
@@ -89,6 +95,7 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder --chown=broker:nodejs /app/packages/config/dist/ ./packages/config/dist/
 COPY --from=builder --chown=broker:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=broker:nodejs /app/packages/store/dist/ ./packages/store/dist/
+COPY --from=builder --chown=broker:nodejs /app/packages/store-client/dist/ ./packages/store-client/dist/
 COPY --from=builder --chown=broker:nodejs /app/packages/broker/dist/ ./packages/broker/dist/
 
 # 切换到broker包目录

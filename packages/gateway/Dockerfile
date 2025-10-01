@@ -36,43 +36,42 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # 复制根目录 tsconfig.json
 COPY tsconfig.json ./
 
-# 复制所有依赖包的源代码和配置文件
+# 复制依赖包源码并逐个构建（优化缓存层）
 COPY packages/config/src/ ./packages/config/src/
 COPY packages/config/tsup.config.ts ./packages/config/tsup.config.ts
 COPY packages/config/tsconfig.json ./packages/config/tsconfig.json
+RUN pnpm --filter @sker/config run build
 
 COPY packages/models/src/ ./packages/models/src/
 COPY packages/models/tsup.config.ts ./packages/models/tsup.config.ts
 COPY packages/models/tsconfig.json ./packages/models/tsconfig.json
+RUN pnpm --filter @sker/models run build
 
 COPY packages/store/src/ ./packages/store/src/
 COPY packages/store/tsup.config.ts ./packages/store/tsup.config.ts
 COPY packages/store/tsconfig.json ./packages/store/tsconfig.json
+RUN pnpm --filter @sker/store run build
 
 COPY packages/store-client/src/ ./packages/store-client/src/
 COPY packages/store-client/tsup.config.ts ./packages/store-client/tsup.config.ts
 COPY packages/store-client/tsconfig.json ./packages/store-client/tsconfig.json
+RUN pnpm --filter @sker/store-client run build
 
 COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/tsup.config.ts ./packages/broker/tsup.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
+RUN pnpm --filter @sker/broker run build
 
 COPY packages/engine/src/ ./packages/engine/src/
 COPY packages/engine/tsup.config.ts ./packages/engine/tsup.config.ts
 COPY packages/engine/tsconfig.json ./packages/engine/tsconfig.json
+RUN pnpm --filter @sker/engine run build
 
+# 最后复制和构建 gateway（确保源码变更能触发重新构建）
 COPY packages/gateway/src/ ./packages/gateway/src/
 COPY packages/gateway/tsup.config.ts ./packages/gateway/tsup.config.ts
 COPY packages/gateway/tsconfig.json ./packages/gateway/tsconfig.json
-
-# 按依赖顺序构建包
-RUN pnpm --filter @sker/config run build && \
-    pnpm --filter @sker/models run build && \
-    pnpm --filter @sker/store run build && \
-    pnpm --filter @sker/store-client run build && \
-    pnpm --filter @sker/broker run build && \
-    pnpm --filter @sker/engine run build && \
-    pnpm --filter @sker/gateway run build
+RUN pnpm --filter @sker/gateway run build
 
 # 生产阶段：运行时镜像
 ARG NODE_VERSION=18.20.5

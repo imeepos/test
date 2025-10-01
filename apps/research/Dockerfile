@@ -47,14 +47,12 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # Copy workspace configuration
 COPY tsconfig.json ./
 
-# Copy shared packages source
+# Copy and build shared packages separately for better cache granularity
 COPY packages/utils/ ./packages/utils/
-COPY packages/store/src/ ./packages/store/src/
-COPY packages/store/tsconfig.json ./packages/store/
+RUN pnpm --filter @sker/utils build
 
-# Build shared packages first
-RUN cd packages/utils && pnpm run build && \
-    cd ../store && pnpm run build
+COPY packages/store/ ./packages/store/
+RUN pnpm --filter @sker/store build
 
 # Copy research app source
 COPY apps/research/ ./apps/research/
