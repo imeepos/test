@@ -194,10 +194,10 @@ export class UserRouter extends BaseRouter {
       }
 
       try {
-        // 使用 store 服务的认证接口
+        // 使用 store 服务的认证接口（仅验证密码）
         const authResult = await this.storeClient!.users.authenticate(email.toLowerCase().trim(), password)
 
-        if (!authResult || !authResult.user || !authResult.token) {
+        if (!authResult || !authResult.user) {
           res.error({
             code: 'INVALID_CREDENTIALS',
             message: '邮箱或密码错误',
@@ -207,7 +207,7 @@ export class UserRouter extends BaseRouter {
           return
         }
 
-        const { user, token } = authResult
+        const { user } = authResult
 
         // 检查用户状态
         if (!user.is_active) {
@@ -220,14 +220,20 @@ export class UserRouter extends BaseRouter {
           return
         }
 
-        // 生成 Gateway 自己的 refresh token
+        // 由 Gateway 统一生成 JWT Token
+        const tokenPayload = {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        }
+        const token = this.generateJWTToken(tokenPayload)
         const refreshToken = this.generateRefreshToken(user.id)
 
         // 记录登录日志
         console.log(`User login successful: ${user.email} (${user.id})`)
 
         res.success({
-          token, // 使用 store 服务返回的 token
+          token,
           refresh_token: refreshToken,
           expires_in: 604800, // 7天（秒）
           user: {

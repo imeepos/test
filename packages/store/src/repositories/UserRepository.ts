@@ -132,11 +132,11 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   /**
-   * 用户登录验证
+   * 用户登录验证（仅验证密码，不生成Token）
+   * Token 生成由 Gateway 负责
    */
   async authenticate(emailOrUsername: string, password: string): Promise<{
     user: User
-    token: string
   } | null> {
     try {
       const user = await this.findByEmailOrUsername(emailOrUsername)
@@ -148,24 +148,8 @@ export class UserRepository extends BaseRepository<User> {
       // 更新最后登录时间
       await this.updateLastLogin(user.id)
 
-      // 生成JWT token（与 Gateway 认证中间件兼容）
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          email: user.email,
-          username: user.username
-        },
-        this.jwtSecret,
-        {
-          expiresIn: '7d',
-          issuer: '@sker/gateway',
-          audience: '@sker/studio'
-        }
-      )
-
       return {
-        user: { ...user, password_hash: '' } as User, // 清空密码哈希
-        token
+        user: { ...user, password_hash: '' } as User // 清空密码哈希
       }
     } catch (error) {
       throw new DatabaseError(

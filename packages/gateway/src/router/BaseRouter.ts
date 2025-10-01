@@ -85,14 +85,14 @@ export abstract class BaseRouter {
   /**
    * 生成JWT令牌
    */
-  protected generateJWTToken(payload: JWTPayload): string {
+  protected generateJWTToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
     const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key'
 
     return jwt.sign(
       payload,
       jwtSecret,
       {
-        expiresIn: '24h',
+        expiresIn: '7d',
         issuer: '@sker/gateway',
         audience: '@sker/studio'
       }
