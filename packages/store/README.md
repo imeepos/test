@@ -2,6 +2,20 @@
 
 SKER 数据存储服务 - 提供 PostgreSQL 数据管理和 Redis 缓存的统一接口。
 
+## ⚠️ 重要变更（2025-10-01）
+
+**HTTP 客户端已迁移到独立包 `@sker/store-client`**
+
+- ✅ **使用 HTTP 客户端访问 Store**：请使用 [`@sker/store-client`](../store-client/README.md)
+- ✅ **直接数据库操作**（仅 Store 服务内部）：继续使用 `@sker/store`
+
+**影响的服务：**
+- `@sker/engine` → 现在使用 `@sker/store-client`
+- `@sker/broker` → 现在使用 `@sker/store-client`
+- `@sker/gateway` → 现在使用 `@sker/store-client`
+
+详见：[迁移指南](#迁移指南)
+
 ## 系统架构位置
 
 `@sker/store` 是SKER系统的**数据存储层**，位于整个架构的底层，为上层服务提供数据持久化支持：
@@ -456,6 +470,83 @@ npm run test
 # 代码检查
 npm run lint
 ```
+
+## 迁移指南
+
+### 从 `@sker/store` 迁移到 `@sker/store-client`
+
+如果你之前使用 `@sker/store` 的 `StoreClient` 来访问 Store 服务，请按以下步骤迁移：
+
+#### 1. 更新依赖
+
+**package.json**
+```diff
+{
+  "dependencies": {
+-   "@sker/store": "workspace:*",
++   "@sker/store-client": "workspace:*",
+  }
+}
+```
+
+#### 2. 更新导入
+
+**旧代码：**
+```typescript
+import { StoreClient, createStoreClientFromEnv } from '@sker/store'
+```
+
+**新代码：**
+```typescript
+import { StoreClient, createStoreClientFromEnv } from '@sker/store-client'
+```
+
+#### 3. 无需更改使用代码
+
+API 完全兼容，无需修改业务逻辑代码：
+
+```typescript
+// ✅ 这些代码无需修改
+const client = new StoreClient({ baseURL: 'http://localhost:3001' })
+await client.initialize()
+const users = await client.users.findMany()
+```
+
+#### 4. 更新环境变量（可选）
+
+环境变量名称保持兼容，但推荐使用新的标准：
+
+- `STORE_SERVICE_URL` 或 `STORE_API_URL` → Store 服务地址
+- ~~`DATABASE_URL`~~ → **不再需要！**
+- ~~`PG_*`~~ → **不再需要！**
+
+#### 5. 重新安装和构建
+
+```bash
+pnpm install
+pnpm --filter your-package build
+```
+
+### 为什么要拆分？
+
+| 之前 (@sker/store) | 现在 (@sker/store-client) |
+|-------------------|-------------------------|
+| 包含数据库驱动 (pg, redis) | ✅ 仅 HTTP 客户端 |
+| 需要数据库环境变量 | ✅ 只需 Store URL |
+| 包体积较大 | ✅ 轻量级 |
+| 混合职责 | ✅ 职责单一 |
+
+### 什么时候使用哪个包？
+
+- **使用 `@sker/store-client`**：
+  - ✅ 微服务需要访问 Store API
+  - ✅ 前端应用需要访问 Store
+  - ✅ 任何通过 HTTP 访问 Store 的场景
+
+- **使用 `@sker/store`**：
+  - ✅ Store 服务本身的实现
+  - ✅ 需要直接数据库访问的场景
+  - ✅ 数据库迁移和管理脚本
 
 ## 许可证
 

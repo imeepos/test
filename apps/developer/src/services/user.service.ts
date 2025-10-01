@@ -5,6 +5,7 @@
 import { request } from './api/client'
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from './api/endpoints'
 import type { User, UserProfile } from '@/types'
+import { ENABLE_MOCK, mockUserApi } from '@/mocks'
 
 export interface LoginDTO {
   email: string
@@ -49,7 +50,13 @@ export class UserService {
    * 用户登录
    */
   static async login(data: LoginDTO): Promise<LoginResponse> {
-    const response = await request.post<LoginResponse>(AUTH_ENDPOINTS.LOGIN, data)
+    let response: LoginResponse
+
+    if (ENABLE_MOCK) {
+      response = await mockUserApi.login(data)
+    } else {
+      response = await request.post<LoginResponse>(AUTH_ENDPOINTS.LOGIN, data)
+    }
 
     // 保存 token
     if (response.token) {
@@ -121,6 +128,9 @@ export class UserService {
    * 获取当前用户信息
    */
   static async getCurrentUser(): Promise<User> {
+    if (ENABLE_MOCK) {
+      return mockUserApi.getCurrentUser()
+    }
     return request.get<User>(USER_ENDPOINTS.ME)
   }
 

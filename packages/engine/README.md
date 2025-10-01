@@ -2,6 +2,21 @@
 
 AI处理引擎服务包 - 为@sker/studio提供强大的AI内容生成和语义分析能力。
 
+## ✨ 最新变更（2025-10-01）
+
+**依赖优化：从 `@sker/store` 迁移到 `@sker/store-client`**
+
+- ✅ **移除数据库依赖**：Engine 不再需要 PostgreSQL 环境变量
+- ✅ **轻量化**：包体积减少，构建速度提升
+- ✅ **职责清晰**：Engine 通过 HTTP API 访问 Store 服务
+
+**环境变量变更：**
+- ✅ **保留**：`STORE_API_URL` - Store 服务地址（默认：http://localhost:3001）
+- ❌ **移除**：`PG_*` 系列环境变量（不再需要）
+- ❌ **移除**：`DATABASE_URL`（不再需要）
+
+详见：[迁移说明](#依赖变更说明)
+
 ## 系统架构位置
 
 `@sker/engine` 是SKER系统的**AI处理引擎层**，负责所有AI相关的智能处理任务：
@@ -486,3 +501,99 @@ NODE_ENV=development
 ```
 
 为@sker/studio提供强大、可靠、高效的AI处理能力，让智能内容生成变得简单而精确。
+
+## 依赖变更说明
+
+### 从 @sker/store 迁移到 @sker/store-client
+
+Engine 服务现在使用 `@sker/store-client` 而非 `@sker/store`，这带来以下好处：
+
+#### 变更内容
+
+**依赖变化：**
+```diff
+{
+  "dependencies": {
+-   "@sker/store": "workspace:*",
++   "@sker/store-client": "workspace:*",
+  }
+}
+```
+
+**环境变量简化：**
+```bash
+# ✅ 只需要这些
+STORE_API_URL=http://localhost:3001
+OPENAI_API_KEY=your-key
+
+# ❌ 不再需要这些
+# PG_HOST=localhost
+# PG_PORT=5432
+# PG_DATABASE=sker
+# PG_USER=postgres
+# PG_PASSWORD=password
+```
+
+#### 优势
+
+1. **环境配置简化**
+   - 无需配置数据库连接信息
+   - 只需 Store 服务 URL
+
+2. **依赖更清晰**
+   - 移除 PostgreSQL 驱动依赖
+   - 移除 Redis 客户端依赖
+   - 移除 @sker/config 依赖
+
+3. **符合微服务最佳实践**
+   - 服务间通过 HTTP API 通信
+   - 职责分离，Engine 专注于 AI 处理
+   - Store 负责数据持久化
+
+#### 架构对比
+
+**之前：**
+```
+Engine → @sker/store → PostgreSQL
+             ↓
+         @sker/config (需要 PG 环境变量)
+```
+
+**现在：**
+```
+Engine → @sker/store-client → Store Service → PostgreSQL
+         (HTTP Client)         (仅需 URL)
+```
+
+#### 代码无需更改
+
+StoreClient 的 API 保持完全兼容：
+
+```typescript
+// ✅ 这些代码无需修改
+const storeClient = new StoreClient({
+  baseURL: process.env.STORE_API_URL || 'http://localhost:3001'
+})
+
+await storeClient.initialize()
+await storeClient.aiTasks.create(taskData)
+```
+
+#### 部署注意事项
+
+1. **Docker 环境**
+   - 移除 PG_* 环境变量
+   - 确保 STORE_API_URL 指向 Store 服务
+
+2. **开发环境**
+   - 更新 .env 文件，移除数据库配置
+   - 确保 Store 服务运行在正确的端口
+
+3. **生产环境**
+   - 更新 docker-compose.yml 或 K8s 配置
+   - 移除数据库环境变量
+   - 配置正确的服务发现/URL
+
+## 许可证
+
+MIT License

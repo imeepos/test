@@ -57,6 +57,12 @@ graph TB
 
 **职责**: 系统数据的持久化和管理基础设施
 
+> **📦 包拆分（2025-10-01）**: Store 已拆分为两个包：
+> - `@sker/store` - 服务端数据库操作（仅供 Store 服务使用）
+> - `@sker/store-client` - HTTP 客户端（供其他微服务使用）
+>
+> 这一改进使微服务架构更清晰，服务间通过 HTTP API 通信。
+
 #### 核心功能
 - **PostgreSQL数据管理**: 关系型数据的完整生命周期管理
 - **Redis缓存服务**: 高性能缓存层，提升访问速度
@@ -64,6 +70,7 @@ graph TB
 - **数据模型管理**: User、Project、Node、Connection、AITask等核心实体
 - **数据库迁移**: 版本化的数据库结构管理和升级
 - **Repository模式**: 标准化的数据访问层实现
+- **HTTP API服务器**: 对外提供 RESTful API 接口
 
 #### 技术栈
 - **数据库**: PostgreSQL 8.11+, Redis 4.6+
@@ -73,14 +80,25 @@ graph TB
 - **测试**: jest单元测试
 
 #### 对外接口
+
+**服务端接口（@sker/store）**:
 ```typescript
-// 核心服务接口
+// Store 服务内部使用
 storeService.users.*        // 用户管理
 storeService.projects.*     // 项目管理
 storeService.nodes.*        // 节点管理
 storeService.connections.*  // 连接管理
 storeService.aiTasks.*      // AI任务管理
 storeService.cache()*       // 缓存操作
+```
+
+**客户端接口（@sker/store-client）**:
+```typescript
+// 其他微服务通过 HTTP 访问
+const client = new StoreClient({ baseURL: 'http://store:3001' })
+await client.users.findById(id)
+await client.projects.findMany()
+await client.aiTasks.create(taskData)
 ```
 
 ### 2. @sker/gateway - API网关层
@@ -98,10 +116,10 @@ storeService.cache()*       // 缓存操作
 #### 依赖关系
 ```typescript
 dependencies: {
-  "@sker/broker": "workspace:*",  // 消息队列集成
-  "@sker/store": "workspace:*",   // 数据存储集成
-  "@sker/models": "workspace:*",  // 共享类型定义
-  "@sker/config": "workspace:*"   // 配置管理
+  "@sker/broker": "workspace:*",       // 消息队列集成
+  "@sker/store-client": "workspace:*", // Store HTTP 客户端
+  "@sker/models": "workspace:*",       // 共享类型定义
+  "@sker/config": "workspace:*"        // 配置管理
 }
 ```
 

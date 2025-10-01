@@ -2,7 +2,7 @@ import { GatewayServer } from '../server/GatewayServer.js'
 import { DEFAULT_CONFIG, getConfigForEnvironment, mergeConfig } from '../config/defaults.js'
 import type { GatewayConfig } from '../types/GatewayConfig.js'
 import type { AIEngine } from '@sker/engine'
-import { StoreClient } from '@sker/store'
+import { StoreClient } from '@sker/store-client'
 import { MessageBroker } from '@sker/broker'
 
 export interface GatewayDependencies {

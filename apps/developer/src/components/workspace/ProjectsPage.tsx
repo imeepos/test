@@ -1,3 +1,7 @@
+/**
+ * 项目列表页面 (重构版)
+ * 使用新的架构: services + stores + hooks
+ */
 import React, { useState } from 'react'
 import {
   Card,
@@ -15,6 +19,7 @@ import {
   Col,
   Typography,
   Tooltip,
+  Popconfirm,
 } from 'antd'
 import {
   PlusOutlined,
@@ -25,140 +30,38 @@ import {
   CodeOutlined,
   SettingOutlined,
   EyeOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import type { Project } from '../../types/index.js'
+import type { Project } from '@/types'
+import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks'
+import { useDebounce } from '@/hooks'
+import { useNavigate } from 'react-router-dom'
+import { formatRelativeTime } from '@/utils'
 
 const { Title } = Typography
 const { Option } = Select
 
 export const ProjectsPage: React.FC = () => {
+  const navigate = useNavigate()
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [form] = Form.useForm()
 
-  // 模拟项目数据
-  const projects: Project[] = [
-    {
-      id: '1',
-      name: 'AI Canvas Helper',
-      description: '智能画布助手，提供AI驱动的设计建议',
-      type: 'ai-processor',
-      status: 'development',
-      template: { id: 'ai-processor-template', name: 'AI处理器模板', description: '', category: 'ai-processor', files: [], dependencies: {} },
-      ownerId: 'user1',
-      collaborators: [],
-      createdAt: '2024-01-15T08:00:00Z',
-      updatedAt: '2024-01-20T14:30:00Z',
-      config: {
-        entry: 'src/index.ts',
-        output: 'dist',
-        dependencies: {},
-        devDependencies: {},
-        buildSettings: {
-          target: 'es2020',
-          format: 'esm',
-          minify: false,
-          sourcemap: true,
-          externals: [],
-        },
-        debugSettings: {
-          enabled: true,
-          port: 3000,
-          autoOpen: false,
-          hot: true,
-        },
-      },
-      stats: {
-        linesOfCode: 2340,
-        files: 15,
-        dependencies: 8,
-        buildTime: 1200,
-        bundleSize: 156000,
-        lastBuild: '2024-01-20T14:30:00Z',
-      },
-    },
-    {
-      id: '2',
-      name: 'Export to PDF',
-      description: '将画布内容导出为PDF文件',
-      type: 'exporter',
-      status: 'published',
-      template: { id: 'exporter-template', name: '导出器模板', description: '', category: 'exporter', files: [], dependencies: {} },
-      ownerId: 'user1',
-      collaborators: ['user2'],
-      createdAt: '2024-01-10T10:00:00Z',
-      updatedAt: '2024-01-19T16:00:00Z',
-      config: {
-        entry: 'src/index.ts',
-        output: 'dist',
-        dependencies: {},
-        devDependencies: {},
-        buildSettings: {
-          target: 'es2020',
-          format: 'esm',
-          minify: true,
-          sourcemap: false,
-          externals: [],
-        },
-        debugSettings: {
-          enabled: false,
-          port: 3001,
-          autoOpen: false,
-          hot: false,
-        },
-      },
-      stats: {
-        linesOfCode: 1850,
-        files: 12,
-        dependencies: 5,
-        buildTime: 800,
-        bundleSize: 89000,
-        lastBuild: '2024-01-19T16:00:00Z',
-      },
-    },
-    {
-      id: '3',
-      name: 'Theme Manager',
-      description: '自定义主题管理器',
-      type: 'theme',
-      status: 'testing',
-      template: { id: 'theme-template', name: '主题模板', description: '', category: 'theme', files: [], dependencies: {} },
-      ownerId: 'user1',
-      collaborators: [],
-      createdAt: '2024-01-18T09:00:00Z',
-      updatedAt: '2024-01-20T11:00:00Z',
-      config: {
-        entry: 'src/index.ts',
-        output: 'dist',
-        dependencies: {},
-        devDependencies: {},
-        buildSettings: {
-          target: 'es2020',
-          format: 'esm',
-          minify: false,
-          sourcemap: true,
-          externals: [],
-        },
-        debugSettings: {
-          enabled: true,
-          port: 3002,
-          autoOpen: false,
-          hot: true,
-        },
-      },
-      stats: {
-        linesOfCode: 980,
-        files: 8,
-        dependencies: 3,
-        buildTime: 500,
-        bundleSize: 45000,
-        lastBuild: '2024-01-20T11:00:00Z',
-      },
-    },
-  ]
+  // 使用防抖优化搜索
+  const debouncedSearch = useDebounce(searchText, 500)
+
+  // 使用新的 hooks
+  const { projects, isLoading, refetch } = useProjects({
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    search: debouncedSearch || undefined,
+  })
+
+  const createMutation = useCreateProject()
+  const deleteMutation = useDeleteProject()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -209,6 +112,28 @@ export const ProjectsPage: React.FC = () => {
     return 20
   }
 
+  const handleCreateProject = async (values: any) => {
+    try {
+      await createMutation.mutateAsync(values)
+      setCreateModalVisible(false)
+      form.resetFields()
+    } catch (error) {
+      // 错误已在 hook 中处理
+    }
+  }
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (error) {
+      // 错误已在 hook 中处理
+    }
+  }
+
+  const handleOpenIDE = (projectId: string) => {
+    navigate(`/workspace/ide/${projectId}`)
+  }
+
   const columns: ColumnsType<Project> = [
     {
       title: '项目名称',
@@ -235,6 +160,7 @@ export const ProjectsPage: React.FC = () => {
         { text: '工具', value: 'tool' },
         { text: '主题', value: 'theme' },
       ],
+      onFilter: (value, record) => record.type === value,
     },
     {
       title: '状态',
@@ -250,6 +176,7 @@ export const ProjectsPage: React.FC = () => {
         { text: '已发布', value: 'published' },
         { text: '已归档', value: 'archived' },
       ],
+      onFilter: (value, record) => record.status === value,
     },
     {
       title: '进度',
@@ -283,9 +210,11 @@ export const ProjectsPage: React.FC = () => {
       dataIndex: 'updatedAt',
       key: 'updatedAt',
       render: (updatedAt: string) => (
-        <div className="text-sm text-gray-600">
-          {new Date(updatedAt).toLocaleDateString('zh-CN')}
-        </div>
+        <Tooltip title={new Date(updatedAt).toLocaleString('zh-CN')}>
+          <div className="text-sm text-gray-600">
+            {formatRelativeTime(updatedAt)}
+          </div>
+        </Tooltip>
       ),
       sorter: (a: Project, b: Project) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
     },
@@ -301,7 +230,11 @@ export const ProjectsPage: React.FC = () => {
             <Button size="small" icon={<EditOutlined />} />
           </Tooltip>
           <Tooltip title="打开IDE">
-            <Button size="small" icon={<CodeOutlined />} />
+            <Button
+              size="small"
+              icon={<CodeOutlined />}
+              onClick={() => handleOpenIDE(record.id)}
+            />
           </Tooltip>
           {record.status === 'development' && (
             <Tooltip title="运行调试">
@@ -311,27 +244,26 @@ export const ProjectsPage: React.FC = () => {
           <Tooltip title="项目设置">
             <Button size="small" icon={<SettingOutlined />} />
           </Tooltip>
-          <Tooltip title="删除项目">
-            <Button size="small" icon={<DeleteOutlined />} danger />
-          </Tooltip>
+          <Popconfirm
+            title="确定要删除这个项目吗?"
+            description="此操作不可恢复"
+            onConfirm={() => handleDeleteProject(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Tooltip title="删除项目">
+              <Button
+                size="small"
+                icon={<DeleteOutlined />}
+                danger
+                loading={deleteMutation.isPending}
+              />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
   ]
-
-  const handleCreateProject = (values: any) => {
-    console.log('创建项目:', values)
-    setCreateModalVisible(false)
-    form.resetFields()
-  }
-
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchText.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter
-    const matchesType = typeFilter === 'all' || project.type === typeFilter
-    return matchesSearch && matchesStatus && matchesType
-  })
 
   return (
     <div className="p-6 bg-gray-50 min-h-full">
@@ -339,13 +271,22 @@ export const ProjectsPage: React.FC = () => {
         <Title level={2} className="mb-0">
           我的项目
         </Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setCreateModalVisible(true)}
-        >
-          创建新项目
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => refetch()}
+            loading={isLoading}
+          >
+            刷新
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalVisible(true)}
+          >
+            创建新项目
+          </Button>
+        </Space>
       </div>
 
       {/* 搜索和筛选 */}
@@ -357,6 +298,7 @@ export const ProjectsPage: React.FC = () => {
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              allowClear
             />
           </Col>
           <Col xs={24} sm={6} md={4}>
@@ -396,8 +338,9 @@ export const ProjectsPage: React.FC = () => {
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredProjects}
+          dataSource={projects}
           rowKey="id"
+          loading={isLoading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -415,6 +358,7 @@ export const ProjectsPage: React.FC = () => {
         onCancel={() => setCreateModalVisible(false)}
         onOk={() => form.submit()}
         width={600}
+        confirmLoading={createMutation.isPending}
       >
         <Form
           form={form}
@@ -424,7 +368,10 @@ export const ProjectsPage: React.FC = () => {
           <Form.Item
             label="项目名称"
             name="name"
-            rules={[{ required: true, message: '请输入项目名称' }]}
+            rules={[
+              { required: true, message: '请输入项目名称' },
+              { min: 3, message: '项目名称至少3个字符' },
+            ]}
           >
             <Input placeholder="请输入项目名称" />
           </Form.Item>
@@ -465,3 +412,5 @@ export const ProjectsPage: React.FC = () => {
     </div>
   )
 }
+
+export default ProjectsPage

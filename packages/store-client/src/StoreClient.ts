@@ -3,7 +3,7 @@
  * 提供与StoreService相同的接口，但通过HTTP调用Store微服务
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
 import { DatabaseError } from './errors.js'
 import type { ApiResponse, StoreClientConfig } from './types.js'
 
@@ -25,7 +25,7 @@ export class StoreClient {
 
     this.http = axios.create({
       baseURL: this.config.baseURL,
-      timeout: this.config.timeout,
+      timeout: this.config.timeout ?? 30000,
       headers: {
         'Content-Type': 'application/json',
         ...(this.config.authToken && { Authorization: `Bearer ${this.config.authToken}` })
@@ -104,7 +104,7 @@ export class StoreClient {
    * 清除认证令牌
    */
   clearAuthToken(): void {
-    this.config.authToken = undefined
+    delete this.config.authToken
     delete this.http.defaults.headers.Authorization
   }
 
@@ -665,7 +665,7 @@ export function createStoreClient(config: StoreClientConfig): StoreClient {
 export function createStoreClientFromEnv(): StoreClient {
   const config: StoreClientConfig = {
     baseURL: process.env.STORE_SERVICE_URL || process.env.STORE_API_URL || 'http://localhost:3001',
-    authToken: process.env.STORE_AUTH_TOKEN,
+    ...(process.env.STORE_AUTH_TOKEN && { authToken: process.env.STORE_AUTH_TOKEN }),
     timeout: parseInt(process.env.STORE_TIMEOUT || '30000'),
     retries: parseInt(process.env.STORE_RETRIES || '3'),
     retryDelay: parseInt(process.env.STORE_RETRY_DELAY || '1000')

@@ -19,7 +19,7 @@ import {
   ROUTING_KEYS
 } from '@sker/models'
 import type { AIEngine } from '@sker/engine'
-import { StoreClient } from '@sker/store'
+import { StoreClient } from '@sker/store-client'
 import { MessageBroker } from '@sker/broker'
 
 /**

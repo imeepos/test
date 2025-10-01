@@ -2,9 +2,9 @@
  * 插件管理 Hook
  * 封装插件相关的业务逻辑
  */
-import { useQuery, useMutation, useQueryClient } from '@tantml:tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePluginStore } from '@/stores'
-import { PluginService, type SearchPluginParams } from '@/services'
+import { type SearchPluginParams } from '@/services'
 import { message } from 'antd'
 
 export function usePlugins(params?: any) {

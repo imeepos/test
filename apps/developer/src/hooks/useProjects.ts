@@ -2,14 +2,12 @@
  * 项目管理 Hook
  * 封装项目相关的业务逻辑
  */
-import { useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useProjectStore } from '@/stores'
-import { ProjectService, type CreateProjectDTO, type UpdateProjectDTO } from '@/services'
+import { type CreateProjectDTO, type UpdateProjectDTO } from '@/services'
 import { message } from 'antd'
 
 export function useProjects(params?: any) {
-  const queryClient = useQueryClient()
   const { projects, isLoading, error, fetchProjects } = useProjectStore()
 
   // 使用 React Query 缓存

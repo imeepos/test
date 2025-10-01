@@ -3,7 +3,7 @@ import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
 import { ResponseMapper } from '../adapters/ResponseMapper.js'
 import { QueueManager } from '../messaging/QueueManager.js'
 import { AIEngine } from '@sker/engine'
-import { StoreClient } from '@sker/store'
+import { StoreClient } from '@sker/store-client'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 

@@ -2,7 +2,7 @@
  * Store客户端配置
  */
 
-import { createStoreClient, type StoreClientConfig } from '@sker/store'
+import { createStoreClient, type StoreClientConfig } from '@sker/store-client'
 
 /**
  * 默认Store客户端配置

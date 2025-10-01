@@ -1,15 +1,8 @@
 // 核心服务
 export { StoreService, storeService } from './services/StoreService.js'
 
-// HTTP客户端
-export {
-  StoreClient,
-  createStoreClient,
-  createStoreClientFromEnv,
-  getDefaultStoreClient,
-  resetDefaultStoreClient
-} from './client/index.js'
-export type { StoreClientConfig } from './client/index.js'
+// 注意：StoreClient 已迁移到 @sker/store-client 包
+// 如需使用 HTTP 客户端，请导入 @sker/store-client
 
 // 向后兼容性
 export {

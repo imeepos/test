@@ -6,9 +6,9 @@
 type StorageType = 'local' | 'session'
 
 /**
- * 获取存储对象
+ * 获取存储对象 (内部工具函数)
  */
-function getStorage(type: StorageType): Storage {
+function getStorageObject(type: StorageType): Storage {
   return type === 'local' ? localStorage : sessionStorage
 }
 
@@ -17,7 +17,7 @@ function getStorage(type: StorageType): Storage {
  */
 export function setStorage<T>(key: string, value: T, type: StorageType = 'local'): void {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     const serializedValue = JSON.stringify(value)
     storage.setItem(key, serializedValue)
   } catch (error) {
@@ -30,7 +30,7 @@ export function setStorage<T>(key: string, value: T, type: StorageType = 'local'
  */
 export function getStorage<T>(key: string, type: StorageType = 'local'): T | null {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     const serializedValue = storage.getItem(key)
     if (serializedValue === null) {
       return null
@@ -47,7 +47,7 @@ export function getStorage<T>(key: string, type: StorageType = 'local'): T | nul
  */
 export function removeStorage(key: string, type: StorageType = 'local'): void {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     storage.removeItem(key)
   } catch (error) {
     console.error('Failed to remove storage:', error)
@@ -59,7 +59,7 @@ export function removeStorage(key: string, type: StorageType = 'local'): void {
  */
 export function clearStorage(type: StorageType = 'local'): void {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     storage.clear()
   } catch (error) {
     console.error('Failed to clear storage:', error)
@@ -71,7 +71,7 @@ export function clearStorage(type: StorageType = 'local'): void {
  */
 export function getAllKeys(type: StorageType = 'local'): string[] {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     return Object.keys(storage)
   } catch (error) {
     console.error('Failed to get all keys:', error)
@@ -84,7 +84,7 @@ export function getAllKeys(type: StorageType = 'local'): string[] {
  */
 export function hasKey(key: string, type: StorageType = 'local'): boolean {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     return storage.getItem(key) !== null
   } catch (error) {
     console.error('Failed to check key:', error)
@@ -97,10 +97,10 @@ export function hasKey(key: string, type: StorageType = 'local'): boolean {
  */
 export function getStorageSize(type: StorageType = 'local'): number {
   try {
-    const storage = getStorage(type)
+    const storage = getStorageObject(type)
     let size = 0
     for (const key in storage) {
-      if (storage.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(storage, key)) {
         size += storage[key].length + key.length
       }
     }

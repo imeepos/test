@@ -5,6 +5,7 @@
 import { request } from './api/client'
 import { PLUGIN_ENDPOINTS } from './api/endpoints'
 import type { Plugin, PluginVersion } from '@/types'
+import { ENABLE_MOCK, mockPluginApi } from '@/mocks'
 
 export interface SearchPluginParams {
   keyword?: string
@@ -63,6 +64,9 @@ export class PluginService {
     page?: number
     pageSize?: number
   }): Promise<{ data: Plugin[]; total: number }> {
+    if (ENABLE_MOCK) {
+      return mockPluginApi.getPlugins(params)
+    }
     return request.get(PLUGIN_ENDPOINTS.LIST, { params })
   }
 
@@ -70,6 +74,9 @@ export class PluginService {
    * 搜索插件
    */
   static async searchPlugins(params: SearchPluginParams): Promise<{ data: Plugin[]; total: number }> {
+    if (ENABLE_MOCK) {
+      return mockPluginApi.searchPlugins(params)
+    }
     return request.get(PLUGIN_ENDPOINTS.SEARCH, { params })
   }
 
@@ -77,6 +84,9 @@ export class PluginService {
    * 获取单个插件
    */
   static async getPlugin(id: string): Promise<Plugin> {
+    if (ENABLE_MOCK) {
+      return mockPluginApi.getPlugin(id)
+    }
     return request.get(PLUGIN_ENDPOINTS.GET(id))
   }
 
@@ -121,6 +131,9 @@ export class PluginService {
    * 安装插件
    */
   static async installPlugin(id: string): Promise<{ success: boolean; message: string }> {
+    if (ENABLE_MOCK) {
+      return mockPluginApi.installPlugin(id)
+    }
     return request.post(PLUGIN_ENDPOINTS.INSTALL(id))
   }
 
@@ -128,6 +141,9 @@ export class PluginService {
    * 卸载插件
    */
   static async uninstallPlugin(id: string): Promise<{ success: boolean; message: string }> {
+    if (ENABLE_MOCK) {
+      return mockPluginApi.uninstallPlugin(id)
+    }
     return request.post(PLUGIN_ENDPOINTS.UNINSTALL(id))
   }
 

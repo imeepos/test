@@ -26,6 +26,7 @@ COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/broker/package.json ./packages/broker/
 COPY packages/store/package.json ./packages/store/
+COPY packages/store-client/package.json ./packages/store-client/
 COPY packages/engine/package.json ./packages/engine/
 
 # 安装所有依赖
@@ -47,6 +48,10 @@ COPY packages/store/src/ ./packages/store/src/
 COPY packages/store/tsup.config.ts ./packages/store/tsup.config.ts
 COPY packages/store/tsconfig.json ./packages/store/tsconfig.json
 
+COPY packages/store-client/src/ ./packages/store-client/src/
+COPY packages/store-client/tsup.config.ts ./packages/store-client/tsup.config.ts
+COPY packages/store-client/tsconfig.json ./packages/store-client/tsconfig.json
+
 COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/tsup.config.ts ./packages/broker/tsup.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
@@ -63,6 +68,7 @@ COPY packages/gateway/tsconfig.json ./packages/gateway/tsconfig.json
 RUN pnpm --filter @sker/config run build && \
     pnpm --filter @sker/models run build && \
     pnpm --filter @sker/store run build && \
+    pnpm --filter @sker/store-client run build && \
     pnpm --filter @sker/broker run build && \
     pnpm --filter @sker/engine run build && \
     pnpm --filter @sker/gateway run build
@@ -89,6 +95,8 @@ COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/broker/package.json ./packages/broker/
 COPY packages/store/package.json ./packages/store/
+COPY packages/store-client/package.json ./packages/store-client/
+COPY packages/engine/package.json ./packages/engine/
 
 # 仅安装生产依赖
 RUN pnpm install --prod --frozen-lockfile
@@ -101,6 +109,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder --chown=gateway:nodejs /app/packages/config/dist/ ./packages/config/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/store/dist/ ./packages/store/dist/
+COPY --from=builder --chown=gateway:nodejs /app/packages/store-client/dist/ ./packages/store-client/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/broker/dist/ ./packages/broker/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/engine/dist/ ./packages/engine/dist/
 COPY --from=builder --chown=gateway:nodejs /app/packages/gateway/dist/ ./packages/gateway/dist/

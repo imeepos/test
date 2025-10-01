@@ -5,6 +5,7 @@
 import { request } from './api/client'
 import { PROJECT_ENDPOINTS } from './api/endpoints'
 import type { Project, ProjectConfig, ProjectStats } from '@/types'
+import { ENABLE_MOCK, mockProjectApi } from '@/mocks'
 
 export interface CreateProjectDTO {
   name: string
@@ -56,6 +57,9 @@ export class ProjectService {
     page?: number
     pageSize?: number
   }): Promise<{ data: Project[]; total: number }> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.getProjects(params)
+    }
     return request.get(PROJECT_ENDPOINTS.LIST, { params })
   }
 
@@ -63,6 +67,9 @@ export class ProjectService {
    * 获取单个项目
    */
   static async getProject(id: string): Promise<Project> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.getProject(id)
+    }
     return request.get(PROJECT_ENDPOINTS.GET(id))
   }
 
@@ -70,6 +77,9 @@ export class ProjectService {
    * 创建项目
    */
   static async createProject(data: CreateProjectDTO): Promise<Project> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.createProject(data)
+    }
     return request.post(PROJECT_ENDPOINTS.CREATE, data)
   }
 
@@ -77,6 +87,9 @@ export class ProjectService {
    * 更新项目
    */
   static async updateProject(id: string, data: UpdateProjectDTO): Promise<Project> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.updateProject(id, data)
+    }
     return request.put(PROJECT_ENDPOINTS.UPDATE(id), data)
   }
 
@@ -84,6 +97,9 @@ export class ProjectService {
    * 删除项目
    */
   static async deleteProject(id: string): Promise<void> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.deleteProject(id)
+    }
     return request.delete(PROJECT_ENDPOINTS.DELETE(id))
   }
 
@@ -91,6 +107,9 @@ export class ProjectService {
    * 获取项目文件列表
    */
   static async getProjectFiles(id: string): Promise<ProjectFile[]> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.getProjectFiles(id)
+    }
     return request.get(PROJECT_ENDPOINTS.FILES(id))
   }
 
@@ -126,6 +145,9 @@ export class ProjectService {
    * 构建项目
    */
   static async buildProject(id: string, options?: BuildOptions): Promise<BuildResult> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.buildProject(id)
+    }
     return request.post(PROJECT_ENDPOINTS.BUILD(id), options)
   }
 
@@ -133,6 +155,9 @@ export class ProjectService {
    * 运行项目
    */
   static async runProject(id: string): Promise<{ success: boolean; url: string }> {
+    if (ENABLE_MOCK) {
+      return mockProjectApi.runProject(id)
+    }
     return request.post(PROJECT_ENDPOINTS.RUN(id))
   }
 
