@@ -245,6 +245,13 @@ export class APIClient {
       return false
     }
   }
+
+  /**
+   * 设置认证错误回调
+   */
+  setAuthErrorHandler(handler: () => void): void {
+    this.config.onAuthError = handler
+  }
 }
 
 /**
@@ -262,3 +269,12 @@ export const storeClient = new APIClient({
  * 导出单例实例(默认使用Gateway)
  */
 export const apiClient = gatewayClient
+
+/**
+ * 设置认证错误回调
+ * 在应用启动时由authStore调用，建立双向连接
+ */
+export function setupAuthErrorHandler(onAuthError: () => void): void {
+  gatewayClient.setAuthErrorHandler(onAuthError)
+  storeClient.setAuthErrorHandler(onAuthError)
+}

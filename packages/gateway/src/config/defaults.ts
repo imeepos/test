@@ -74,6 +74,14 @@ export const DEVELOPMENT_CONFIG: Partial<GatewayConfig> = {
     origin: '*', // 开发环境允许所有域名
     credentials: true
   },
+  rateLimit: {
+    enabled: false, // 开发环境完全禁用限流
+    windowMs: 1 * 60 * 1000, // 1分钟
+    max: 999999, // 开发环境无限制
+    message: 'Too many requests, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false
+  },
   security: {
     helmet: false, // 开发环境禁用helmet以便调试
     compression: false,

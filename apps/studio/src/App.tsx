@@ -2,6 +2,7 @@ import React from 'react'
 import { CanvasPage } from '@/pages/CanvasPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ToastContainer } from '@/components/ui'
 import { ProjectSelector } from '@/components/project/ProjectSelector'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -15,8 +16,8 @@ function App() {
   const { currentProject } = useCanvasStore()
   const { status: authStatus, initialize: initializeAuth } = useAuthStore()
 
-  // 页面状态：'login' | 'register' | 'app'
-  const [page, setPage] = React.useState<'login' | 'register' | 'app'>('login')
+  // 页面状态：'login' | 'register' | 'forgot-password' | 'app'
+  const [page, setPage] = React.useState<'login' | 'register' | 'forgot-password' | 'app'>('login')
 
   // 初始化项目系统
   const { isReady, isLoading, error: projectError } = useProjectInit()
@@ -67,10 +68,11 @@ function App() {
     }
   }, [])
 
-  // 初始化认证状态
+  // 初始化认证状态（仅在首次加载时）
   React.useEffect(() => {
     initializeAuth()
-  }, [initializeAuth])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 根据认证状态决定显示的页面
   React.useEffect(() => {
@@ -147,7 +149,10 @@ function App() {
   if (page === 'login') {
     return (
       <ErrorBoundary>
-        <LoginPage onSwitchToRegister={() => setPage('register')} />
+        <LoginPage
+          onSwitchToRegister={() => setPage('register')}
+          onForgotPassword={() => setPage('forgot-password')}
+        />
         <ToastContainer />
       </ErrorBoundary>
     )
@@ -158,6 +163,19 @@ function App() {
     return (
       <ErrorBoundary>
         <RegisterPage onSwitchToLogin={() => setPage('login')} />
+        <ToastContainer />
+      </ErrorBoundary>
+    )
+  }
+
+  // 显示忘记密码页面
+  if (page === 'forgot-password') {
+    return (
+      <ErrorBoundary>
+        <ForgotPasswordPage
+          onBack={() => setPage('login')}
+          onResetSuccess={() => setPage('login')}
+        />
         <ToastContainer />
       </ErrorBoundary>
     )

@@ -135,9 +135,14 @@ export class GatewayServer {
       limit: this.config.security.bodyLimit || '10mb'
     }))
 
-    // 限流中间件
-    const limiter = rateLimit(this.config.rateLimit)
-    this.app.use(limiter as any)
+    // 限流中间件（开发环境可禁用）
+    if (this.config.rateLimit.enabled !== false) {
+      const limiter = rateLimit(this.config.rateLimit)
+      this.app.use(limiter as any)
+      console.log('✅ 限流中间件已启用')
+    } else {
+      console.log('⚠️  限流中间件已禁用（开发环境）')
+    }
 
     // 请求增强中间件（添加requestId等）
     this.app.use(RequestEnhancer.enhance())

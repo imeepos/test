@@ -22,6 +22,8 @@ export function useProjectInit() {
    * 应用启动时的初始化逻辑
    */
   useEffect(() => {
+    let isMounted = true
+
     const initializeApp = async () => {
       console.log('🚀 Studio应用初始化中...')
 
@@ -41,16 +43,18 @@ export function useProjectInit() {
       await checkOnlineStatus()
 
       // 3. 加载项目列表
-      try {
-        await loadProjects()
-        console.log('✅ 项目列表加载成功')
-      } catch (error) {
-        console.error('❌ 加载项目列表失败:', error)
+      if (isMounted) {
+        try {
+          await loadProjects()
+          console.log('✅ 项目列表加载成功')
+        } catch (error) {
+          console.error('❌ 加载项目列表失败:', error)
+        }
       }
 
       // 4. 如果有保存的项目ID,尝试恢复
       const savedProjectId = localStorage.getItem('last_project_id')
-      if (savedProjectId && !currentProject) {
+      if (isMounted && savedProjectId && !currentProject) {
         try {
           console.log('🔄 恢复上次打开的项目:', savedProjectId)
           // 这里不直接加载,让用户通过ProjectSelector选择
@@ -60,11 +64,18 @@ export function useProjectInit() {
         }
       }
 
-      console.log('✅ Studio应用初始化完成')
-      setIsInitialized(true)
+      if (isMounted) {
+        console.log('✅ Studio应用初始化完成')
+        setIsInitialized(true)
+      }
     }
 
     initializeApp()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // 只在首次挂载时执行
 
   /**

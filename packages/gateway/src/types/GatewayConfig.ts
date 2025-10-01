@@ -36,6 +36,7 @@ export interface AuthConfig {
 
 // 限流配置
 export interface RateLimitConfig {
+  enabled?: boolean  // 是否启用限流，默认true
   windowMs: number
   max: number
   message?: string
