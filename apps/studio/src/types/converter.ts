@@ -95,27 +95,49 @@ export class NodeDataConverter {
    * 将后端Node转换为前端AINode格式
    */
   static fromBackend(backendNode: BackendNode): AINode {
+    // 安全地访问 metadata，提供默认值
+    const metadata = backendNode.metadata || {}
+    const semanticTypes = metadata.semantic_types || []
+    const processingHistory = metadata.processing_history || []
+    const statistics = metadata.statistics
+
+    // 确保 importance 是有效值
+    const importance = this.normalizeImportance(backendNode.importance || 3)
+
+    // 确保 confidence 是有效值
+    const confidence = this.convertConfidenceFromBackend(
+      typeof backendNode.confidence === 'number' && !isNaN(backendNode.confidence)
+        ? backendNode.confidence
+        : 50
+    )
+
+    // 确保 status 是有效值
+    const validStatuses = ['idle', 'processing', 'completed', 'error'] as const
+    const status = validStatuses.includes(backendNode.status as any)
+      ? backendNode.status
+      : 'idle'
+
     return {
       id: backendNode.id,
-      content: backendNode.content,
+      content: backendNode.content || '',
       title: backendNode.title,
-      importance: backendNode.importance,
-      confidence: this.convertConfidenceFromBackend(backendNode.confidence),
-      status: backendNode.status,
-      tags: backendNode.tags,
-      version: backendNode.version,
-      position: backendNode.position,
+      importance,
+      confidence,
+      status,
+      tags: Array.isArray(backendNode.tags) ? backendNode.tags : [],
+      version: backendNode.version || 1,
+      position: backendNode.position || { x: 0, y: 0 },
       size: backendNode.size,
       connections: [], // 连接关系需要单独处理
-      semantic_type: backendNode.metadata.semantic_types?.[0],
-      user_rating: backendNode.metadata.user_rating,
+      semantic_type: semanticTypes[0],
+      user_rating: metadata.user_rating,
       metadata: {
-        semantic: backendNode.metadata.semantic_types || [],
-        editCount: backendNode.metadata.edit_count,
-        lastEditReason: backendNode.metadata.last_edit_reason,
+        semantic: semanticTypes,
+        editCount: metadata.edit_count || 0,
+        lastEditReason: metadata.last_edit_reason,
         lastModified: backendNode.updated_at,
         autoSaved: false,
-        processingHistory: backendNode.metadata.processing_history?.map(record => ({
+        processingHistory: processingHistory.map(record => ({
           timestamp: record.timestamp,
           operation: record.operation,
           modelUsed: record.model_used,
@@ -123,15 +145,15 @@ export class NodeDataConverter {
           processingTime: record.processing_time,
           confidenceBefore: record.confidence_before,
           confidenceAfter: record.confidence_after,
-        })) || [],
-        statistics: backendNode.metadata.statistics ? {
-          viewCount: backendNode.metadata.statistics.view_count,
-          editDurationTotal: backendNode.metadata.statistics.edit_duration_total,
-          aiInteractions: backendNode.metadata.statistics.ai_interactions,
+        })),
+        statistics: statistics ? {
+          viewCount: statistics.view_count,
+          editDurationTotal: statistics.edit_duration_total,
+          aiInteractions: statistics.ai_interactions,
         } : undefined
       },
-      createdAt: backendNode.created_at,
-      updatedAt: backendNode.updated_at
+      createdAt: backendNode.created_at || new Date(),
+      updatedAt: backendNode.updated_at || new Date()
     }
   }
 

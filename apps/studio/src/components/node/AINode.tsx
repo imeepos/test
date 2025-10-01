@@ -137,8 +137,17 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // ============= 样式计算 =============
 
-  const importanceColors = useMemo(() => getImportanceColor(data.importance), [data.importance])
-  const confidenceInfo = useMemo(() => getConfidenceColor(data.confidence), [data.confidence])
+  const importanceColors = useMemo(() => {
+    // 确保 importance 是有效值,否则使用默认值 3
+    const validImportance = (data.importance >= 1 && data.importance <= 5) ? data.importance : 3
+    return getImportanceColor(validImportance as 1 | 2 | 3 | 4 | 5)
+  }, [data.importance])
+
+  const confidenceInfo = useMemo(() => {
+    // 确保 confidence 是有效数值,否则使用默认值 0.5
+    const validConfidence = (typeof data.confidence === 'number' && !isNaN(data.confidence)) ? data.confidence : 0.5
+    return getConfidenceColor(validConfidence)
+  }, [data.confidence])
 
   // 版本信息 tooltip
   const versionTooltip = useMemo(() => {
