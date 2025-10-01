@@ -71,10 +71,6 @@ export class EngineFactory {
         analysis: model,
         fusion: model
       },
-      model: {
-        name: model,
-        maxTokens: 2000
-      },
       defaultModel: model,
       temperature: 0.7,
       maxTokens: 2000,
