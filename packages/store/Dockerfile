@@ -43,6 +43,7 @@ COPY packages/models/tsconfig.json ./packages/models/tsconfig.json
 COPY packages/store/src/ ./packages/store/src/
 COPY packages/store/tsup.config.ts ./packages/store/tsup.config.ts
 COPY packages/store/tsconfig.json ./packages/store/tsconfig.json
+COPY packages/store/docker-entrypoint.sh ./packages/store/docker-entrypoint.sh
 
 # 按正确顺序构建依赖包
 RUN pnpm --filter @sker/config run build && \
@@ -83,12 +84,8 @@ COPY --from=builder --chown=store:nodejs /app/packages/config/dist/ ./packages/c
 COPY --from=builder --chown=store:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=store:nodejs /app/packages/store/dist/ ./packages/store/dist/
 
-# 复制迁移文件和入口脚本
+# 复制迁移文件
 COPY --from=builder --chown=store:nodejs /app/packages/store/src/migrations/ ./packages/store/src/migrations/
-COPY --chown=store:nodejs packages/store/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-
-# 确保脚本可执行
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 切换到store包目录
 WORKDIR /app/packages/store
@@ -103,8 +100,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
 
-# 使用入口脚本
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-
-# 运行应用
-CMD ["node", "dist/server.js"]
+# 运行应用（直接在服务启动前执行迁移）
+CMD sh -c "npm run migrate && node dist/server.js"
