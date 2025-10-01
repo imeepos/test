@@ -148,7 +148,7 @@ export class UserRepository extends BaseRepository<User> {
       // 更新最后登录时间
       await this.updateLastLogin(user.id)
 
-      // 生成JWT token
+      // 生成JWT token（与 Gateway 认证中间件兼容）
       const token = jwt.sign(
         {
           userId: user.id,
@@ -156,7 +156,11 @@ export class UserRepository extends BaseRepository<User> {
           username: user.username
         },
         this.jwtSecret,
-        { expiresIn: '7d' }
+        {
+          expiresIn: '7d',
+          issuer: '@sker/gateway',
+          audience: '@sker/studio'
+        }
       )
 
       return {
