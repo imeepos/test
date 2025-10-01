@@ -12,12 +12,12 @@ import type {
   UnifiedBatchTaskMessage,
   UnifiedBatchResultMessage,
   TaskMetadata
-} from '@sker/models/src/messaging/AITaskTypes.js'
+} from '@sker/models'
 
 import {
   dbToUnifiedTaskType,
   unifiedToDbTaskType
-} from '@sker/models/src/messaging/AITaskTypes.js'
+} from '@sker/models'
 
 // 重新导出统一类型以保持向后兼容
 export type AITaskMessage = UnifiedAITaskMessage

@@ -13,7 +13,7 @@ import type {
   WebSocketMessage,
   GatewayQueueConfig
 } from '../types/messaging'
-import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models/src/messaging/AITaskTypes'
+import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models'
 
 // 类型别名以兼容现有代码
 type AITaskMessage = UnifiedAITaskMessage

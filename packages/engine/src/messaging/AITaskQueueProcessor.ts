@@ -11,7 +11,7 @@ import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,
   ROUTING_KEYS
-} from '@sker/models/src/messaging/QueueContracts.js'
+} from '@sker/models'
 
 /**
  * AI 任务队列处理器 - 处理来自消息队列的 AI 任务
