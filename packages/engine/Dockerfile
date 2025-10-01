@@ -19,40 +19,37 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 # 复制工作区配置文件
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# 复制所有需要的 package.json 文件（用于依赖解析）
+# 复制所有 package.json 文件
 COPY packages/engine/package.json ./packages/engine/
 COPY packages/broker/package.json ./packages/broker/
 COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 COPY packages/store/package.json ./packages/store/
 
-# 安装所有依赖
-RUN pnpm install --frozen-lockfile
+# 安装所有依赖（使用缓存挂载）
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # 复制根目录 tsconfig.json
 COPY tsconfig.json ./
 
-# 复制 config 包的源代码和配置文件
+# 复制所有包的源代码和配置文件
 COPY packages/config/src/ ./packages/config/src/
 COPY packages/config/tsup.config.ts ./packages/config/tsup.config.ts
 COPY packages/config/tsconfig.json ./packages/config/tsconfig.json
 
-# 复制 models 包的源代码和配置文件
 COPY packages/models/src/ ./packages/models/src/
 COPY packages/models/tsup.config.ts ./packages/models/tsup.config.ts
 COPY packages/models/tsconfig.json ./packages/models/tsconfig.json
 
-# 复制 store 包的源代码和配置文件
 COPY packages/store/src/ ./packages/store/src/
 COPY packages/store/tsup.config.ts ./packages/store/tsup.config.ts
 COPY packages/store/tsconfig.json ./packages/store/tsconfig.json
 
-# 复制 broker 包的源代码和配置文件
 COPY packages/broker/src/ ./packages/broker/src/
 COPY packages/broker/tsup.config.ts ./packages/broker/tsup.config.ts
 COPY packages/broker/tsconfig.json ./packages/broker/tsconfig.json
 
-# 复制 engine 包的源代码和配置文件
 COPY packages/engine/src/ ./packages/engine/src/
 COPY packages/engine/tsup.config.ts ./packages/engine/tsup.config.ts
 COPY packages/engine/tsconfig.json ./packages/engine/tsconfig.json

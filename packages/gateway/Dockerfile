@@ -20,7 +20,7 @@ RUN npm install -g pnpm@${PNPM_VERSION} node-gyp && \
 # 复制工作区配置文件
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# 复制所有必要的 package.json 文件
+# 复制所有 package.json 文件
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
@@ -29,8 +29,9 @@ COPY packages/store/package.json ./packages/store/
 COPY packages/store-client/package.json ./packages/store-client/
 COPY packages/engine/package.json ./packages/engine/
 
-# 安装所有依赖
-RUN pnpm install --frozen-lockfile
+# 安装所有依赖（使用缓存挂载）
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # 复制根目录 tsconfig.json
 COPY tsconfig.json ./

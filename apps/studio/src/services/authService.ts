@@ -3,7 +3,7 @@
  * 处理用户登录、注册、登出等认证相关操作
  */
 
-import { apiClient } from './apiClient'
+import { apiClient, type ExtendedRequestConfig } from './apiClient'
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types/auth'
 
 export class AuthService {
@@ -50,7 +50,12 @@ export class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/api/users/auth/logout')
+      // 发送登出请求，跳过401错误处理避免死循环
+      const config: ExtendedRequestConfig = {
+        skipAuthError: true, // 关键：跳过401认证错误处理
+        skipRetry: true // 登出不需要重试
+      }
+      await apiClient.post('/api/users/auth/logout', null, config)
     } catch (error) {
       console.error('登出请求失败:', error)
       // 即使请求失败也要清除本地Token

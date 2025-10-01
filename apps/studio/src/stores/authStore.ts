@@ -25,11 +25,16 @@ export interface AuthState {
 
 // 设置认证错误处理器
 let authErrorHandlerSetup = false
+let isLoggingOut = false // 防止死循环
 
 export const useAuthStore = create<AuthState>((set, get) => {
   // 设置认证错误处理器（仅执行一次）
   if (!authErrorHandlerSetup) {
     setupAuthErrorHandler(() => {
+      // 如果正在登出，忽略认证错误
+      if (isLoggingOut) {
+        return
+      }
       console.warn('🔒 认证失败，自动登出')
       get().logout()
     })
@@ -104,10 +109,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     // 用户登出
     logout: async () => {
+      // 设置登出标志，防止死循环
+      isLoggingOut = true
+
       try {
         await authService.logout()
       } catch (error) {
         console.error('登出失败:', error)
+        // 即使登出请求失败也继续清理本地状态
       } finally {
         set({
           status: 'unauthenticated',
@@ -116,6 +125,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
         })
 
         console.log('用户已登出')
+
+        // 重置标志
+        isLoggingOut = false
       }
     },
 

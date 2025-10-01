@@ -4,7 +4,9 @@ import {
   LoginRequest,
   RegisterRequest,
   ProfileUpdateRequest,
-  RefreshTokenRequest
+  RefreshTokenRequest,
+  RequestPasswordResetRequest,
+  ResetPasswordRequest
 } from '../types/SpecificTypes.js'
 import { BaseRouter, RouterDependencies } from './BaseRouter.js'
 
@@ -23,6 +25,10 @@ export class UserRouter extends BaseRouter {
     this.router.post('/auth/login', this.login.bind(this))
     this.router.post('/auth/logout', this.logout.bind(this))
     this.router.post('/auth/refresh', this.refreshToken.bind(this))
+
+    // 密码重置
+    this.router.post('/auth/request-reset', this.requestPasswordReset.bind(this))
+    this.router.post('/auth/reset-password', this.resetPassword.bind(this))
 
     // 用户资料
     this.router.get('/profile', this.getProfile.bind(this))
@@ -147,7 +153,7 @@ export class UserRouter extends BaseRouter {
             avatar: newUser.avatar,
             created_at: newUser.created_at
           }
-        }, 'Registration successful', 201)
+        }, 'Registration successful')
 
       } catch (dbError) {
         console.error('数据库操作失败:', dbError)
@@ -597,6 +603,201 @@ export class UserRouter extends BaseRouter {
       res.error({
         code: 'UPDATE_PROFILE_ERROR',
         message: error instanceof Error ? error.message : 'Failed to update profile',
+        timestamp: new Date(),
+        requestId: req.requestId
+      })
+    }
+  }
+
+  private async requestPasswordReset(req: ApiRequest<RequestPasswordResetRequest>, res: ApiResponse): Promise<void> {
+    try {
+      if (!this.checkStoreService(req, res)) return
+
+      const { email } = req.body
+
+      if (!email) {
+        res.error({
+          code: 'MISSING_EMAIL',
+          message: '缺少邮箱地址',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      try {
+        // 查找用户
+        const user = await this.storeClient!.users.findByEmail(email.toLowerCase().trim())
+
+        // 安全考虑：即使用户不存在也返回成功，防止邮箱枚举攻击
+        if (!user) {
+          res.success({
+            message: '如果该邮箱已注册，重置链接已发送'
+          }, 'Reset email sent')
+          return
+        }
+
+        // 生成6位数字重置码
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString()
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000) // 30分钟有效期
+
+        // 保存重置码到用户preferences（简化实现，生产环境应使用专门的表）
+        await this.storeClient!.users.update(user.id, {
+          preferences: {
+            ...user.preferences,
+            password_reset: {
+              code: resetCode,
+              expires_at: expiresAt,
+              created_at: new Date()
+            }
+          }
+        })
+
+        // TODO: 实际项目中应发送邮件
+        // await sendPasswordResetEmail(email, resetCode)
+
+        // 开发环境在控制台输出重置码
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔐 密码重置码 [${email}]: ${resetCode} (30分钟有效)`)
+        }
+
+        res.success({
+          message: '如果该邮箱已注册，重置链接已发送',
+          // 开发环境返回重置码方便测试
+          ...(process.env.NODE_ENV === 'development' && { reset_code: resetCode })
+        }, 'Reset email sent')
+
+      } catch (dbError) {
+        console.error('数据库操作失败:', dbError)
+        res.error({
+          code: 'DATABASE_ERROR',
+          message: '服务暂时不可用',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+      }
+
+    } catch (error) {
+      console.error('请求密码重置失败:', error)
+      res.error({
+        code: 'REQUEST_RESET_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to request password reset',
+        timestamp: new Date(),
+        requestId: req.requestId
+      })
+    }
+  }
+
+  private async resetPassword(req: ApiRequest<ResetPasswordRequest>, res: ApiResponse): Promise<void> {
+    try {
+      if (!this.checkStoreService(req, res)) return
+
+      const { email, reset_code, new_password } = req.body
+
+      if (!email || !reset_code || !new_password) {
+        res.error({
+          code: 'MISSING_FIELDS',
+          message: '缺少必填字段',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      // 验证密码强度
+      if (new_password.length < 6) {
+        res.error({
+          code: 'WEAK_PASSWORD',
+          message: '密码至少需要6个字符',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      try {
+        // 查找用户
+        const user = await this.storeClient!.users.findByEmail(email.toLowerCase().trim())
+
+        if (!user) {
+          res.error({
+            code: 'INVALID_RESET_CODE',
+            message: '重置码无效或已过期',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 验证重置码
+        const resetData = user.preferences?.password_reset
+        if (!resetData || !resetData.code || !resetData.expires_at) {
+          res.error({
+            code: 'INVALID_RESET_CODE',
+            message: '重置码无效或已过期',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 检查重置码是否匹配
+        if (resetData.code !== reset_code) {
+          res.error({
+            code: 'INVALID_RESET_CODE',
+            message: '重置码错误',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 检查是否过期
+        const expiresAt = new Date(resetData.expires_at)
+        if (expiresAt < new Date()) {
+          res.error({
+            code: 'EXPIRED_RESET_CODE',
+            message: '重置码已过期，请重新申请',
+            timestamp: new Date(),
+            requestId: req.requestId
+          })
+          return
+        }
+
+        // 哈希新密码
+        const password_hash = await this.hashPassword(new_password)
+
+        // 更新密码并清除重置码
+        await this.storeClient!.users.update(user.id, {
+          password_hash,
+          preferences: {
+            ...user.preferences,
+            password_reset: undefined // 清除重置数据
+          },
+          updated_at: new Date()
+        })
+
+        console.log(`密码重置成功: ${user.email} (${user.id})`)
+
+        res.success({
+          message: '密码重置成功，请使用新密码登录'
+        }, 'Password reset successful')
+
+      } catch (dbError) {
+        console.error('数据库操作失败:', dbError)
+        res.error({
+          code: 'DATABASE_ERROR',
+          message: '服务暂时不可用',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+      }
+
+    } catch (error) {
+      console.error('重置密码失败:', error)
+      res.error({
+        code: 'RESET_PASSWORD_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to reset password',
         timestamp: new Date(),
         requestId: req.requestId
       })

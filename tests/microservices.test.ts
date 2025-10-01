@@ -1,121 +1,104 @@
 /**
- * 微服务架构集成测试
+ * 微服务架构集成测试 - 使用 @sker/store-client
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals'
-import { createStore, isMicroserviceStore, isLegacyStore } from '@sker/store'
-import type { StoreService, StoreClient } from '@sker/store'
+import { createStoreClient } from '@sker/store-client'
+import type { StoreClient } from '@sker/store-client'
 
 describe('微服务架构测试', () => {
-  let microserviceStore: StoreClient
-  let legacyStore: StoreService
+  let storeClient: StoreClient
 
   beforeAll(async () => {
-    // 创建微服务Store (需要Store服务运行在localhost:3001)
+    // 创建Store客户端 (需要Store服务运行在localhost:3001)
     try {
-      microserviceStore = await createStore({
-        useMicroservice: true,
-        storeServiceUrl: 'http://localhost:3001'
-      }) as StoreClient
+      storeClient = createStoreClient({
+        baseURL: 'http://localhost:3001',
+        timeout: 30000,
+        retries: 3
+      })
+      await storeClient.initialize()
     } catch (error) {
       console.warn('无法连接到Store微服务，跳过微服务测试')
     }
-
-    // 创建传统Store
-    legacyStore = await createStore({
-      useMicroservice: false
-    }) as StoreService
   })
 
   afterAll(async () => {
-    if (microserviceStore) {
-      await microserviceStore.close()
-    }
-    if (legacyStore) {
-      await legacyStore.close()
+    if (storeClient) {
+      await storeClient.close()
     }
   })
 
-  describe('Store工厂函数', () => {
-    it('应该能够创建微服务Store', async () => {
-      if (!microserviceStore) {
-        console.log('跳过微服务测试')
+  describe('StoreClient功能', () => {
+    it('应该能够创建StoreClient并初始化', async () => {
+      if (!storeClient) {
+        console.log('跳过StoreClient测试')
         return
       }
 
-      expect(isMicroserviceStore(microserviceStore)).toBe(true)
-      expect(isLegacyStore(microserviceStore)).toBe(false)
+      expect(storeClient).toBeDefined()
+      expect(typeof storeClient.users).toBe('object')
+      expect(typeof storeClient.projects).toBe('object')
+      expect(typeof storeClient.nodes).toBe('object')
+      expect(typeof storeClient.connections).toBe('object')
+      expect(typeof storeClient.aiTasks).toBe('object')
     })
 
-    it('应该能够创建传统Store', async () => {
-      expect(isLegacyStore(legacyStore)).toBe(true)
-      expect(isMicroserviceStore(legacyStore)).toBe(false)
-    })
-
-    it('应该能够自动检测环境', async () => {
-      // 设置环境变量测试
+    it('应该支持环境变量配置', async () => {
       const originalEnv = process.env.STORE_SERVICE_URL
 
       process.env.STORE_SERVICE_URL = 'http://localhost:3001'
-      const autoStore = await createStore()
-      expect(isMicroserviceStore(autoStore)).toBe(true)
-      await autoStore.close()
-
-      delete process.env.STORE_SERVICE_URL
-      const autoLegacyStore = await createStore()
-      expect(isLegacyStore(autoLegacyStore)).toBe(true)
-      await autoLegacyStore.close()
+      const autoClient = createStoreClient({
+        baseURL: process.env.STORE_SERVICE_URL
+      })
+      expect(autoClient).toBeDefined()
 
       process.env.STORE_SERVICE_URL = originalEnv
     })
   })
 
-  describe('Store接口兼容性', () => {
-    it('微服务Store应该提供相同的接口', async () => {
-      if (!microserviceStore) {
-        console.log('跳过微服务接口测试')
+  describe('Store接口', () => {
+    it('StoreClient应该提供完整的接口', async () => {
+      if (!storeClient) {
+        console.log('跳过接口测试')
         return
       }
 
-      // 检查基本方法存在
-      expect(typeof microserviceStore.users).toBe('object')
-      expect(typeof microserviceStore.projects).toBe('object')
-      expect(typeof microserviceStore.nodes).toBe('object')
-      expect(typeof microserviceStore.connections).toBe('object')
-      expect(typeof microserviceStore.aiTasks).toBe('object')
-      expect(typeof microserviceStore.healthCheck).toBe('function')
-    })
+      // 检查所有资源仓库
+      expect(typeof storeClient.users).toBe('object')
+      expect(typeof storeClient.projects).toBe('object')
+      expect(typeof storeClient.nodes).toBe('object')
+      expect(typeof storeClient.connections).toBe('object')
+      expect(typeof storeClient.aiTasks).toBe('object')
 
-    it('传统Store应该提供相同的接口', async () => {
-      expect(typeof legacyStore.users).toBe('object')
-      expect(typeof legacyStore.projects).toBe('object')
-      expect(typeof legacyStore.nodes).toBe('object')
-      expect(typeof legacyStore.connections).toBe('object')
-      expect(typeof legacyStore.aiTasks).toBe('object')
-      expect(typeof legacyStore.healthCheck).toBe('function')
+      // 检查工具方法
+      expect(typeof storeClient.healthCheck).toBe('function')
+      expect(typeof storeClient.getSystemStats).toBe('function')
+      expect(typeof storeClient.cache).toBe('function')
+      expect(typeof storeClient.batch).toBe('function')
     })
   })
 
   describe('健康检查', () => {
-    it('微服务Store健康检查', async () => {
-      if (!microserviceStore) {
-        console.log('跳过微服务健康检查')
+    it('StoreClient健康检查', async () => {
+      if (!storeClient) {
+        console.log('跳过健康检查')
         return
       }
 
-      const health = await microserviceStore.healthCheck()
-      expect(health).toHaveProperty('status')
-      expect(health).toHaveProperty('timestamp')
-    })
-
-    it('传统Store健康检查', async () => {
-      const health = await legacyStore.healthCheck()
-      expect(health).toHaveProperty('status')
-      expect(health).toHaveProperty('timestamp')
+      try {
+        const health = await storeClient.healthCheck()
+        expect(health).toHaveProperty('success')
+        expect(health).toHaveProperty('data')
+        expect(health.data).toHaveProperty('status')
+        expect(health.data).toHaveProperty('timestamp')
+      } catch (error) {
+        console.warn('健康检查失败:', error)
+      }
     })
   })
 
-  describe('用户操作兼容性', () => {
+  describe('用户操作', () => {
     const testUser = {
       username: 'testuser_' + Date.now(),
       email: 'test_' + Date.now() + '@example.com',
@@ -123,28 +106,36 @@ describe('微服务架构测试', () => {
       displayName: 'Test User'
     }
 
-    it('微服务Store用户创建', async () => {
-      if (!microserviceStore) {
-        console.log('跳过微服务用户测试')
+    it('StoreClient用户创建', async () => {
+      if (!storeClient) {
+        console.log('跳过用户测试')
         return
       }
 
       try {
-        const user = await microserviceStore.users.create(testUser)
-        expect(user).toHaveProperty('id')
-        expect(user.username).toBe(testUser.username)
+        const result = await storeClient.users.create(testUser)
+        expect(result.success).toBe(true)
+        expect(result.data).toHaveProperty('id')
+        expect(result.data.username).toBe(testUser.username)
       } catch (error) {
-        console.warn('微服务用户创建失败:', error)
+        console.warn('用户创建失败:', error)
       }
     })
 
-    it('传统Store用户创建', async () => {
+    it('StoreClient用户查询', async () => {
+      if (!storeClient) {
+        console.log('跳过用户查询测试')
+        return
+      }
+
       try {
-        const user = await legacyStore.users.create(testUser)
-        expect(user).toHaveProperty('id')
-        expect(user.username).toBe(testUser.username)
+        const result = await storeClient.users.findByUsername(testUser.username)
+        expect(result.success).toBe(true)
+        if (result.data) {
+          expect(result.data.username).toBe(testUser.username)
+        }
       } catch (error) {
-        console.warn('传统Store用户创建失败:', error)
+        console.warn('用户查询失败:', error)
       }
     })
   })

@@ -26,13 +26,17 @@ import type { StoreEdge } from '@/stores/nodeStore'
 import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
 import { ShortcutHandler } from '../interactions/ShortcutHandler'
+import { getOptimizedReactFlowProps } from './PerformanceOptimizer'
 import { nodeService } from '@/services'
 import type { Position, AINodeData, AINode } from '@/types'
 
-// 自定义节点类型
-const nodeTypes = {
-  aiNode: AINodeComponent,
-}
+// 自定义节点类型 - 使用React.memo避免不必要的重渲染
+const nodeTypes = React.useMemo(
+  () => ({
+    aiNode: AINodeComponent,
+  }),
+  []
+)
 
 export interface CanvasProps {
   onNodeDoubleClick?: (nodeId: string) => void
@@ -138,15 +142,15 @@ const Canvas: React.FC<CanvasProps> = ({
   // 转换连接数据格式
   const edges = React.useMemo(() => {
     return storeEdges.map((edge): Edge => {
-      const defaultStyle = { 
-        stroke: '#6366f1', 
+      const defaultStyle = {
+        stroke: '#6366f1',
         strokeWidth: 2,
         type: 'smoothstep' as const,
         animated: false,
         strokeDasharray: undefined
       }
       const edgeStyle = edge.style || {}
-      
+
       return {
         id: edge.id,
         source: edge.source,
@@ -161,6 +165,12 @@ const Canvas: React.FC<CanvasProps> = ({
       }
     })
   }, [storeEdges])
+
+  // 性能优化配置
+  const performanceProps = React.useMemo(
+    () => getOptimizedReactFlowProps(storeNodes.length),
+    [storeNodes.length]
+  )
 
   // React Flow状态
   const [rfNodes, setRfNodes, originalOnNodesChange] = useNodesState(nodes)
@@ -769,7 +779,8 @@ const Canvas: React.FC<CanvasProps> = ({
           includeHiddenNodes: false,
         }}
         onContextMenu={handleContextMenu}
-        deleteKeyCode={null}
+        // 性能优化配置
+        {...performanceProps}
       >
         <Background
           color="#1a1b23"

@@ -31,6 +31,15 @@ export interface APIResponse<T = any> {
 }
 
 /**
+ * 扩展的请求配置，支持自定义选项
+ */
+export interface ExtendedRequestConfig extends AxiosRequestConfig {
+  skipAuthError?: boolean // 跳过401错误处理
+  skipRetry?: boolean // 跳过重试逻辑
+  _retry?: number // 内部重试计数
+}
+
+/**
  * API客户端配置
  */
 export interface APIClientConfig {
@@ -119,12 +128,15 @@ export class APIClient {
    * 处理API错误
    */
   private async handleError(error: AxiosError<APIResponse>): Promise<any> {
-    const config = error.config as AxiosRequestConfig & { _retry?: number }
+    const config = error.config as ExtendedRequestConfig
 
     // 401 认证错误
     if (error.response?.status === 401) {
-      this.clearAuthToken()
-      this.config.onAuthError()
+      // 检查是否跳过认证错误处理（例如logout请求）
+      if (!config?.skipAuthError) {
+        this.clearAuthToken()
+        this.config.onAuthError()
+      }
       return Promise.reject(new Error('认证失败,请重新登录'))
     }
 
@@ -132,8 +144,8 @@ export class APIClient {
     if (!error.response) {
       this.config.onNetworkError(new Error('网络连接失败'))
 
-      // 实现重试逻辑
-      if (config && (!config._retry || config._retry < this.config.retries)) {
+      // 检查是否跳过重试逻辑
+      if (!config?.skipRetry && config && (!config._retry || config._retry < this.config.retries)) {
         config._retry = (config._retry || 0) + 1
 
         // 延迟后重试

@@ -331,5 +331,52 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   )
 }
 
-export default AINode
-export { AINode }
+/**
+ * 自定义比较函数 - 仅在关键数据变化时重新渲染
+ */
+const areNodesEqual = (
+  prevProps: AINodeProps,
+  nextProps: AINodeProps
+): boolean => {
+  // 如果选中状态变化,需要重新渲染
+  if (prevProps.selected !== nextProps.selected) {
+    return false
+  }
+
+  // 如果ID变化,需要重新渲染
+  if (prevProps.id !== nextProps.id) {
+    return false
+  }
+
+  // 检查data中的关键字段
+  const prevData = prevProps.data
+  const nextData = nextProps.data
+
+  // 内容相关
+  if (prevData.content !== nextData.content) return false
+  if (prevData.title !== nextData.title) return false
+  if (prevData.status !== nextData.status) return false
+
+  // 样式相关
+  if (prevData.importance !== nextData.importance) return false
+  if (prevData.confidence !== nextData.confidence) return false
+
+  // 标签数量或内容变化
+  if (prevData.tags?.length !== nextData.tags?.length) return false
+  if (prevData.tags?.join(',') !== nextData.tags?.join(',')) return false
+
+  // 版本变化
+  if (prevData.version !== nextData.version) return false
+
+  // 时间戳(仅在实际变化时比较)
+  if (prevData.updatedAt !== nextData.updatedAt) return false
+
+  // 如果以上都没变化,则不需要重新渲染
+  return true
+}
+
+// 使用React.memo优化性能
+const MemoizedAINode = React.memo(AINode, areNodesEqual)
+
+export default MemoizedAINode
+export { MemoizedAINode as AINode }

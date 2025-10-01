@@ -184,7 +184,7 @@ export class CacheManager {
   private evict(): void {
     if (this.cache.size === 0) return
 
-    let keyToEvict: string
+    let keyToEvict: string | undefined
 
     switch (this.config.strategy) {
       case 'lru':
@@ -215,8 +215,10 @@ export class CacheManager {
   /**
    * 找到最快过期的键
    */
-  private findEarliestExpiring(): string {
-    let earliestKey = ''
+  private findEarliestExpiring(): string | undefined {
+    if (this.cache.size === 0) return undefined
+
+    let earliestKey: string | undefined
     let earliestTime = Infinity
 
     for (const [key, item] of this.cache.entries()) {

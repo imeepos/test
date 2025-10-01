@@ -5,6 +5,7 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '@/stores'
 import { Button, Input } from '@/components/ui'
+import { useToast } from '@/components/ui/Toast'
 
 interface RegisterPageProps {
   onSwitchToLogin?: () => void
@@ -12,6 +13,7 @@ interface RegisterPageProps {
 
 export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
   const { register, status, error, clearError } = useAuthStore()
+  const toast = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -50,9 +52,14 @@ export function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
 
     try {
       await register({ email, password, name: name.trim() })
-      // 注册成功后，App.tsx会自动切换到画布页面
+      // 注册成功提示
+      toast.success('注册成功', `欢迎加入，${name}！`)
+      // App.tsx会自动切换到画布页面
     } catch (error) {
       console.error('注册失败:', error)
+      // 注册失败提示
+      const errorMessage = error instanceof Error ? error.message : '注册失败，请重试'
+      toast.error('注册失败', errorMessage)
     }
   }
 

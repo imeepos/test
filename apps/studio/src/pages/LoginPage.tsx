@@ -5,13 +5,16 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '@/stores'
 import { Button, Input } from '@/components/ui'
+import { useToast } from '@/components/ui/Toast'
 
 interface LoginPageProps {
   onSwitchToRegister?: () => void
+  onForgotPassword?: () => void
 }
 
-export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
+export function LoginPage({ onSwitchToRegister, onForgotPassword }: LoginPageProps) {
   const { login, status, error, clearError } = useAuthStore()
+  const toast = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,9 +32,14 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
 
     try {
       await login({ email, password })
-      // 登录成功后，App.tsx会自动切换到画布页面
+      // 登录成功提示
+      toast.success('登录成功', '欢迎回来！')
+      // App.tsx会自动切换到画布页面
     } catch (error) {
       console.error('登录失败:', error)
+      // 登录失败提示
+      const errorMessage = error instanceof Error ? error.message : '登录失败，请重试'
+      toast.error('登录失败', errorMessage)
     }
   }
 
@@ -95,6 +103,18 @@ export function LoginPage({ onSwitchToRegister }: LoginPageProps) {
                   {showPassword ? '隐藏' : '显示'}
                 </button>
               </div>
+            </div>
+
+            {/* 忘记密码链接 */}
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-sm text-primary-500 hover:text-primary-600"
+                disabled={isLoading}
+              >
+                忘记密码？
+              </button>
             </div>
 
             {/* 错误提示 */}

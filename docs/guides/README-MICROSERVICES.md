@@ -66,12 +66,17 @@ SKER现在采用真正的微服务架构，各服务通过HTTP API和消息队�
 ```
 sker/
 ├── packages/
-│   ├── store/           # Store微服务
+│   ├── store/           # Store微服务（独立服务）
 │   │   ├── src/
 │   │   │   ├── api/     # REST API控制器和路由
-│   │   │   ├── client/  # HTTP客户端
 │   │   │   └── server.ts
 │   │   └── Dockerfile
+│   ├── store-client/    # Store客户端库
+│   │   ├── src/
+│   │   │   ├── client/  # HTTP客户端实现
+│   │   │   ├── types/   # 类型定义
+│   │   │   └── index.ts
+│   │   └── package.json
 │   ├── gateway/         # Gateway微服务
 │   │   ├── src/
 │   │   │   ├── config/  # Store客户端配置
@@ -80,7 +85,7 @@ sker/
 │   │   └── Dockerfile
 │   └── broker/          # Broker微服务
 │       ├── src/
-│       │   ├── adapters/    # Store适配器
+│       │   ├── adapters/    # Store适配器（封装store-client）
 │       │   ├── config/      # Store配置
 │       │   └── scheduler/
 │       └── Dockerfile
@@ -112,6 +117,19 @@ sker/
 - `GET /api/v1/ai-tasks` - AI任务管理
 - `GET /api/system/*` - 系统管理
 
+### Store-Client库
+
+**职责**: Store微服务的HTTP客户端
+- 提供类型安全的API调用
+- 自动重试和错误处理
+- 统一的响应格式
+- 认证令牌管理
+
+**依赖关系**:
+- Gateway依赖 `@sker/store-client`
+- Broker依赖 `@sker/store-client`
+- 所有需要访问Store的服务都通过此客户端
+
 ### Gateway微服务 (端口 3000)
 
 **职责**: API网关和WebSocket管理
@@ -119,13 +137,13 @@ sker/
 - 请求路由和负载均衡
 - WebSocket实时通信
 - 认证和授权
-- 通过HTTP客户端调用Store服务
+- 通过 `@sker/store-client` 调用Store服务
 
-**特性**:
-- 使用`StoreClient`而非直接依赖
-- 支持多种认证方式
-- WebSocket事件处理
-- 请求限流和安全防护
+**集成方式**:
+```typescript
+import { createStoreClient } from '@sker/store-client'
+const storeClient = createStoreClient({ baseURL: 'http://store:3001' })
+```
 
 ### Broker微服务 (无暴露端口)
 
@@ -133,12 +151,14 @@ sker/
 - AI任务调度和管理
 - 消息队列处理
 - 事件发布和订阅
-- 通过Store适配器访问数据
+- 通过StoreAdapter访问数据
 
-**特性**:
-- 使用`StoreAdapter`适配HTTP客户端
-- RabbitMQ消息队列集成
-- 可水平扩展(Docker Compose中配置了2个实例)
+**集成方式**:
+```typescript
+import { createStoreAdapterForBroker } from '@sker/broker'
+const storeAdapter = await createStoreAdapterForBroker()
+// StoreAdapter内部使用 @sker/store-client
+```
 
 ## 🔧 配置
 
@@ -243,19 +263,26 @@ docker-compose -f config/docker/docker-compose.microservices.yml logs -f broker
 
 ### 服务间通信
 
-服务间通信统一使用HTTP API：
+服务间通信统一使用HTTP API，通过 `@sker/store-client` 包：
 
 ```javascript
 // Gateway中使用StoreClient
-const storeClient = createStoreClientForGateway({
-  baseURL: 'http://store:3001'
+import { createStoreClient } from '@sker/store-client'
+
+const storeClient = createStoreClient({
+  baseURL: 'http://store:3001',
+  timeout: 30000,
+  retries: 3
 })
 
+await storeClient.initialize()
 const user = await storeClient.users.findById(userId)
 ```
 
 ```javascript
-// Broker中使用StoreAdapter
+// Broker中使用StoreAdapter (封装了StoreClient)
+import { createStoreAdapterForBroker } from '@sker/broker'
+
 const storeAdapter = await createStoreAdapterForBroker({
   baseURL: 'http://store:3001'
 })
@@ -306,16 +333,27 @@ docker-compose -f config/docker/docker-compose.microservices.yml exec store sh
 
 ## 🔄 从单体架构迁移
 
-原有的单体架构代码仍然兼容，可以通过工厂函数选择使用方式：
+系统已完成从单体架构到微服务架构的迁移：
+
+- **@sker/store**: 独立的Store微服务，提供REST API
+- **@sker/store-client**: Store微服务的HTTP客户端库
+- **Gateway/Broker**: 通过 `@sker/store-client` 与Store通信
 
 ```javascript
-// 旧方式：直接使用StoreService
-import { StoreService } from '@sker/store'
-const store = new StoreService()
+// 使用StoreClient连接Store微服务
+import { createStoreClient } from '@sker/store-client'
 
-// 新方式：使用HTTP客户端
-import { createStoreClientFromEnv } from '@sker/store'
-const store = createStoreClientFromEnv()
+const storeClient = createStoreClient({
+  baseURL: process.env.STORE_SERVICE_URL || 'http://localhost:3001',
+  timeout: 30000,
+  retries: 3
+})
+
+await storeClient.initialize()
+
+// 使用统一的API
+const users = await storeClient.users.findAll()
+const projects = await storeClient.projects.findAll()
 ```
 
 ## 📚 API文档

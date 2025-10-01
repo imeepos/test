@@ -215,7 +215,7 @@ services:
       context: .
       dockerfile: packages/gateway/Dockerfile
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=8000
       # 服务间通信配置
       - STORE_SERVICE_URL=http://store:3001

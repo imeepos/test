@@ -2,20 +2,28 @@
   "name": "@sker/api",
   "version": "1.0.0",
   "description": "API客户端 - 统一的HTTP客户端、WebSocket连接、状态同步",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
   "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "files": [
     "dist",
-    "types"
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@sker/config": "workspace:*",
@@ -24,16 +32,22 @@
     "socket.io-client": "^4.7.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@types/socket.io-client": "^3.0.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "keywords": [
     "api",
     "client",
     "http",
     "websocket",
-    "sync"
+    "rest",
+    "realtime",
+    "sync",
+    "cache",
+    "auth"
   ],
   "author": "SKER Team",
   "license": "MIT"

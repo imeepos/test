@@ -1,11 +1,14 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut, User, Keyboard } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useUIStore, useAuthStore } from '@/stores'
+import { useToast } from '@/components/ui/Toast'
+import { useShortcutHelp } from '@/hooks/useShortcutHelp'
 import { SearchBox } from './SearchBox'
 import { CanvasStats } from './CanvasStats'
 import { ZoomIndicator } from './ZoomIndicator'
+import { ShortcutHelp } from '@/components/help/ShortcutHelp'
 
 export interface SidebarProps {
   className?: string
@@ -20,6 +23,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   } = useUIStore()
 
   const { user, logout } = useAuthStore()
+  const toast = useToast()
+
+  // 快捷键帮助
+  const { isOpen: showShortcutHelp, open: openShortcutHelp, close: closeShortcutHelp } = useShortcutHelp()
 
   // 拖拽调整宽度
   const [isResizing, setIsResizing] = React.useState(false)
@@ -28,7 +35,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   // 处理登出
   const handleLogout = async () => {
     if (confirm('确定要退出登录吗？')) {
-      await logout()
+      try {
+        await logout()
+        toast.info('已退出登录', '期待您的再次光临')
+      } catch (error) {
+        toast.error('登出失败', '请稍后重试')
+      }
     }
   }
 
@@ -150,6 +162,22 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             <CanvasStats />
           </div>
 
+          {/* 快捷键帮助 */}
+          <div>
+            <h3 className="text-sm font-medium text-sidebar-text mb-2">
+              帮助
+            </h3>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Keyboard}
+              onClick={openShortcutHelp}
+              className="w-full justify-start"
+            >
+              快捷键帮助 <kbd className="ml-auto text-xs opacity-60">Ctrl+?</kbd>
+            </Button>
+          </div>
+
           {/* 用户信息和登出 */}
           {user && (
             <div className="pt-4 border-t border-sidebar-border">
@@ -234,6 +262,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       {isResizing && (
         <div className="fixed inset-0 cursor-col-resize z-50" />
       )}
+
+      {/* 快捷键帮助模态框 */}
+      <ShortcutHelp
+        isOpen={showShortcutHelp}
+        onClose={closeShortcutHelp}
+      />
     </motion.div>
   )
 }

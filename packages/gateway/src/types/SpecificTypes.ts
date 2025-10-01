@@ -118,6 +118,18 @@ export interface RefreshTokenRequest {
   refresh_token: string
 }
 
+// 请求密码重置
+export interface RequestPasswordResetRequest {
+  email: string
+}
+
+// 重置密码
+export interface ResetPasswordRequest {
+  email: string
+  reset_code: string
+  new_password: string
+}
+
 // JWT载荷
 export interface JWTPayload {
   userId: string

@@ -30,22 +30,22 @@ RUN npm install -g pnpm@${PNPM_VERSION} && \
     librsvg-dev
 
 # Copy root package files for workspace setup
-COPY package.json pnpm-lock.yaml ./
-COPY apps/research/package.json ./apps/research/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy shared packages
+# Copy all package.json files
+COPY apps/research/package.json ./apps/research/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/store/package.json ./packages/store/
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/engine/package.json ./packages/engine/
 COPY packages/broker/package.json ./packages/broker/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies with cache mount
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Copy workspace configuration
 COPY tsconfig.json ./
-COPY pnpm-workspace.yaml ./
 
 # Copy shared packages source
 COPY packages/utils/ ./packages/utils/

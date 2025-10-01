@@ -58,6 +58,19 @@ export abstract class BaseRouter {
   }
 
   /**
+   * 哈希密码
+   */
+  protected async hashPassword(password: string): Promise<string> {
+    try {
+      const saltRounds = 10
+      return await bcrypt.hash(password, saltRounds)
+    } catch (error) {
+      console.error('密码哈希失败:', error)
+      throw new Error('密码加密失败')
+    }
+  }
+
+  /**
    * 验证密码
    */
   protected async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {

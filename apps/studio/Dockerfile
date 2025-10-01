@@ -19,16 +19,20 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 
 # Copy root workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy all package.json files first for better layer caching
+COPY apps/studio/package.json ./apps/studio/
+COPY packages/*/package.json ./packages/
+
+# Install all workspace dependencies with cache mount
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy configuration files
 COPY tsconfig.json ./
 
-# Copy studio app package.json first for better layer caching
-COPY apps/studio/package.json ./apps/studio/
-
-# Copy packages directory structure 
+# Copy packages source code
 COPY packages/ ./packages/
-
-# Install all workspace dependencies
-RUN pnpm install --frozen-lockfile
 
 # Copy studio app source files
 COPY apps/studio/src ./apps/studio/src

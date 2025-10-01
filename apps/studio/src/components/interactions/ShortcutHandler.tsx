@@ -24,6 +24,7 @@ interface ShortcutHandlerProps {
   onRedo?: () => void
   onDuplicate?: () => void
   onSave?: () => void
+  onShowHelp?: () => void
   disabled?: boolean
 }
 
@@ -39,6 +40,7 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
   onRedo,
   onDuplicate,
   onSave,
+  onShowHelp,
   disabled = false,
 }) => {
   const { selectedNodeIds, clearSelection } = useCanvasStore()
@@ -471,7 +473,12 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
     const helpHandler = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === '?' && !disabled) {
         event.preventDefault()
-        showShortcutHelp()
+        // 优先使用外部传入的处理器
+        if (onShowHelp) {
+          onShowHelp()
+        } else {
+          showShortcutHelp()
+        }
       }
     }
 
@@ -479,7 +486,7 @@ export const ShortcutHandler: React.FC<ShortcutHandlerProps> = ({
     return () => {
       document.removeEventListener('keydown', helpHandler)
     }
-  }, [showShortcutHelp, disabled])
+  }, [showShortcutHelp, onShowHelp, disabled])
 
   // 这个组件不渲染任何UI，只处理快捷键
   return null
