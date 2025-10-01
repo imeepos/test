@@ -148,8 +148,17 @@ export class GatewayServer {
     this.app.use(RequestEnhancer.enhance())
 
     // 认证中间件（排除健康检查等公共端点）
+    // 注意：因为中间件挂载在 /api 路由上，所以 req.path 不包含 /api 前缀
     this.app.use('/api', AuthMiddleware.authenticate(this.config.auth, {
-      exclude: ['/api/health', '/api/status']
+      exclude: [
+        '/health',
+        '/status',
+        '/users/auth/login',
+        '/users/auth/register',
+        '/users/auth/refresh',
+        '/users/auth/request-reset',
+        '/users/auth/reset-password'
+      ]
     }))
 
     // 请求验证中间件
