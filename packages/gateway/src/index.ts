@@ -1,10 +1,10 @@
 // Gateway服务包的主要导出
-export { GatewayServer } from './server/GatewayServer'
-export { WebSocketManager } from './websocket/WebSocketManager'
-export { AuthMiddleware } from './middleware/AuthMiddleware'
-export { ValidationMiddleware } from './middleware/ValidationMiddleware'
-export { RateLimitMiddleware } from './middleware/RateLimitMiddleware'
-export { ErrorHandler } from './middleware/ErrorHandler'
+export { GatewayServer } from './server/GatewayServer.js'
+export { WebSocketManager } from './websocket/WebSocketManager.js'
+export { AuthMiddleware } from './middleware/AuthMiddleware.js'
+export { ValidationMiddleware } from './middleware/ValidationMiddleware.js'
+export { RateLimitMiddleware } from './middleware/RateLimitMiddleware.js'
+export { ErrorHandler } from './middleware/ErrorHandler.js'
 
 // 路由器导出 - 新的模块化架构
 export {
@@ -14,18 +14,18 @@ export {
   AIRouter,
   ProjectRouter,
   UserRouter
-} from './router'
+} from './router/index.js'
 
 export type {
   RouterDependencies,
   RouteHandler,
   RouteMap
-} from './router'
+} from './router/index.js'
 
 // 类型导出
-export type { GatewayConfig } from './types/GatewayConfig'
-export type { ApiRequest, ApiResponse } from './types/ApiTypes'
-export type { WebSocketEvent } from './types/WebSocketTypes'
+export type { GatewayConfig } from './types/GatewayConfig.js'
+export type { ApiRequest, ApiResponse } from './types/ApiTypes.js'
+export type { WebSocketEvent } from './types/WebSocketTypes.js'
 
 // 便捷创建函数
 export {
@@ -37,7 +37,7 @@ export {
   startDevelopmentGateway,
   startProductionGateway,
   type GatewayDependencies
-} from './factory/createGateway'
+} from './factory/createGateway.js'
 
 // 集成Store微服务的Gateway工厂函数
 export {
@@ -49,14 +49,14 @@ export {
   startProductionGatewayWithStore,
   startGatewayFromEnvironment,
   type ExtendedGatewayDependencies
-} from './factory/createGatewayWithStore'
+} from './factory/createGatewayWithStore.js'
 
 // Store配置
 export {
   createStoreClientForGateway,
   createAuthenticatedStoreClient,
   getStoreConfigForEnvironment
-} from './config/store'
+} from './config/store.js'
 
 // 常量和配置
-export { DEFAULT_CONFIG } from './config/defaults'
+export { DEFAULT_CONFIG } from './config/defaults.js'

@@ -92,7 +92,7 @@ async function main() {
 }
 
 // 启动应用
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error)
 }
 

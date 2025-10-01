@@ -20,7 +20,7 @@ import {
   validateContentType,
   errorHandler,
   bodyLimitConfig
-} from './api/middleware'
+} from './api/middleware/index.js'
 
 // 加载环境变量
 dotenv.config()
@@ -262,7 +262,7 @@ async function gracefulShutdown(storeService: any, server: http.Server): Promise
 }
 
 // 启动服务器
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   startServer()
 }
 

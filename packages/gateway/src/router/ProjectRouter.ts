@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
+import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
 import {
   ProjectSearchQuery,
   ProjectCreateData,
   ProjectUpdateData,
   QueryOptions
-} from '../types/SpecificTypes'
-import { BaseRouter, RouterDependencies } from './BaseRouter'
+} from '../types/SpecificTypes.js'
+import { BaseRouter, RouterDependencies } from './BaseRouter.js'
 
 /**
  * 项目管理路由器 - 处理项目的CRUD操作和画布状态管理

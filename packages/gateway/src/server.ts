@@ -1,4 +1,4 @@
-import { startGatewayFromEnvironment } from './factory/createGatewayWithStore'
+import { startGatewayFromEnvironment } from './factory/createGatewayWithStore.js'
 
 // 启动Gateway服务器
 async function main() {

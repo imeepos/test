@@ -12,7 +12,7 @@ import type {
   MessageMetadata,
   WebSocketMessage,
   GatewayQueueConfig
-} from '../types/messaging'
+} from '../types/messaging.js'
 import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models'
 
 // 类型别名以兼容现有代码

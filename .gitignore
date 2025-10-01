@@ -4,6 +4,8 @@ dist
 tsconfig.tsbuildinfo
 resources
 
+.claude
+
 # Environment variables
 .env
 .env.local

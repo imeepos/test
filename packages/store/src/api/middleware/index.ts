@@ -157,7 +157,7 @@ export const bodyLimitConfig = {
 /**
  * 错误处理中间件（在路由文件中已定义，这里导出供引用）
  */
-export { errorHandler } from '../BaseController'
+export { errorHandler } from '../BaseController.js'
 
 /**
  * 健康检查中间件 - 绕过认证和限流

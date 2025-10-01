@@ -1,4 +1,4 @@
-import { NodeData, EdgeData, CanvasData, Position } from '../types'
+import { NodeData, EdgeData, CanvasData, Position } from '../types/index.js'
 
 /**
  * 画布API

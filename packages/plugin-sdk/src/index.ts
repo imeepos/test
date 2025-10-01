@@ -2,12 +2,12 @@
 // 为第三方开发者提供完整的插件开发接口
 
 // 导出核心接口
-export * from './types'
-export * from './context'
-export * from './lifecycle'
-export * from './apis'
-export * from './events'
-export * from './utils'
+export * from './types/index.js'
+export * from './context/index.js'
+export * from './lifecycle/index.js'
+export * from './apis/index.js'
+export * from './events/index.js'
+export * from './utils/index.js'
 
 // 导出版本信息
 export const SDK_VERSION = '1.0.0'

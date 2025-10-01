@@ -5,14 +5,14 @@ import helmet from 'helmet'
 import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 
-import type { GatewayConfig } from '../types/GatewayConfig'
-import { ApiRouter } from '../router/ApiRouter'
-import { WebSocketManager } from '../websocket/WebSocketManager'
-import { ErrorHandler } from '../middleware/ErrorHandler'
-import { AuthMiddleware } from '../middleware/AuthMiddleware'
-import { ValidationMiddleware } from '../middleware/ValidationMiddleware'
-import { RequestEnhancer } from '../middleware/RequestEnhancer'
-import { QueueManager } from '../messaging/QueueManager'
+import type { GatewayConfig } from '../types/GatewayConfig.js'
+import { ApiRouter } from '../router/ApiRouter.js'
+import { WebSocketManager } from '../websocket/WebSocketManager.js'
+import { ErrorHandler } from '../middleware/ErrorHandler.js'
+import { AuthMiddleware } from '../middleware/AuthMiddleware.js'
+import { ValidationMiddleware } from '../middleware/ValidationMiddleware.js'
+import { RequestEnhancer } from '../middleware/RequestEnhancer.js'
+import { QueueManager } from '../messaging/QueueManager.js'
 import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,

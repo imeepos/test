@@ -1,4 +1,4 @@
-import { AIRequest, AIResponse, AIOptions } from '../types'
+import { AIRequest, AIResponse, AIOptions } from '../types/index.js'
 
 /**
  * AI服务API

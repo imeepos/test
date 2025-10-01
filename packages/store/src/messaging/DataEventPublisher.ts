@@ -16,7 +16,7 @@ import type {
   EventPublisherConfig,
   EventFilter,
   EventAggregation
-} from '../types/messaging'
+} from '../types/messaging.js'
 
 /**
  * 数据事件发布器 - 发布数据变更事件到消息队列

@@ -6,7 +6,7 @@ import type {
   MessageRouteDefinition,
   IntegrationStats,
   ServiceHealthStatus
-} from '../types/integration'
+} from '../types/integration.js'
 
 /**
  * 服务集成器 - 协调多个服务之间的消息队列通信

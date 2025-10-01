@@ -1,8 +1,8 @@
 import { Router } from 'express'
-import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
-import { BatchGenerateRequest } from '../types/SpecificTypes'
-import { ResponseMapper } from '../adapters/ResponseMapper'
-import { BaseRouter, RouterDependencies } from './BaseRouter'
+import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
+import { BatchGenerateRequest } from '../types/SpecificTypes.js'
+import { ResponseMapper } from '../adapters/ResponseMapper.js'
+import { BaseRouter, RouterDependencies } from './BaseRouter.js'
 import {
   UnifiedAITaskType,
   UnifiedTaskStatus,

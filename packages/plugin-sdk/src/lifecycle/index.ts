@@ -1,4 +1,4 @@
-import { PluginContext } from '../context'
+import { PluginContext } from '../context/index.js'
 
 /**
  * 插件生命周期接口

@@ -1,10 +1,10 @@
-import { CanvasAPI } from '../apis/canvas'
-import { ComponentAPI } from '../apis/component'
-import { AIServiceAPI } from '../apis/ai'
-import { StorageAPI } from '../apis/storage'
-import { UIHelperAPI } from '../apis/ui'
-import { EventSystemAPI } from '../events'
-import { PluginMetadata } from '../types'
+import { CanvasAPI } from '../apis/canvas.js'
+import { ComponentAPI } from '../apis/component.js'
+import { AIServiceAPI } from '../apis/ai.js'
+import { StorageAPI } from '../apis/storage.js'
+import { UIHelperAPI } from '../apis/ui.js'
+import { EventSystemAPI } from '../events/index.js'
+import { PluginMetadata } from '../types/index.js'
 
 /**
  * 插件上下文

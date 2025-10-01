@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
+import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
 import {
   LoginRequest,
   ProfileUpdateRequest,
   RefreshTokenRequest
-} from '../types/SpecificTypes'
-import { BaseRouter, RouterDependencies } from './BaseRouter'
+} from '../types/SpecificTypes.js'
+import { BaseRouter, RouterDependencies } from './BaseRouter.js'
 
 /**
  * 用户管理路由器 - 处理用户认证和资料管理

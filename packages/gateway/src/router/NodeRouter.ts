@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
+import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
 import {
   NodeSearchQuery,
   NodeVersionQuery,
@@ -7,9 +7,9 @@ import {
   NodeUpdateData,
   NodeRollbackRequest,
   QueryOptions
-} from '../types/SpecificTypes'
-import { ResponseMapper } from '../adapters/ResponseMapper'
-import { BaseRouter, RouterDependencies } from './BaseRouter'
+} from '../types/SpecificTypes.js'
+import { ResponseMapper } from '../adapters/ResponseMapper.js'
+import { BaseRouter, RouterDependencies } from './BaseRouter.js'
 import type { ImportanceLevel } from '@sker/models'
 
 /**

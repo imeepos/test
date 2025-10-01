@@ -14,6 +14,13 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
+    "typeRoots": [],
+    "rootDir": "./",
+    "paths": {
+      "@sker/*": [
+        "packages/*/src/index.ts"
+      ]
+    },
     "skipLibCheck": true,
   }
 }

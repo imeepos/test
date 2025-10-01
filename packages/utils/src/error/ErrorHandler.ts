@@ -7,7 +7,7 @@ import type {
   ErrorHandlingResult,
   ErrorMetrics,
   ErrorRecoveryStrategy
-} from './types'
+} from './types.js'
 
 /**
  * 统一错误处理器 - 处理应用程序中的所有错误

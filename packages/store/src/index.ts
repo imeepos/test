@@ -1,5 +1,5 @@
 // 核心服务
-export { StoreService, storeService } from './services/StoreService'
+export { StoreService, storeService } from './services/StoreService.js'
 
 // HTTP客户端
 export {
@@ -8,8 +8,8 @@ export {
   createStoreClientFromEnv,
   getDefaultStoreClient,
   resetDefaultStoreClient
-} from './client'
-export type { StoreClientConfig } from './client'
+} from './client/index.js'
+export type { StoreClientConfig } from './client/index.js'
 
 // 向后兼容性
 export {
@@ -20,87 +20,25 @@ export {
   isMicroserviceStore,
   isLegacyStore,
   type StoreCreationOptions
-} from './compatibility/LegacyStoreFactory'
+} from './compatibility/LegacyStoreFactory.js'
 
 // 数据库配置和管理
-export { DatabaseManager, databaseManager, defaultDatabaseConfig } from './config/database'
-export type { DatabaseConfig } from './config/database'
+export { DatabaseManager, databaseManager, defaultDatabaseConfig } from './config/database.js'
+export type { DatabaseConfig } from './config/database.js'
 
 // 仓库类
-export { BaseRepository } from './repositories/BaseRepository'
-export { UserRepository } from './repositories/UserRepository'
-export { ProjectRepository } from './repositories/ProjectRepository'
-export { NodeRepository } from './repositories/NodeRepository'
-export { ConnectionRepository } from './repositories/ConnectionRepository'
-export { AITaskRepository } from './repositories/AITaskRepository'
-
-// 模型和类型 - 从外部包导入
-export type {
-  // 用户相关
-  User,
-  UserSettings,
-  UserStats,
-
-  // 项目相关
-  Project,
-  ProjectStatus,
-  CanvasData,
-  ProjectSettings,
-  ProjectStats,
-
-  // 节点相关
-  Node,
-  ImportanceLevel,
-  NodeStatus,
-  Position,
-  Size,
-  NodeMetadata,
-  SemanticType,
-  ProcessingRecord,
-
-  // 连接相关
-  Connection,
-  ConnectionType,
-  ConnectionMetadata,
-
-  // 版本历史
-  NodeVersion,
-  VersionChangeType,
-
-  // AI任务
-  AITask,
-  AITaskType,
-  AITaskStatus,
-  AITaskMetadata,
-
-  // 协作
-  ProjectCollaborator,
-  CollaboratorRole,
-  CollaborationStatus,
-  CollaboratorPermissions,
-
-  // 活动日志
-  ActivityLog,
-  ActivityAction,
-  ActivityTargetType,
-  ActivityDetails,
-
-  // 查询和分页
-  QueryOptions,
-  PaginatedResult,
-
-  // 错误类型
-  DatabaseError,
-  ValidationError,
-  NotFoundError,
-  UnauthorizedError
-} from '@sker/models'
+export { BaseRepository } from './repositories/BaseRepository.js'
+export { UserRepository } from './repositories/UserRepository.js'
+export { ProjectRepository } from './repositories/ProjectRepository.js'
+export { NodeRepository } from './repositories/NodeRepository.js'
+export { ConnectionRepository } from './repositories/ConnectionRepository.js'
+export { AITaskRepository } from './repositories/AITaskRepository.js'
 
 // 迁移工具
-export { MigrationManager } from './migrations/migrate'
+export { MigrationManager } from './migrations/migrate.js'
 
 // 消息和事件
-export { DataEventPublisher, createDataEventPublisher } from './messaging/DataEventPublisher'
+export { DataEventPublisher, createDataEventPublisher } from './messaging/DataEventPublisher.js'
 export type {
   DataEvent,
   DataEventType,
@@ -111,14 +49,14 @@ export type {
   EventPublisherConfig,
   EventFilter,
   EventAggregation
-} from './types/messaging'
+} from './types/messaging.js'
 
 // 工具函数
 export const createStoreService = async (config?: {
   brokerUrl?: string
   databaseConfig?: any
 }) => {
-  const { StoreService } = await import('./services/StoreService')
+  const { StoreService } = await import('./services/StoreService.js')
   const service = new StoreService()
   await service.initialize(config?.brokerUrl)
   return service
@@ -166,25 +104,3 @@ export const validatePassword = (password: string): {
     errors
   }
 }
-
-// 常量 - 从外部包导入
-import {
-  NODE_STATUS,
-  PROJECT_STATUS,
-  CONNECTION_TYPE,
-  AI_TASK_STATUS,
-  AI_TASK_TYPE,
-  SEMANTIC_TYPE,
-  IMPORTANCE_LEVEL
-} from '@sker/models'
-
-export {
-  NODE_STATUS,
-  PROJECT_STATUS,
-  CONNECTION_TYPE,
-  AI_TASK_STATUS,
-  AI_TASK_TYPE,
-  SEMANTIC_TYPE,
-  IMPORTANCE_LEVEL
-}
-

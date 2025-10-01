@@ -1,4 +1,4 @@
-import { NodeData, NodeStyle } from '../types'
+import { NodeData, NodeStyle } from '../types/index.js'
 
 /**
  * 组件API

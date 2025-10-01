@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 import type {
   WebSocketConfig,
   AuthConfig
-} from '../types/GatewayConfig'
+} from '../types/GatewayConfig.js'
 import type {
   WebSocketEvent,
   WebSocketConnection,
@@ -13,8 +13,8 @@ import type {
   AIProgressEvent,
   NodeOperationEvent,
   CanvasStateEvent
-} from '../types/WebSocketTypes'
-import { WebSocketEventType } from '../types/WebSocketTypes'
+} from '../types/WebSocketTypes.js'
+import { WebSocketEventType } from '../types/WebSocketTypes.js'
 
 /**
  * WebSocket管理器 - 处理实时通信和连接管理

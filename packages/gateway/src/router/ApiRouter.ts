@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import type { ApiRequest, ApiResponse } from '../types/ApiTypes'
-import type { RouteHandler, RouteMap } from '../types/SpecificTypes'
-import { BaseRouter, RouterDependencies } from './BaseRouter'
-import { NodeRouter } from './NodeRouter'
-import { AIRouter } from './AIRouter'
-import { ProjectRouter } from './ProjectRouter'
-import { UserRouter } from './UserRouter'
+import type { ApiRequest, ApiResponse } from '../types/ApiTypes.js'
+import type { RouteHandler, RouteMap } from '../types/SpecificTypes.js'
+import { BaseRouter, RouterDependencies } from './BaseRouter.js'
+import { NodeRouter } from './NodeRouter.js'
+import { AIRouter } from './AIRouter.js'
+import { ProjectRouter } from './ProjectRouter.js'
+import { UserRouter } from './UserRouter.js'
 
 /**
  * API路由器 - 管理所有API端点的路由组合器

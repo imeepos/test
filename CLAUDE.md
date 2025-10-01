@@ -34,3 +34,12 @@ pnpm typecheck
 # 代码检查
 pnpm lint
 ```
+
+## 单独运行单个子模块构建时使用
+
+```bash
+pnpm run --filter=@sker/xxx build
+pnpm run --filter=@sker/xxx typecheck
+pnpm run --filter=@sker/xxx lint
+pnpm run --filter=@sker/xxx test
+```
