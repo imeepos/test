@@ -117,7 +117,7 @@ export class QueueManager extends EventEmitter {
             case 'failed':
               await this.handleTaskFailed(taskResult)
               break
-            case 'progress':
+            case 'processing':
               await this.handleTaskProgress(taskResult)
               break
           }
@@ -415,7 +415,7 @@ export class QueueManager extends EventEmitter {
     })
 
     // 发送系统通知（如果是严重错误）
-    if (taskResult.error && taskResult.error.severity === 'critical') {
+    if (taskResult.error && taskResult.error.severity === 'high') {
       await this.publishSystemNotification({
         type: 'critical_task_failure',
         message: `Critical AI task failure: ${taskResult.taskId}`,

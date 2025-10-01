@@ -134,24 +134,21 @@ export class AIRouter extends BaseRouter {
       const taskId = this.generateTaskId()
       const aiTask = {
         taskId,
-        type: 'content_optimization' as AITaskType,
+        type: 'optimize' as AITaskType,
+        inputs: [content],
+        instruction: instruction || '请优化这段内容，使其更清晰、准确和有条理',
+        nodeId: taskId, // 使用taskId作为nodeId
         status: 'queued' as AITaskStatus,
         priority: 'normal' as TaskPriority,
         userId,
         projectId,
-        data: {
-          inputs: [content],
-          instruction: instruction || '请优化这段内容，使其更清晰、准确和有条理',
-          type: 'optimize'
-        },
+        timestamp: new Date(),
         metadata: {
           requestId: req.requestId,
           source: 'gateway_api',
           model: 'gpt-3.5-turbo',
-          retryCount: 0,
-          createdAt: new Date()
-        },
-        timestamp: new Date()
+          retryCount: 0
+        }
       }
 
       // 发布任务到队列
@@ -391,15 +388,12 @@ export class AIRouter extends BaseRouter {
 
       const result = await this.aiEngine!.generateContent({
         prompt,
+        inputs: [prompt],
         model: model || 'gpt-4',
         maxTokens: maxTokens || 2000,
         temperature: temperature || 0.7,
         userId: userId || req.user?.id,
-        projectId,
-        metadata: {
-          requestId: req.requestId,
-          source: 'gateway_api_direct'
-        }
+        projectId
       })
 
       const mappedResult = ResponseMapper.toAIGenerateResponse(result)
@@ -461,13 +455,10 @@ export class AIRouter extends BaseRouter {
       const result = await this.aiEngine!.fuseContent({
         inputs,
         instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
+        fusionType: 'synthesis',
         model: model || 'gpt-4',
         userId: userId || req.user?.id,
-        projectId,
-        metadata: {
-          requestId: req.requestId,
-          source: 'gateway_api_direct'
-        }
+        projectId
       })
 
       const mappedResult = ResponseMapper.toAIGenerateResponse(result)
@@ -514,16 +505,12 @@ export class AIRouter extends BaseRouter {
           const chunkResults = await Promise.allSettled(
             chunk.map(request => this.aiEngine!.generateContent({
               prompt: request.prompt || request.inputs?.join('\n'),
+              inputs: request.inputs || [request.prompt || ''],
               model: request.model || 'gpt-4',
               maxTokens: request.maxTokens || 2000,
               temperature: request.temperature || 0.7,
               userId: userId,
-              projectId,
-              metadata: {
-                requestId: req.requestId,
-                source: 'gateway_api_batch_direct',
-                batchIndex: results.length + chunk.indexOf(request)
-              }
+              projectId
             }))
           )
 
