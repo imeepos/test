@@ -58,9 +58,9 @@ FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS runtime
 
 WORKDIR /app
 
-# 安装curl和pnpm
+# 安装必要的工具：curl, postgresql-client, redis
 ARG PNPM_VERSION
-RUN apk add --no-cache curl && \
+RUN apk add --no-cache curl postgresql-client redis bash && \
     npm install -g pnpm@${PNPM_VERSION}
 
 # 创建非root用户
@@ -83,6 +83,13 @@ COPY --from=builder --chown=store:nodejs /app/packages/config/dist/ ./packages/c
 COPY --from=builder --chown=store:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=store:nodejs /app/packages/store/dist/ ./packages/store/dist/
 
+# 复制迁移文件和入口脚本
+COPY --from=builder --chown=store:nodejs /app/packages/store/src/migrations/ ./packages/store/src/migrations/
+COPY --chown=store:nodejs packages/store/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# 确保脚本可执行
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # 切换到store包目录
 WORKDIR /app/packages/store
 
@@ -95,6 +102,9 @@ EXPOSE 3001
 # 健康检查：尝试HTTP请求到应用
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
+
+# 使用入口脚本
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # 运行应用
 CMD ["node", "dist/server.js"]

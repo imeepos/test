@@ -2,9 +2,44 @@ import { databaseManager } from '../config/database.js'
 import { storeService } from '../services/StoreService.js'
 
 /**
+ * 种子数据配置选项
+ */
+export interface SeedOptions {
+  skipIfExists?: boolean // 如果数据已存在则跳过
+  clearBeforeSeed?: boolean // 在种子前清理数据
+  verbose?: boolean // 详细输出
+  usersOnly?: boolean // 仅创建用户
+  projectsOnly?: boolean // 仅创建项目
+  minimalData?: boolean // 最小化数据集
+}
+
+/**
  * 数据库种子数据管理器
  */
 export class SeedManager {
+  private options: SeedOptions
+
+  constructor(options: SeedOptions = {}) {
+    this.options = {
+      skipIfExists: true,
+      clearBeforeSeed: false,
+      verbose: false,
+      usersOnly: false,
+      projectsOnly: false,
+      minimalData: false,
+      ...options
+    }
+  }
+
+  /**
+   * 日志输出
+   */
+  private log(message: string, force = false): void {
+    if (this.options.verbose || force) {
+      console.log(message)
+    }
+  }
+
   /**
    * 创建示例用户
    */
@@ -12,12 +47,12 @@ export class SeedManager {
     try {
       // 检查是否已有用户
       const existingUsers = await storeService.users.count()
-      if (existingUsers > 0) {
-        console.log('用户数据已存在，跳过创建示例用户')
+      if (existingUsers > 0 && this.options.skipIfExists) {
+        this.log('ℹ️ 用户数据已存在，跳过创建示例用户', true)
         return
       }
 
-      console.log('创建示例用户...')
+      this.log('👤 创建示例用户...', true)
 
       // 创建管理员用户
       const adminUser = await storeService.users.createUser({
@@ -63,8 +98,14 @@ export class SeedManager {
         }
       })
 
-      console.log(`✅ 创建用户成功: ${adminUser.username}, ${testUser.username}`)
+      this.log(`✅ 创建用户成功: ${adminUser.username}, ${testUser.username}`, true)
+
+      return { adminUser, testUser }
     } catch (error) {
+      if ((error as any).code === 'EMAIL_ALREADY_EXISTS' || (error as any).code === 'USERNAME_ALREADY_EXISTS') {
+        this.log('ℹ️ 用户已存在，跳过创建', true)
+        return undefined
+      }
       console.error('❌ 创建示例用户失败:', error)
       throw error
     }
@@ -73,16 +114,22 @@ export class SeedManager {
   /**
    * 创建示例项目
    */
-  private async createDemoProjects(): Promise<void> {
+  private async createDemoProjects(userId?: string): Promise<void> {
     try {
       // 获取测试用户
-      const testUser = await storeService.users.findByUsername('testuser')
+      let testUser
+      if (userId) {
+        testUser = await storeService.users.findById(userId)
+      } else {
+        testUser = await storeService.users.findByUsername('testuser')
+      }
+
       if (!testUser) {
-        console.log('未找到测试用户，跳过创建示例项目')
+        this.log('⚠️ 未找到测试用户，跳过创建示例项目', true)
         return
       }
 
-      console.log('创建示例项目...')
+      this.log('📁 创建示例项目...', true)
 
       // 创建示例项目1: AI助手开发计划
       const aiProject = await storeService.projects.create({
@@ -152,10 +199,14 @@ export class SeedManager {
         is_archived: false
       })
 
-      console.log(`✅ 创建项目成功: ${aiProject.name}, ${productProject.name}`)
+      this.log(`✅ 创建项目成功: ${aiProject.name}, ${productProject.name}`, true)
 
-      // 为AI项目创建示例节点
-      await this.createDemoNodes(aiProject.id, testUser.id)
+      // 为AI项目创建示例节点（除非是最小化数据）
+      if (!this.options.minimalData) {
+        await this.createDemoNodes(aiProject.id, testUser.id)
+      }
+
+      return { aiProject, productProject }
     } catch (error) {
       console.error('❌ 创建示例项目失败:', error)
       throw error
@@ -167,7 +218,7 @@ export class SeedManager {
    */
   private async createDemoNodes(projectId: string, userId: string): Promise<void> {
     try {
-      console.log('创建示例节点...')
+      this.log('📝 创建示例节点...', true)
 
       // 根节点：项目概述
       const rootNode = await storeService.nodes.create({
@@ -279,7 +330,7 @@ export class SeedManager {
         ai_generated: true
       })
 
-      console.log('✅ 创建节点成功')
+      this.log('✅ 创建节点成功', true)
 
       // 创建节点间的连接
       await this.createDemoConnections(projectId, [rootNode, requirementNode, architectureNode, modelNode])
@@ -294,7 +345,7 @@ export class SeedManager {
    */
   private async createDemoConnections(projectId: string, nodes: any[]): Promise<void> {
     try {
-      console.log('创建示例连接...')
+      this.log('🔗 创建示例连接...', true)
 
       const [rootNode, requirementNode, architectureNode, modelNode] = nodes
 
@@ -347,7 +398,7 @@ export class SeedManager {
         created_by_user: false
       })
 
-      console.log('✅ 创建连接成功')
+      this.log('✅ 创建连接成功', true)
     } catch (error) {
       console.error('❌ 创建示例连接失败:', error)
       throw error
@@ -359,7 +410,7 @@ export class SeedManager {
    */
   private async createDemoAITasks(projectId: string, userId: string): Promise<void> {
     try {
-      console.log('创建示例AI任务...')
+      this.log('🤖 创建示例AI任务...', true)
 
       // 内容生成任务
       await storeService.aiTasks.createTask({
@@ -405,7 +456,7 @@ export class SeedManager {
         }
       })
 
-      console.log('✅ 创建AI任务成功')
+      this.log('✅ 创建AI任务成功', true)
     } catch (error) {
       console.error('❌ 创建示例AI任务失败:', error)
       throw error
@@ -418,25 +469,50 @@ export class SeedManager {
   async seedAll(): Promise<void> {
     try {
       console.log('🌱 开始创建种子数据...')
+      console.log('━'.repeat(50))
 
       // 初始化服务
       await storeService.initialize()
 
-      // 创建示例数据
-      await this.createDemoUsers()
-      await this.createDemoProjects()
-
-      // 获取项目和用户信息创建AI任务
-      const testUser = await storeService.users.findByUsername('testuser')
-      const projects = await storeService.projects.findByUser(testUser!.id, { limit: 1 })
-      if (projects.length > 0) {
-        await this.createDemoAITasks(projects[0].id, testUser!.id)
+      // 清理数据（如果需要）
+      if (this.options.clearBeforeSeed) {
+        this.log('🧹 清理现有数据...', true)
+        await this.clearAll()
       }
 
+      let userId: string | undefined
+
+      // 创建用户
+      if (!this.options.projectsOnly) {
+        const userResult = await this.createDemoUsers()
+        if (userResult) {
+          userId = userResult.testUser.id
+        }
+      }
+
+      // 创建项目
+      if (!this.options.usersOnly) {
+        await this.createDemoProjects(userId)
+
+        // 获取项目和用户信息创建AI任务（仅在非最小化模式）
+        if (!this.options.minimalData) {
+          const testUser = await storeService.users.findByUsername('testuser')
+          if (testUser) {
+            const projects = await storeService.projects.findByUser(testUser.id, { limit: 1 })
+            if (projects.length > 0) {
+              await this.createDemoAITasks(projects[0].id, testUser.id)
+            }
+          }
+        }
+      }
+
+      console.log('━'.repeat(50))
       console.log('🎉 种子数据创建完成!')
     } catch (error) {
       console.error('❌ 种子数据创建失败:', error)
       throw error
+    } finally {
+      await storeService.close()
     }
   }
 
@@ -446,6 +522,7 @@ export class SeedManager {
   async clearAll(): Promise<void> {
     try {
       console.log('🧹 开始清理所有数据...')
+      console.log('━'.repeat(50))
 
       await storeService.initialize()
 
@@ -461,42 +538,118 @@ export class SeedManager {
         'users'
       ]
 
+      let totalDeleted = 0
       for (const table of tables) {
         const result = await databaseManager.query(`DELETE FROM ${table}`)
-        console.log(`清理 ${table}: ${(result as any).rowCount || 0} 条记录`)
+        const rowCount = (result as any).rowCount || 0
+        this.log(`清理 ${table}: ${rowCount} 条记录`, true)
+        totalDeleted += rowCount
       }
 
-      console.log('🎉 数据清理完成!')
+      console.log('━'.repeat(50))
+      console.log(`🎉 数据清理完成! 共删除 ${totalDeleted} 条记录`)
     } catch (error) {
       console.error('❌ 数据清理失败:', error)
       throw error
+    } finally {
+      await storeService.close()
+    }
+  }
+
+  /**
+   * 获取数据统计
+   */
+  async getStats(): Promise<Record<string, number>> {
+    try {
+      await storeService.initialize()
+
+      const tables = [
+        'users',
+        'projects',
+        'nodes',
+        'connections',
+        'ai_tasks',
+        'activity_logs'
+      ]
+
+      const stats: Record<string, number> = {}
+      for (const table of tables) {
+        const result = await databaseManager.query<{ count: string }>(`SELECT COUNT(*) as count FROM ${table}`)
+        stats[table] = parseInt(result[0].count) || 0
+      }
+
+      return stats
+    } finally {
+      await storeService.close()
     }
   }
 }
 
 // 如果直接运行此文件
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const seedManager = new SeedManager()
-
   const command = process.argv[2] || 'seed'
+
+  // 解析选项
+  const options: SeedOptions = {
+    skipIfExists: !process.argv.includes('--force'),
+    clearBeforeSeed: process.argv.includes('--clear'),
+    verbose: process.argv.includes('--verbose') || process.argv.includes('-v'),
+    usersOnly: process.argv.includes('--users-only'),
+    projectsOnly: process.argv.includes('--projects-only'),
+    minimalData: process.argv.includes('--minimal')
+  }
+
+  const seedManager = new SeedManager(options)
 
   switch (command) {
     case 'seed':
       seedManager.seedAll()
         .then(() => process.exit(0))
-        .catch(() => process.exit(1))
+        .catch((error) => {
+          console.error(error)
+          process.exit(1)
+        })
       break
 
     case 'clear':
       seedManager.clearAll()
         .then(() => process.exit(0))
-        .catch(() => process.exit(1))
+        .catch((error) => {
+          console.error(error)
+          process.exit(1)
+        })
+      break
+
+    case 'stats':
+      seedManager.getStats()
+        .then(stats => {
+          console.log('\n📊 数据库统计:')
+          console.log('━'.repeat(50))
+          Object.entries(stats).forEach(([table, count]) => {
+            console.log(`  ${table.padEnd(20)} ${count}`)
+          })
+          console.log('━'.repeat(50) + '\n')
+        })
+        .then(() => process.exit(0))
+        .catch((error) => {
+          console.error(error)
+          process.exit(1)
+        })
       break
 
     default:
       console.log('用法:')
-      console.log('  npm run seed       - 创建种子数据')
-      console.log('  npm run seed clear - 清理所有数据')
+      console.log('  npm run seed              - 创建种子数据')
+      console.log('  npm run seed clear        - 清理所有数据')
+      console.log('  npm run seed stats        - 查看数据统计')
+      console.log('')
+      console.log('选项:')
+      console.log('  --force          - 强制创建（忽略已存在检查）')
+      console.log('  --clear          - 在种子前清理数据')
+      console.log('  --verbose, -v    - 详细输出')
+      console.log('  --users-only     - 仅创建用户')
+      console.log('  --projects-only  - 仅创建项目')
+      console.log('  --minimal        - 最小化数据集')
       process.exit(1)
   }
 }

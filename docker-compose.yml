@@ -121,6 +121,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-ae5d479531684e3081dad2ba4800cf26}
       # 消息队列配置
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
+      # 自动迁移和种子配置
+      - AUTO_MIGRATE=${AUTO_MIGRATE:-true}
+      - AUTO_SEED=${AUTO_SEED:-false}
     ports:
       - "3001:3001"
     depends_on:

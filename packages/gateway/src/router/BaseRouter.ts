@@ -93,8 +93,8 @@ export abstract class BaseRouter {
       jwtSecret,
       {
         expiresIn: '24h',
-        issuer: 'sker-gateway',
-        audience: 'sker-client'
+        issuer: '@sker/gateway',
+        audience: '@sker/studio'
       }
     )
   }
@@ -110,8 +110,8 @@ export abstract class BaseRouter {
       refreshSecret,
       {
         expiresIn: '7d',
-        issuer: 'sker-gateway',
-        audience: 'sker-client'
+        issuer: '@sker/gateway',
+        audience: '@sker/studio'
       }
     )
   }
@@ -124,8 +124,8 @@ export abstract class BaseRouter {
       const refreshSecret = process.env.REFRESH_TOKEN_SECRET || 'fallback-refresh-secret'
 
       const decoded = jwt.verify(refreshToken, refreshSecret, {
-        issuer: 'sker-gateway',
-        audience: 'sker-client'
+        issuer: '@sker/gateway',
+        audience: '@sker/studio'
       }) as RefreshTokenPayload
 
       return decoded
