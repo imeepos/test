@@ -15,6 +15,7 @@ COPY packages/models/package.json ./packages/models/
 COPY packages/config/package.json ./packages/config/
 
 # 安装所有依赖
+#  pnpm install --frozen-lockfile
 RUN pnpm install --frozen-lockfile
 
 # 复制根目录 tsconfig.json
