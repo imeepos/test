@@ -2,7 +2,6 @@
  * Broker微服务启动入口
  */
 
-import { startBrokerFromEnvironment } from './factory/createBrokerWithStore.js'
 import { AIProcessingEngine } from './ai/AIProcessingEngine.js'
 
 // 优雅关闭处理
@@ -42,7 +41,7 @@ async function main() {
     console.log(`🤖 AI引擎配置完成 (模型: ${process.env.AI_DEFAULT_MODEL || 'gpt-3.5-turbo'})`)
     
     // 使用 startBrokerFromEnvironment，它会正确处理环境变量和配置
-    const { startBrokerFromEnvironment } = await import('./factory/createBrokerWithStore')
+    const { startBrokerFromEnvironment } = await import('./factory/createBrokerWithStore.js')
     
     const services = await startBrokerFromEnvironment({ aiEngine })
     console.log('✅ Broker 微服务启动成功!')

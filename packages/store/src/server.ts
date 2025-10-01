@@ -170,7 +170,7 @@ async function startServer() {
 
     // 3. 创建并初始化 Store 服务
     console.log('🏪 Creating store service...')
-    const { StoreService } = await import('./services/StoreService')
+    const { StoreService } = await import('./services/StoreService.js')
     const storeService = new StoreService()
     await storeService.initialize()
     console.log('✅ Store service initialized')

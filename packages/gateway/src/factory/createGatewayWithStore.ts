@@ -21,7 +21,7 @@ export interface ExtendedGatewayDependencies {
 export async function createGatewayWithStore(
   gatewayConfig: Partial<GatewayConfig> = {},
   dependencies?: ExtendedGatewayDependencies
-): Promise<import('../server/GatewayServer').GatewayServer> {
+): Promise<import('../server/GatewayServer.js').GatewayServer> {
   // 创建Store客户端
   const storeClient = createStoreClientForGateway(dependencies?.storeConfig)
 

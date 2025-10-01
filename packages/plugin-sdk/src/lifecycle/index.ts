@@ -180,7 +180,7 @@ export abstract class BasePlugin implements PluginLifecycle {
  * 创建插件装饰器
  * 用于标记和配置插件类
  */
-export function Plugin(metadata: Partial<import('../types').PluginMetadata>) {
+export function Plugin(metadata: Partial<import('../types/index.js').PluginMetadata>) {
   return function <T extends new (...args: any[]) => PluginLifecycle>(constructor: T) {
     // 将元数据附加到构造函数
     ;(constructor as any).__pluginMetadata = metadata
@@ -191,6 +191,6 @@ export function Plugin(metadata: Partial<import('../types').PluginMetadata>) {
 /**
  * 获取插件元数据
  */
-export function getPluginMetadata(constructor: any): Partial<import('../types').PluginMetadata> | undefined {
+export function getPluginMetadata(constructor: any): Partial<import('../types/index.js').PluginMetadata> | undefined {
   return constructor.__pluginMetadata
 }
