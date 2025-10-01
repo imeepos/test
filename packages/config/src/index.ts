@@ -269,16 +269,3 @@ export class ConfigManager {
 
 // 创建单例实例
 export const configManager = new ConfigManager()
-
-// 默认导出
-export default {
-  getConfig,
-  getDefaultDatabaseConfig,
-  isFeatureEnabled,
-  getAIConfig,
-  getRedisConfig,
-  getMessageQueueConfig,
-  getThemeConfig,
-  configManager,
-  ConfigManager
-}

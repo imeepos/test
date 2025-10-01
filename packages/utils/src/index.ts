@@ -22,18 +22,3 @@ export type {
   ErrorSummary,
   MonitorConfig
 } from './monitoring/SystemMonitor'
-
-// 默认导出
-import { ErrorHandler, createErrorHandler, globalErrorHandler } from './error/ErrorHandler'
-import { SystemMonitor, createSystemMonitor, systemMonitor } from './monitoring/SystemMonitor'
-
-const utils = {
-  ErrorHandler,
-  createErrorHandler,
-  globalErrorHandler,
-  SystemMonitor,
-  createSystemMonitor,
-  systemMonitor
-}
-
-export default utils

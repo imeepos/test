@@ -188,13 +188,3 @@ export {
   IMPORTANCE_LEVEL
 }
 
-export default {
-  createStoreService,
-  NODE_STATUS,
-  PROJECT_STATUS,
-  CONNECTION_TYPE,
-  AI_TASK_STATUS,
-  AI_TASK_TYPE,
-  SEMANTIC_TYPE,
-  IMPORTANCE_LEVEL
-}
