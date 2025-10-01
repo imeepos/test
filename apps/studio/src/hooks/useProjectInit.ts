@@ -3,7 +3,7 @@
  * 处理应用启动时的项目加载和初始化逻辑
  */
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useNodeStore } from '@/stores/nodeStore'
 import { useSyncStore } from '@/stores/syncStore'
@@ -13,9 +13,10 @@ import { validateAPIConfig, logAPIConfig } from '@/config/api'
  * 项目初始化Hook
  */
 export function useProjectInit() {
-  const { currentProject, loadProjects } = useCanvasStore()
+  const { currentProject, loadProjects, isLoadingProject, projectError } = useCanvasStore()
   const { syncFromBackend, setCurrentProject } = useNodeStore()
   const { checkOnlineStatus } = useSyncStore()
+  const [isInitialized, setIsInitialized] = useState(false)
 
   /**
    * 应用启动时的初始化逻辑
@@ -60,6 +61,7 @@ export function useProjectInit() {
       }
 
       console.log('✅ Studio应用初始化完成')
+      setIsInitialized(true)
     }
 
     initializeApp()
@@ -123,7 +125,9 @@ export function useProjectInit() {
   }, [checkOnlineStatus])
 
   return {
-    isReady: currentProject !== null,
+    isReady: isInitialized,
+    isLoading: !isInitialized || isLoadingProject,
+    error: projectError,
     currentProject,
   }
 }

@@ -1,13 +1,19 @@
 import React from 'react'
 import { CanvasPage } from '@/pages/CanvasPage'
 import { ToastContainer } from '@/components/ui'
+import { ProjectSelector } from '@/components/project/ProjectSelector'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { useUIStore, useAIStore } from '@/stores'
+import { useUIStore, useAIStore, useCanvasStore } from '@/stores'
 import { initializeServices, cleanupServices } from '@/services'
+import { useProjectInit } from '@/hooks/useProjectInit'
 
 function App() {
   const { theme, setTheme } = useUIStore()
   const { initializeWebSocket } = useAIStore()
+  const { currentProject } = useCanvasStore()
+
+  // 初始化项目系统
+  const { isReady, isLoading, error: projectError } = useProjectInit()
 
   // 初始化主题
   React.useEffect(() => {
@@ -103,13 +109,64 @@ function App() {
     }
   }, [])
 
+  // 显示项目初始化错误
+  if (projectError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-canvas-bg">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">项目初始化失败</div>
+          <div className="text-sidebar-text-muted">{projectError}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 显示项目选择器(如果没有当前项目)
+  if (isReady && !currentProject) {
+    return (
+      <ErrorBoundary
+        onError={(error: Error, errorInfo: React.ErrorInfo) => {
+          console.error('应用错误:', error)
+          console.error('错误信息:', errorInfo)
+          if (!import.meta.env.DEV) {
+            // 例如: sendErrorToMonitoring(error, errorInfo)
+          }
+        }}
+      >
+        <div className="App">
+          <ProjectSelector />
+          <ToastContainer />
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  // 显示加载状态
+  if (isLoading || !isReady) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-canvas-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <div className="text-sidebar-text">正在初始化项目系统...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // 显示主应用(有当前项目)
   return (
     <ErrorBoundary
       onError={(error: Error, errorInfo: React.ErrorInfo) => {
         // 记录错误到控制台
         console.error('应用错误:', error)
         console.error('错误信息:', errorInfo)
-        
+
         // 在生产环境中，这里可以发送错误到监控服务
         if (!import.meta.env.DEV) {
           // 例如: sendErrorToMonitoring(error, errorInfo)

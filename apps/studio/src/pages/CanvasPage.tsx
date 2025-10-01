@@ -4,44 +4,58 @@ import { Canvas, CanvasControls } from '@/components/canvas'
 import { Sidebar } from '@/components/sidebar'
 import { ToastContainer } from '@/components/ui'
 import { useCanvasStore, useNodeStore, useUIStore, useAIStore } from '@/stores'
+import { useSyncStore } from '@/stores/syncStore'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { nodeService } from '@/services'
 import type { Position } from '@/types'
 
 const CanvasPage: React.FC = () => {
   const { sidebarCollapsed, sidebarWidth, addToast } = useUIStore()
-  const { addNode, getNode, getNodes } = useNodeStore()
-  const { updateStats, selectedNodeIds, selectAll } = useCanvasStore()
+  const { addNode, getNode, getNodes, createNodeWithSync, setCurrentProject } = useNodeStore()
+  const { updateStats, selectedNodeIds, selectAll, currentProject } = useCanvasStore()
   const { startProcessing, connectionStatus } = useAIStore()
+  const { status: syncStatus, lastSavedAt } = useSyncStore()
+
+  // 启用自动保存(30秒间隔，3秒防抖)
+  useAutoSave({
+    enabled: !!currentProject,
+    interval: 30000,
+    debounceDelay: 3000,
+  })
+
+  // 同步当前项目ID到NodeStore
+  React.useEffect(() => {
+    if (currentProject?.id) {
+      setCurrentProject(currentProject.id)
+    }
+  }, [currentProject?.id, setCurrentProject])
 
   // 处理画布双击创建节点
   const handleCanvasDoubleClick = React.useCallback(
     async (position: Position) => {
       console.log('CanvasPage: 处理画布双击创建节点, 位置:', position)
-      
+
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '创建失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        return
+      }
+
       try {
-        // 使用nodeService创建空节点
-        const newNode = await nodeService.createNode({
-          position,
+        // 使用后端同步方法创建节点
+        const newNode = await createNodeWithSync({
+          project_id: currentProject.id,
           content: '请输入内容或描述你的想法...',
           importance: 3,
-          useAI: false, // 双击创建空节点，不使用AI
+          position,
+          tags: [],
         })
 
-        console.log('CanvasPage: nodeService创建节点成功:', newNode)
-
-        // 添加到store
-        const nodeId = addNode({
-          content: newNode.content,
-          title: newNode.title,
-          importance: newNode.importance,
-          confidence: newNode.confidence,
-          status: newNode.status,
-          tags: newNode.tags,
-          position: newNode.position,
-          connections: newNode.connections,
-          version: newNode.version,
-          metadata: newNode.metadata,
-        })
+        console.log('CanvasPage: 创建节点成功:', newNode)
 
         // 显示创建成功提示
         addToast({
@@ -50,8 +64,6 @@ const CanvasPage: React.FC = () => {
           message: '双击节点开始编辑内容',
           duration: 3000,
         })
-
-        console.log('CanvasPage: 新建节点:', nodeId, '位置:', position)
       } catch (error) {
         console.error('CanvasPage: 创建节点失败:', error)
         addToast({
@@ -62,7 +74,7 @@ const CanvasPage: React.FC = () => {
         })
       }
     },
-    [addNode, addToast]
+    [currentProject?.id, createNodeWithSync, addToast]
   )
 
   // 处理节点双击编辑
@@ -77,6 +89,16 @@ const CanvasPage: React.FC = () => {
   // 处理拖拽扩展
   const handleDragExpand = React.useCallback(
     async (sourceNodeId: string, position: Position) => {
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '扩展失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        return
+      }
+
       try {
         // 获取源节点
         const sourceNode = getNode(sourceNodeId)
@@ -96,20 +118,18 @@ const CanvasPage: React.FC = () => {
           context: `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`,
         })
 
-        // 使用nodeService创建扩展节点
+        // 使用nodeService创建扩展节点(本地AI生成)
         const newNode = await nodeService.dragExpandGenerate(sourceNode, position)
 
-        // 添加到store
-        const nodeId = addNode({
+        // 使用后端同步方法保存
+        await createNodeWithSync({
+          project_id: currentProject.id,
           content: newNode.content,
           title: newNode.title,
           importance: newNode.importance,
-          confidence: newNode.confidence,
-          status: newNode.status,
-          tags: newNode.tags,
           position: newNode.position,
-          connections: newNode.connections,
-          version: newNode.version,
+          tags: newNode.tags,
+          parent_id: sourceNodeId,
           metadata: newNode.metadata,
         })
 
@@ -117,27 +137,37 @@ const CanvasPage: React.FC = () => {
         addToast({
           type: 'success',
           title: '扩展节点已创建',
-          message: connectionStatus === 'connected' ? 'AI正在生成内容...' : '已创建空白扩展节点',
+          message: connectionStatus === 'connected' ? 'AI正在生成内容...' : '已创建扩展节点',
           duration: 3000,
         })
 
-        console.log('拖拽扩展创建节点:', nodeId)
+        console.log('拖拽扩展创建节点成功')
       } catch (error) {
         console.error('拖拽扩展失败:', error)
         addToast({
           type: 'error',
           title: '扩展失败',
-          message: '请稍后重试',
+          message: error instanceof Error ? error.message : '请稍后重试',
           duration: 3000,
         })
       }
     },
-    [getNode, addNode, addToast, startProcessing, connectionStatus]
+    [currentProject?.id, getNode, createNodeWithSync, addToast, startProcessing, connectionStatus]
   )
 
   // 处理多输入融合
   const handleFusionCreate = React.useCallback(
     async (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => {
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '融合失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        return
+      }
+
       try {
         if (selectedNodeIds.length < 2) {
           addToast({
@@ -182,20 +212,17 @@ const CanvasPage: React.FC = () => {
           duration: 3000,
         })
 
-        // 使用nodeService创建融合节点
+        // 使用nodeService创建融合节点(本地AI生成)
         const newNode = await nodeService.fusionGenerate(inputNodes, fusionType, position)
 
-        // 添加到store
-        const nodeId = addNode({
+        // 使用后端同步方法保存
+        await createNodeWithSync({
+          project_id: currentProject.id,
           content: newNode.content,
           title: newNode.title,
           importance: newNode.importance,
-          confidence: newNode.confidence,
-          status: newNode.status,
-          tags: newNode.tags,
           position: newNode.position,
-          connections: newNode.connections,
-          version: newNode.version,
+          tags: newNode.tags,
           metadata: newNode.metadata,
         })
 
@@ -208,7 +235,7 @@ const CanvasPage: React.FC = () => {
           duration: 4000,
         })
 
-        console.log('融合节点创建:', nodeId, '类型:', fusionType, '源节点:', selectedNodeIds)
+        console.log('融合节点创建成功, 类型:', fusionType, '源节点:', selectedNodeIds)
       } catch (error) {
         console.error('融合创建失败:', error)
         addToast({
@@ -219,7 +246,7 @@ const CanvasPage: React.FC = () => {
         })
       }
     },
-    [getNode, addNode, addToast, startProcessing]
+    [currentProject?.id, getNode, createNodeWithSync, addToast, startProcessing]
   )
 
   // 计算主内容区域的样式
@@ -573,6 +600,45 @@ const CanvasPage: React.FC = () => {
             <li>• 悬停版本信息查看历史</li>
           </ul>
         </motion.div>
+
+        {/* 同步状态指示器 */}
+        {currentProject && (
+          <motion.div
+            className="absolute top-4 right-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg px-3 py-2 text-xs"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            <div className="flex items-center gap-2">
+              {syncStatus === 'saving' && (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
+                  <span className="text-sidebar-text">保存中...</span>
+                </>
+              )}
+              {syncStatus === 'saved' && (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-sidebar-text-muted">
+                    已保存 {lastSavedAt && `(${new Date(lastSavedAt).toLocaleTimeString()})`}
+                  </span>
+                </>
+              )}
+              {syncStatus === 'error' && (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                  <span className="text-red-500">保存失败</span>
+                </>
+              )}
+              {syncStatus === 'idle' && (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-gray-400"></div>
+                  <span className="text-sidebar-text-muted">就绪</span>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
       </motion.main>
 
       {/* Toast 通知容器 */}
