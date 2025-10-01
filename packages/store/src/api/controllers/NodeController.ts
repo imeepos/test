@@ -52,6 +52,38 @@ export class NodeController extends BaseController {
   })
 
   /**
+   * 获取节点分页列表
+   * GET /api/v1/nodes/paginated
+   */
+  getNodesPaginated = this.asyncHandler(async (req: Request, res: Response) => {
+    const { page, limit, offset, sort, order } = this.parseQueryOptions(req)
+    const filters: any = {}
+
+    // 解析过滤条件
+    if (req.query.filters) {
+      const queryFilters = req.query.filters as any
+      if (queryFilters.project_id) filters.project_id = queryFilters.project_id
+      if (queryFilters.user_id) filters.user_id = queryFilters.user_id
+      if (queryFilters.type) filters.type = queryFilters.type
+      if (queryFilters.status) filters.status = queryFilters.status
+    }
+
+    // 构建查询选项
+    const options = {
+      limit,
+      offset,
+      orderBy: sort || 'updated_at',
+      orderDirection: order || 'DESC',
+      filters
+    }
+
+    // 使用 findWithPagination 方法
+    const result = await this.nodeRepo.findWithPagination(options)
+
+    this.success(res, result.data, result.pagination)
+  })
+
+  /**
    * 根据ID获取节点
    * GET /api/v1/nodes/:id
    */

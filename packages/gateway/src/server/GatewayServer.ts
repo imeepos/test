@@ -148,8 +148,8 @@ export class GatewayServer {
     this.app.use(RequestEnhancer.enhance())
 
     // 认证中间件（排除健康检查等公共端点）
-    // 注意：因为中间件挂载在 /api 路由上，所以 req.path 不包含 /api 前缀
-    this.app.use('/api', AuthMiddleware.authenticate(this.config.auth, {
+    // 支持 /api 和 /api/v1 两种路径
+    const authMiddleware = AuthMiddleware.authenticate(this.config.auth, {
       exclude: [
         '/health',
         '/status',
@@ -159,10 +159,14 @@ export class GatewayServer {
         '/users/auth/request-reset',
         '/users/auth/reset-password'
       ]
-    }))
+    })
+    this.app.use('/api', authMiddleware)
+    this.app.use('/api/v1', authMiddleware)
 
     // 请求验证中间件
-    this.app.use('/api', ValidationMiddleware.validate())
+    const validationMiddleware = ValidationMiddleware.validate()
+    this.app.use('/api', validationMiddleware)
+    this.app.use('/api/v1', validationMiddleware)
   }
 
   /**
@@ -180,8 +184,9 @@ export class GatewayServer {
       })
     })
 
-    // API路由
+    // API路由 - 同时支持 /api 和 /api/v1 两种路径
     this.app.use('/api', this.apiRouter.getRouter())
+    this.app.use('/api/v1', this.apiRouter.getRouter())
 
     // 静态文件服务（如果需要）
     this.app.use('/static', express.static('public'))

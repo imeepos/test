@@ -6,6 +6,7 @@ import { NodeRouter } from './NodeRouter.js'
 import { AIRouter } from './AIRouter.js'
 import { ProjectRouter } from './ProjectRouter.js'
 import { UserRouter } from './UserRouter.js'
+import { ConnectionRouter } from './ConnectionRouter.js'
 
 /**
  * API路由器 - 管理所有API端点的路由组合器
@@ -16,6 +17,7 @@ export class ApiRouter extends BaseRouter {
   private aiRouter: AIRouter
   private projectRouter: ProjectRouter
   private userRouter: UserRouter
+  private connectionRouter: ConnectionRouter
 
   constructor(dependencies?: RouterDependencies) {
     super(dependencies)
@@ -25,6 +27,7 @@ export class ApiRouter extends BaseRouter {
     this.aiRouter = new AIRouter(dependencies)
     this.projectRouter = new ProjectRouter(dependencies)
     this.userRouter = new UserRouter(dependencies)
+    this.connectionRouter = new ConnectionRouter(dependencies)
 
     this.setupRoutes()
   }
@@ -41,6 +44,9 @@ export class ApiRouter extends BaseRouter {
 
     // 用户管理路由
     this.router.use('/users', this.userRouter.getRouter())
+
+    // 连接管理路由
+    this.router.use('/connections', this.connectionRouter.getRouter())
 
     // 根路由健康检查
     this.router.get('/', this.healthCheck.bind(this))
@@ -108,6 +114,11 @@ export class ApiRouter extends BaseRouter {
             base: '/api/users',
             description: '用户管理 - 认证和资料管理',
             methods: ['GET', 'POST', 'PUT']
+          },
+          connections: {
+            base: '/api/connections',
+            description: '连接管理 - 节点连接的CRUD操作和查询',
+            methods: ['GET', 'POST', 'PUT', 'DELETE']
           }
         },
         features: [
@@ -169,6 +180,10 @@ export class ApiRouter extends BaseRouter {
     return this.userRouter
   }
 
+  getConnectionRouter(): ConnectionRouter {
+    return this.connectionRouter
+  }
+
   /**
    * 更新依赖注入
    */
@@ -183,6 +198,7 @@ export class ApiRouter extends BaseRouter {
     this.aiRouter = new AIRouter(dependencies)
     this.projectRouter = new ProjectRouter(dependencies)
     this.userRouter = new UserRouter(dependencies)
+    this.connectionRouter = new ConnectionRouter(dependencies)
 
     // 重新设置路由
     this.router = Router()
@@ -213,9 +229,9 @@ export class ApiRouter extends BaseRouter {
     subRouters: string[]
   } {
     return {
-      totalRoutes: this.routes.size + 4, // 4个子路由器
+      totalRoutes: this.routes.size + 5, // 5个子路由器
       customRoutes: this.routes.size,
-      subRouters: ['nodes', 'ai', 'projects', 'users']
+      subRouters: ['nodes', 'ai', 'projects', 'users', 'connections']
     }
   }
 }

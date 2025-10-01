@@ -203,7 +203,8 @@ export class APIClient {
    */
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.http.get<APIResponse<T>>(url, config)
-    return response.data.data as T
+    // 确保返回有效数据，避免 undefined 或 null
+    return (response.data.data ?? null) as T
   }
 
   /**

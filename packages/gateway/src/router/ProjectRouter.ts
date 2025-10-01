@@ -33,6 +33,9 @@ export class ProjectRouter extends BaseRouter {
     // 获取项目列表
     this.router.get('/', this.getProjects.bind(this))
 
+    // 更新项目最后访问时间
+    this.router.put('/:id/last-accessed', this.updateLastAccessed.bind(this))
+
     // 保存画布状态
     this.router.post('/:id/canvas-state', this.saveCanvasState.bind(this))
 
@@ -433,8 +436,8 @@ export class ProjectRouter extends BaseRouter {
       } else {
         // 分页查询
         const paginatedResult = await this.storeClient!.projects.findWithPagination(options)
-        results = paginatedResult.items
-        totalCount = paginatedResult.total
+        results = paginatedResult.data
+        totalCount = paginatedResult.pagination.total
       }
 
       // 计算分页信息
@@ -562,7 +565,7 @@ export class ProjectRouter extends BaseRouter {
 
       res.success({
         saved_at: updatedProject.updated_at,
-        version: updatedProject.updated_at.getTime() // 简单版本号
+        version: new Date(updatedProject.updated_at).getTime() // 简单版本号
       }, 'Canvas state saved successfully')
 
     } catch (error) {
@@ -627,6 +630,38 @@ export class ProjectRouter extends BaseRouter {
       res.error({
         code: 'GET_CANVAS_ERROR',
         message: error instanceof Error ? error.message : 'Failed to get canvas state',
+        timestamp: new Date(),
+        requestId: req.requestId
+      })
+    }
+  }
+
+  private async updateLastAccessed(req: ApiRequest, res: ApiResponse): Promise<void> {
+    try {
+      if (!this.checkStoreService(req, res)) return
+
+      const { id } = req.params
+
+      if (!id) {
+        res.error({
+          code: 'MISSING_PROJECT_ID',
+          message: '缺少必需的项目ID参数',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
+      // 更新最后访问时间
+      await this.storeClient!.projects.updateLastAccessed(id)
+
+      res.success({ updated_at: new Date() }, 'Last accessed time updated successfully')
+
+    } catch (error) {
+      console.error('更新项目访问时间失败:', error)
+      res.error({
+        code: 'UPDATE_LAST_ACCESSED_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to update last accessed time',
         timestamp: new Date(),
         requestId: req.requestId
       })

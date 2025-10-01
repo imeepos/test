@@ -83,7 +83,9 @@ class NodeAPIService {
     const params = new URLSearchParams({ project_id: projectId })
     const url = `${API_ENDPOINTS.nodes.list}?${params.toString()}`
 
-    const backendNodes = await apiClient.get<BackendNode[]>(url)
+    const response = await apiClient.get<{ items: BackendNode[], pagination: any }>(url)
+    // Gateway 返回的是 { items: [...], pagination: {...} } 格式
+    const backendNodes = response?.items || []
     return backendNodes.map((node) => NodeDataConverter.fromBackend(node))
   }
 

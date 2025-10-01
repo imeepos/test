@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/server.ts', 'src/cli-migrate.ts'],
+  entry: ['src/index.ts', 'src/server.ts', 'src/cli-migrate.ts', 'src/migrations/seed.ts'],
   format: ['esm'],
   dts: true,
   clean: true,

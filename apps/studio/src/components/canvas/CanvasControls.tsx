@@ -94,7 +94,7 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   }
 
   // 格式化缩放显示
-  const zoomPercentage = Math.round(viewport.zoom * 100)
+  const zoomPercentage = Math.round((viewport?.zoom ?? 1) * 100)
 
   return (
     <motion.div
@@ -114,8 +114,8 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           size="sm"
           icon={ZoomIn}
           onClick={handleZoomIn}
-          disabled={viewport.zoom >= 2}
-          className={`h-8 w-8 p-0 ${viewport.zoom >= 2 ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={(viewport?.zoom ?? 1) >= 2}
+          className={`h-8 w-8 p-0 ${(viewport?.zoom ?? 1) >= 2 ? 'opacity-40 cursor-not-allowed' : ''}`}
           title="放大 (Ctrl + +)"
           aria-label="放大画布"
         />
@@ -129,8 +129,8 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           size="sm"
           icon={ZoomOut}
           onClick={handleZoomOut}
-          disabled={viewport.zoom <= 0.1}
-          className={`h-8 w-8 p-0 ${viewport.zoom <= 0.1 ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={(viewport?.zoom ?? 1) <= 0.1}
+          className={`h-8 w-8 p-0 ${(viewport?.zoom ?? 1) <= 0.1 ? 'opacity-40 cursor-not-allowed' : ''}`}
           title="缩小 (Ctrl + -)"
           aria-label="缩小画布"
         />

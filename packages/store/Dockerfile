@@ -84,8 +84,8 @@ COPY --from=builder --chown=store:nodejs /app/packages/config/dist/ ./packages/c
 COPY --from=builder --chown=store:nodejs /app/packages/models/dist/ ./packages/models/dist/
 COPY --from=builder --chown=store:nodejs /app/packages/store/dist/ ./packages/store/dist/
 
-# 复制迁移文件
-COPY --from=builder --chown=store:nodejs /app/packages/store/src/migrations/ ./packages/store/src/migrations/
+# 复制迁移源文件（用于开发/调试）
+COPY --from=builder --chown=store:nodejs /app/packages/store/src/migrations/*.sql ./packages/store/dist/migrations/
 
 # 切换到store包目录
 WORKDIR /app/packages/store

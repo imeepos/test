@@ -1,10 +1,14 @@
 import { readFileSync, readdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { createHash } from 'crypto'
 import { databaseManager } from '../config/database.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// 迁移文件目录：在编译后的代码中，需要明确指向 migrations 子目录
+const migrationsDir = join(__dirname, 'migrations')
 
 /**
  * 迁移记录
@@ -38,8 +42,7 @@ export class MigrationManager {
    * 计算文件校验和
    */
   private calculateChecksum(content: string): string {
-    const crypto = require('crypto')
-    return crypto.createHash('sha256').update(content).digest('hex')
+    return createHash('sha256').update(content).digest('hex')
   }
 
   /**
@@ -47,7 +50,7 @@ export class MigrationManager {
    */
   private discoverMigrations(): string[] {
     try {
-      const files = readdirSync(__dirname)
+      const files = readdirSync(migrationsDir)
       return files
         .filter(f => f.endsWith('.sql'))
         .sort() // 按文件名排序
@@ -99,7 +102,7 @@ export class MigrationManager {
    * 执行单个迁移文件
    */
   private async executeMigration(filename: string): Promise<void> {
-    const filePath = join(__dirname, filename)
+    const filePath = join(migrationsDir, filename)
     const sql = readFileSync(filePath, 'utf-8')
     const checksum = this.calculateChecksum(sql)
 

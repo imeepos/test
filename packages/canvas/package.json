@@ -20,6 +20,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "clean": "rimraf dist"
   },

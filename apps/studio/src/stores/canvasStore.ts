@@ -178,11 +178,13 @@ export const useCanvasStore = create<CanvasStoreState>()(
 
           try {
             const projects = await projectService.getProjects({ userId })
-            set({ projects, isLoadingProject: false })
-            console.log(`✅ 加载了 ${projects.length} 个项目`)
+            // 确保 projects 是数组，防止 map 报错
+            const projectList = Array.isArray(projects) ? projects : []
+            set({ projects: projectList, isLoadingProject: false })
+            console.log(`✅ 加载了 ${projectList.length} 个项目`)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '加载项目失败'
-            set({ projectError: errorMessage, isLoadingProject: false })
+            set({ projectError: errorMessage, isLoadingProject: false, projects: [] })
             console.error('❌ 加载项目失败:', error)
             throw error
           }
@@ -304,6 +306,7 @@ export const useCanvasStore = create<CanvasStoreState>()(
       {
         name: 'canvas-storage',
         partialize: (state) => ({
+          viewport: state.viewport,
           viewMode: state.viewMode,
           searchQuery: state.searchQuery,
         }),

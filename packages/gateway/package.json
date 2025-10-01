@@ -20,6 +20,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "clean": "rimraf dist",
     "start": "node dist/server.cjs.js",

@@ -39,67 +39,73 @@ export function createApiRouter(): Router {
   router.get('/users/active', userController.getActiveUsers)
 
   // ===== 项目管理路由 =====
+  // 注意：特殊路径必须在 :id 参数路由之前定义
   router.get('/projects', projectController.getProjects)
-  router.get('/projects/:id', projectController.getProjectById)
-  router.post('/projects', projectController.createProject)
-  router.put('/projects/:id', projectController.updateProject)
-  router.delete('/projects/:id', projectController.deleteProject)
-
-  // 项目查询
+  router.get('/projects/paginated', projectController.getProjects) // 分页查询
   router.get('/projects/by-user/:userId', projectController.getProjectsByUser)
   router.get('/projects/by-status/:status', projectController.getProjectsByStatus)
   router.get('/projects/active', projectController.getActiveProjects)
   router.get('/projects/archived', projectController.getArchivedProjects)
 
-  // 项目操作
+  // 项目统计和查询（特殊路径）
+  router.get('/projects/users/:userId/stats', projectController.getUserProjectStats)
+  router.get('/projects/recent/:userId', projectController.getRecentProjects)
+  router.get('/projects/popular/:userId', projectController.getPopularProjects)
+  router.delete('/projects/users/:userId/cleanup-archived', projectController.cleanupOldArchived)
+
+  // 通用 CRUD - 必须在所有特殊路径之后
+  router.get('/projects/:id', projectController.getProjectById)
+  router.post('/projects', projectController.createProject)
+  router.put('/projects/:id', projectController.updateProject)
+  router.delete('/projects/:id', projectController.deleteProject)
+
+  // 项目操作（带 :id 参数）
   router.put('/projects/:id/last-accessed', projectController.updateLastAccessed)
   router.put('/projects/:id/archive', projectController.archiveProject)
   router.put('/projects/:id/unarchive', projectController.unarchiveProject)
 
-  // 项目统计和分析
+  // 项目统计和分析（带 :id 参数）
   router.get('/projects/:id/stats', projectController.getProjectStats)
-  router.get('/projects/users/:userId/stats', projectController.getUserProjectStats)
-  router.get('/projects/recent/:userId', projectController.getRecentProjects)
-  router.get('/projects/popular/:userId', projectController.getPopularProjects)
-
-  // 项目权限和协作
   router.get('/projects/:id/access/:userId', projectController.checkAccess)
   router.get('/projects/:id/collaborators/count', projectController.getCollaboratorCount)
-
-  // 项目维护
   router.get('/projects/:id/export', projectController.exportProject)
-  router.delete('/projects/users/:userId/cleanup-archived', projectController.cleanupOldArchived)
 
   // ===== 节点管理路由 =====
+  // 注意：具体路径必须在 :id 参数路由之前，避免被错误匹配
+
+  // 节点统计和查询（优先级最高，避免被 :id 匹配）
+  router.get('/nodes/stats', nodeController.getNodeStats)
+  router.get('/nodes/paginated', nodeController.getNodesPaginated)
+  router.get('/nodes/recent-active/:projectId', nodeController.getRecentlyActiveNodes)
+  router.get('/nodes/high-priority/:projectId', nodeController.getHighPriorityNodes)
+
+  // 节点查询（具体路径）
+  router.get('/nodes/by-project/:projectId', nodeController.getNodesByProject)
+  router.get('/nodes/by-user/:userId', nodeController.getNodesByUser)
+  router.get('/nodes/by-tags', nodeController.getNodesByTags)
+  router.get('/nodes/by-status/:status', nodeController.getNodesByStatus)
+  router.get('/nodes/roots/:projectId', nodeController.getRootNodes)
+
+  // 节点操作（具体路径）
+  router.put('/nodes/batch/status', nodeController.updateNodeStatusBatch)
+
+  // 基础 CRUD（包含 :id 参数的路由放在最后）
   router.get('/nodes', nodeController.getNodes)
   router.get('/nodes/:id', nodeController.getNodeById)
   router.post('/nodes', nodeController.createNode)
   router.put('/nodes/:id', nodeController.updateNode)
   router.delete('/nodes/:id', nodeController.deleteNode)
 
-  // 节点查询
-  router.get('/nodes/by-project/:projectId', nodeController.getNodesByProject)
-  router.get('/nodes/by-user/:userId', nodeController.getNodesByUser)
-  router.get('/nodes/by-tags', nodeController.getNodesByTags)
-  router.get('/nodes/by-status/:status', nodeController.getNodesByStatus)
-
-  // 节点关系
+  // 节点关系（带 :id 参数）
   router.get('/nodes/:id/children', nodeController.getNodeChildren)
-  router.get('/nodes/roots/:projectId', nodeController.getRootNodes)
   router.get('/nodes/:id/neighbors', nodeController.getNodeNeighbors)
   router.get('/nodes/:id/path', nodeController.getNodePath)
   router.get('/nodes/:id/subtree', nodeController.getNodeSubtree)
 
-  // 节点操作
-  router.put('/nodes/batch/status', nodeController.updateNodeStatusBatch)
+  // 节点操作（带 :id 参数）
   router.post('/nodes/:id/copy', nodeController.copyNodeToProject)
   router.put('/nodes/:id/soft-delete', nodeController.softDeleteNode)
   router.put('/nodes/:id/restore', nodeController.restoreNode)
-
-  // 节点统计和查询
-  router.get('/nodes/stats', nodeController.getNodeStats)
-  router.get('/nodes/recent-active/:projectId', nodeController.getRecentlyActiveNodes)
-  router.get('/nodes/high-priority/:projectId', nodeController.getHighPriorityNodes)
 
   // ===== 连接管理路由 =====
   router.get('/connections', connectionController.getConnections)

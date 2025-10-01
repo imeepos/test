@@ -533,8 +533,8 @@ export class NodeRouter extends BaseRouter {
           totalCount = allResults.length
         } else {
           const paginatedResult = await this.storeClient!.nodes.findWithPagination(options)
-          results = paginatedResult.items
-          totalCount = paginatedResult.total
+          results = paginatedResult.data || paginatedResult
+          totalCount = paginatedResult.pagination?.total || 0
         }
       }
 

@@ -460,7 +460,11 @@ class ProjectRepositoryClient {
     const response = await this.http.get<ApiResponse>('/api/v1/projects/paginated', {
       params: options
     })
-    return response.data.data
+    // 返回完整响应，包含 data 和 pagination
+    return {
+      data: response.data.data,
+      pagination: response.data.pagination
+    }
   }
 }
 

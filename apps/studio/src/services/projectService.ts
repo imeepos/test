@@ -89,14 +89,18 @@ class ProjectService {
   }): Promise<Project[]> {
     const queryParams = new URLSearchParams()
 
-    if (params?.userId) queryParams.append('userId', params.userId)
+    if (params?.userId) queryParams.append('user_id', params.userId)
     if (params?.status) queryParams.append('status', params.status)
     if (params?.search) queryParams.append('search', params.search)
     if (params?.page) queryParams.append('page', params.page.toString())
     if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString())
 
     const url = `${API_ENDPOINTS.projects.list}?${queryParams.toString()}`
-    return apiClient.get<Project[]>(url)
+    const response = await apiClient.get<{ items: Project[], pagination: any }>(url)
+
+    // Gateway 返回的是 { items: [...], pagination: {...} } 格式
+    // 提取 items 数组并确保是数组类型
+    return Array.isArray(response?.items) ? response.items : []
   }
 
   /**

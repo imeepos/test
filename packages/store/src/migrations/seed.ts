@@ -43,7 +43,7 @@ export class SeedManager {
   /**
    * 创建示例用户
    */
-  private async createDemoUsers(): Promise<void> {
+  private async createDemoUsers(): Promise<{ adminUser: any; testUser: any } | undefined> {
     try {
       // 检查是否已有用户
       const existingUsers = await storeService.users.count()
@@ -114,7 +114,7 @@ export class SeedManager {
   /**
    * 创建示例项目
    */
-  private async createDemoProjects(userId?: string): Promise<void> {
+  private async createDemoProjects(userId?: string): Promise<{ aiProject: any; productProject: any } | undefined> {
     try {
       // 获取测试用户
       let testUser

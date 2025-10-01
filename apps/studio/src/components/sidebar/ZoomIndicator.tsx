@@ -20,15 +20,16 @@ const ZoomIndicator: React.FC = () => {
   } = useUIStore()
 
   // 格式化缩放百分比
-  const zoomPercentage = Math.round(viewport.zoom * 100)
+  const zoomPercentage = Math.round((viewport?.zoom ?? 1) * 100)
 
   // 获取缩放等级描述
   const getZoomLevel = () => {
-    if (viewport.zoom <= 0.25) return '很远'
-    if (viewport.zoom <= 0.5) return '远'
-    if (viewport.zoom <= 0.75) return '中远'
-    if (viewport.zoom <= 1.25) return '正常'
-    if (viewport.zoom <= 1.5) return '近'
+    const zoom = viewport?.zoom ?? 1
+    if (zoom <= 0.25) return '很远'
+    if (zoom <= 0.5) return '远'
+    if (zoom <= 0.75) return '中远'
+    if (zoom <= 1.25) return '正常'
+    if (zoom <= 1.5) return '近'
     return '很近'
   }
 
@@ -37,9 +38,10 @@ const ZoomIndicator: React.FC = () => {
     // 将缩放范围 0.1-2 映射到 0-100%
     const minZoom = 0.1
     const maxZoom = 2
-    const normalizedZoom = (viewport.zoom - minZoom) / (maxZoom - minZoom)
+    const zoom = viewport?.zoom ?? 1
+    const normalizedZoom = (zoom - minZoom) / (maxZoom - minZoom)
     return Math.max(0, Math.min(100, normalizedZoom * 100))
-  }, [viewport.zoom])
+  }, [viewport?.zoom])
 
   const handleViewModeToggle = () => {
     setViewMode(viewMode === 'preview' ? 'detail' : 'preview')
@@ -58,7 +60,7 @@ const ZoomIndicator: React.FC = () => {
           size="sm"
           icon={ZoomOut}
           onClick={zoomOut}
-          disabled={viewport.zoom <= 0.1}
+          disabled={(viewport?.zoom ?? 1) <= 0.1}
           className="h-7 w-7 p-0"
           title="缩小"
         />
@@ -97,7 +99,7 @@ const ZoomIndicator: React.FC = () => {
           size="sm"
           icon={ZoomIn}
           onClick={zoomIn}
-          disabled={viewport.zoom >= 2}
+          disabled={(viewport?.zoom ?? 1) >= 2}
           className="h-7 w-7 p-0"
           title="放大"
         />
