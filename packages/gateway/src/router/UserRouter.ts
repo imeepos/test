@@ -194,9 +194,10 @@ export class UserRouter extends BaseRouter {
       }
 
       try {
-        // 查找用户
-        const user = await this.storeClient!.users.findByEmail(email.toLowerCase().trim())
-        if (!user) {
+        // 使用 store 服务的认证接口
+        const authResult = await this.storeClient!.users.authenticate(email.toLowerCase().trim(), password)
+
+        if (!authResult || !authResult.user || !authResult.token) {
           res.error({
             code: 'INVALID_CREDENTIALS',
             message: '邮箱或密码错误',
@@ -206,20 +207,10 @@ export class UserRouter extends BaseRouter {
           return
         }
 
-        // 验证密码
-        const isPasswordValid = await this.verifyPassword(password, user.password_hash)
-        if (!isPasswordValid) {
-          res.error({
-            code: 'INVALID_CREDENTIALS',
-            message: '邮箱或密码错误',
-            timestamp: new Date(),
-            requestId: req.requestId
-          })
-          return
-        }
+        const { user, token } = authResult
 
         // 检查用户状态
-        if (user.status !== 'active') {
+        if (!user.is_active) {
           res.error({
             code: 'ACCOUNT_DISABLED',
             message: '账户已禁用，请联系管理员',
@@ -229,39 +220,24 @@ export class UserRouter extends BaseRouter {
           return
         }
 
-        // 生成JWT Token
-        const tokenPayload = {
-          id: user.id,
-          username: user.name,
-          email: user.email,
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24小时过期
-        }
-
-        const token = this.generateJWTToken(tokenPayload)
+        // 生成 Gateway 自己的 refresh token
         const refreshToken = this.generateRefreshToken(user.id)
-
-        // 更新用户最后登录时间
-        await this.storeClient!.users.update(user.id, {
-          last_login_at: new Date(),
-          login_count: (user.login_count || 0) + 1
-        })
 
         // 记录登录日志
         console.log(`User login successful: ${user.email} (${user.id})`)
 
         res.success({
-          token,
+          token, // 使用 store 服务返回的 token
           refresh_token: refreshToken,
-          expires_in: 86400, // 24小时（秒）
+          expires_in: 604800, // 7天（秒）
           user: {
             id: user.id,
             email: user.email,
-            name: user.name,
-            role: user.role,
-            avatar: user.avatar,
+            username: user.username,
+            avatar_url: user.avatar_url,
+            settings: user.settings,
             created_at: user.created_at,
-            last_login_at: new Date()
+            last_login_at: user.last_login_at
           }
         }, 'Login successful')
 

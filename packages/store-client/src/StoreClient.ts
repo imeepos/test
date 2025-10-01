@@ -350,9 +350,9 @@ class UserRepositoryClient {
     return true
   }
 
-  async authenticate(email: string, password: string) {
+  async authenticate(emailOrUsername: string, password: string) {
     const response = await this.http.post<ApiResponse>('/api/v1/users/authenticate', {
-      email,
+      emailOrUsername,
       password
     })
     return response.data.data
