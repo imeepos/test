@@ -6,10 +6,6 @@ export type { WebSocketConfig, WebSocketMessage } from './websocketService'
 export { nodeService, NodeService } from './nodeService'
 export type { NodeCreationOptions, NodeUpdateOptions } from './nodeService'
 
-// 队列服务
-export { queueService, QueueService } from './queueService'
-export type { TaskProgress, QueueTaskOptions } from './queueService'
-
 // 版本管理服务
 export { versionService, VersionService } from './versionService'
 export type { VersionChangeInfo, VersionDiff, RestoreOptions } from './versionService'
@@ -17,14 +13,12 @@ export type { VersionChangeInfo, VersionDiff, RestoreOptions } from './versionSe
 // 导入服务实例
 import { websocketService } from './websocketService'
 import { nodeService } from './nodeService'
-import { queueService } from './queueService'
 import { versionService } from './versionService'
 
 // 服务组合类型
 export interface Services {
   websocket: typeof websocketService
   node: typeof nodeService
-  queue: typeof queueService
   version: typeof versionService
 }
 
@@ -32,7 +26,6 @@ export interface Services {
 export const services: Services = {
   websocket: websocketService,
   node: nodeService,
-  queue: queueService,
   version: versionService,
 }
 
@@ -47,8 +40,6 @@ export async function initializeServices(): Promise<void> {
 
     // 2. 等待WebSocket稳定连接
     await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // 3. 队列服务已在构造函数中自动初始化
 
     console.log('🎉 服务初始化完成')
 

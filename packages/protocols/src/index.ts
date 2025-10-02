@@ -36,23 +36,7 @@ export * from './events/index.js'
 
 export * from './structures/index.js'
 
-// ============================================================================
-// 执行引擎
-// ============================================================================
-
-export * from './execution/index.js'
-
-// ============================================================================
-// 构建器
-// ============================================================================
-
-export * from './builders/index.js'
-
-// ============================================================================
-// 状态管理
-// ============================================================================
-
-export * from './state/index.js'
+// 执行引擎、构建器、状态管理已被移除（未使用）
 
 // ============================================================================
 // 版本信息
@@ -70,19 +54,11 @@ import {
 } from './contracts/index.js'
 
 import {
-  CHAIN_PROTOCOL_VERSION,
-  EDGE_PROTOCOL_VERSION,
-  GRAPH_PROTOCOL_VERSION,
-  TREE_PROTOCOL_VERSION,
-  ENHANCED_NODE_PROTOCOL_VERSION
+  EDGE_PROTOCOL_VERSION
 } from './structures/index.js'
 
 export const PROTOCOL_VERSIONS = {
   aiProcess: AI_PROCESS_PROTOCOL_VERSION,
   node: NODE_PROTOCOL_VERSION,
-  chain: CHAIN_PROTOCOL_VERSION,
-  edge: EDGE_PROTOCOL_VERSION,
-  graph: GRAPH_PROTOCOL_VERSION,
-  tree: TREE_PROTOCOL_VERSION,
-  enhancedNode: ENHANCED_NODE_PROTOCOL_VERSION
+  edge: EDGE_PROTOCOL_VERSION
 } as const

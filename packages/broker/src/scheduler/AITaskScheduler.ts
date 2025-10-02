@@ -454,29 +454,34 @@ export class AITaskScheduler extends EventEmitter {
 
   /**
    * 处理任务结果
+   * 注意:由于当前架构中Gateway直接发布任务到RabbitMQ,
+   * Broker的activeTasks可能没有该任务记录,这是正常情况
    */
   private async handleTaskResult(result: AIResultMessage): Promise<void> {
     const task = this.activeTasks.get(result.taskId)
-    if (!task) {
-      console.warn(`Received result for unknown task: ${result.taskId}`)
-      return
+
+    // 如果在activeTasks中找到任务,清理相关状态
+    if (task) {
+      // 清理超时定时器
+      const timeout = this.taskTimeouts.get(result.taskId)
+      if (timeout) {
+        clearTimeout(timeout)
+        this.taskTimeouts.delete(result.taskId)
+      }
+
+      // 更新任务状态
+      if (result.success) {
+        this.updateTaskStatus(result.taskId, 'completed', 'Task completed successfully')
+      } else {
+        this.updateTaskStatus(result.taskId, 'failed', result.error?.message || 'Task failed')
+      }
+
+      // 从活跃任务中移除
+      this.activeTasks.delete(result.taskId)
     }
 
-    // 清理超时定时器
-    const timeout = this.taskTimeouts.get(result.taskId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.taskTimeouts.delete(result.taskId)
-    }
-
-    // 更新任务状态
-    if (result.success) {
-      this.updateTaskStatus(result.taskId, 'completed', 'Task completed successfully')
-    } else {
-      this.updateTaskStatus(result.taskId, 'failed', result.error?.message || 'Task failed')
-    }
-
-    // 触发结果事件
+    // 无论是否在activeTasks中,都触发结果事件
+    // Store服务已经记录了任务状态,这里只做事件通知
     this.emit('taskCompleted', {
       taskId: result.taskId,
       nodeId: result.nodeId,
@@ -486,10 +491,7 @@ export class AITaskScheduler extends EventEmitter {
       processingTime: result.processingTime
     })
 
-    // 从活跃任务中移除
-    this.activeTasks.delete(result.taskId)
-
-    console.log(`AI task completed: ${result.taskId} (success: ${result.success})`)
+    console.log(`AI task result processed: ${result.taskId} (success: ${result.success}, tracked: ${!!task})`)
   }
 
   /**

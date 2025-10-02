@@ -30,19 +30,4 @@ export {
   canRetryTask
 } from './ai-process.utils.js'
 
-// ============================================================================
-// 流式处理工具函数
-// ============================================================================
-
-export {
-  toSSE,
-  toSSEStream,
-  NodeOutputCollector,
-  ProgressTracker,
-  StateSnapshotCollector,
-  ErrorCollector,
-  StreamEventHandler,
-  monitorStream,
-  extractNodeOutputs,
-  waitForFinalState
-} from './streaming-helpers.js'
+// 流式处理工具已被移除（依赖已删除的执行器）
