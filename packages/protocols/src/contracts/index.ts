@@ -9,9 +9,7 @@
 // ============================================================================
 
 export {
-  type TaskPriority as TaskPriorityV2,
   type TaskStatus as TaskStatusV2,
-  type AIProcessParameters,
   type TaskMetadata as TaskMetadataV2,
   type AIProcessRequest,
   type AIGeneratedContent,
@@ -19,9 +17,7 @@ export {
   type AIProcessError,
   type AIProcessResponse,
   type TaskProgressUpdate,
-  TaskPriority as TaskPrioritySchemaV2,
   TaskStatus as TaskStatusSchemaV2,
-  AIProcessParametersSchema,
   TaskMetadataSchema as TaskMetadataSchemaV2,
   AIProcessRequestSchema,
   AIGeneratedContentSchema,

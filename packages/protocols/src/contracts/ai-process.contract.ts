@@ -14,12 +14,6 @@ import { z } from 'zod'
 // ============================================================================
 
 /**
- * 任务优先级
- */
-export const TaskPriority = z.enum(['low', 'normal', 'high', 'urgent'])
-export type TaskPriority = z.infer<typeof TaskPriority>
-
-/**
  * 任务状态
  */
 export const TaskStatus = z.enum(['queued', 'processing', 'completed', 'failed', 'cancelled'])
@@ -28,28 +22,6 @@ export type TaskStatus = z.infer<typeof TaskStatus>
 // ============================================================================
 // AI 处理请求
 // ============================================================================
-
-/**
- * AI 处理参数（可选配置）
- */
-export const AIProcessParametersSchema = z.object({
-  /** 使用的模型（如 'gpt-4', 'claude-3'） */
-  model: z.string().optional(),
-
-  /** 温度参数 (0-2) */
-  temperature: z.number().min(0).max(2).optional(),
-
-  /** 最大生成Token数 */
-  maxTokens: z.number().positive().optional(),
-
-  /** 超时时间（毫秒） */
-  timeout: z.number().positive().optional(),
-
-  /** 其他自定义参数 */
-  customParams: z.record(z.unknown()).optional()
-}).strict()
-
-export type AIProcessParameters = z.infer<typeof AIProcessParametersSchema>
 
 /**
  * 任务元数据（用于追踪和调试）
@@ -87,7 +59,6 @@ export type TaskMetadata = z.infer<typeof TaskMetadataSchema>
  *   userId: userId,
  *   context: '',  // 无上下文
  *   prompt: '我想做一个电商网站',
- *   priority: 'normal',
  *   timestamp: new Date()
  * }
  *
@@ -100,7 +71,6 @@ export type TaskMetadata = z.infer<typeof TaskMetadataSchema>
  *   userId: userId,
  *   context: parentNode.content,  // 父节点内容作为上下文
  *   prompt: '分析这个需求的技术架构',
- *   priority: 'normal',
  *   timestamp: new Date()
  * }
  *
@@ -113,7 +83,6 @@ export type TaskMetadata = z.infer<typeof TaskMetadataSchema>
  *   userId: userId,
  *   context: `${node1.title}\n${node1.content}\n\n---\n\n${node2.title}\n${node2.content}`,
  *   prompt: '综合以上分析，制定产品MVP方案',
- *   priority: 'normal',
  *   timestamp: new Date(),
  *   metadata: {
  *     sourceNodeIds: [node1.id, node2.id]
@@ -129,7 +98,6 @@ export type TaskMetadata = z.infer<typeof TaskMetadataSchema>
  *   userId: userId,
  *   context: `${existingNode.title}\n${existingNode.content}`,
  *   prompt: '增加更详细的技术实现细节',
- *   priority: 'high',
  *   timestamp: new Date()
  * }
  */
@@ -175,19 +143,13 @@ export const AIProcessRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty'),
 
   // ========================================
-  // 可选配置
+  // 时间戳和元数据
   // ========================================
-
-  /** 处理参数（模型、温度等） */
-  parameters: AIProcessParametersSchema.optional(),
-
-  /** 任务优先级 */
-  priority: TaskPriority,
 
   /** 任务创建时间戳 */
   timestamp: z.date(),
 
-  /** 任务元数据 */
+  /** 任务元数据（可选，用于追踪和调试） */
   metadata: TaskMetadataSchema.optional()
 }).strict()
 
@@ -241,8 +203,8 @@ export type AIGeneratedContent = z.infer<typeof AIGeneratedContentSchema>
  * AI 处理的统计信息
  */
 export const AIProcessingStatsSchema = z.object({
-  /** 使用的模型 */
-  modelUsed: z.string().optional(),
+  /** 自动选择的模型（由系统根据 context + prompt 决定） */
+  modelUsed: z.string(),
 
   /** 消耗的 Token 数 */
   tokenCount: z.number().int().nonnegative().optional(),
@@ -376,7 +338,6 @@ export const AIProcessContractV2 = {
     request: AIProcessRequestSchema,
     response: AIProcessResponseSchema,
     progressUpdate: TaskProgressUpdateSchema,
-    parameters: AIProcessParametersSchema,
     metadata: TaskMetadataSchema,
     generatedContent: AIGeneratedContentSchema,
     processingStats: AIProcessingStatsSchema,

@@ -26,7 +26,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '', // 无上下文
         prompt: '我想做一个电商网站',
-        priority: 'normal',
         timestamp: new Date()
       }
 
@@ -47,7 +46,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '电商网站需求：用户注册、商品展示、购物车、支付',
         prompt: '分析这个需求的技术架构',
-        priority: 'high',
         timestamp: new Date()
       }
 
@@ -56,7 +54,6 @@ describe('AI Process Validator V2', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.value.context).toContain('电商网站需求')
-        expect(result.value.priority).toBe('high')
       }
     })
 
@@ -68,7 +65,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '需求分析\n电商系统需要...\n\n---\n\n技术架构\n采用微服务架构...',
         prompt: '综合以上分析，制定产品MVP方案',
-        priority: 'urgent',
         timestamp: new Date(),
         metadata: {
           sourceNodeIds: [
@@ -86,32 +82,6 @@ describe('AI Process Validator V2', () => {
       }
     })
 
-    it('should validate request with parameters', () => {
-      const request: AIProcessRequest = {
-        taskId: '550e8400-e29b-41d4-a716-446655440000',
-        nodeId: '550e8400-e29b-41d4-a716-446655440001',
-        projectId: '550e8400-e29b-41d4-a716-446655440002',
-        userId: '550e8400-e29b-41d4-a716-446655440003',
-        context: '需求上下文',
-        prompt: '生成代码',
-        priority: 'normal',
-        timestamp: new Date(),
-        parameters: {
-          model: 'gpt-4',
-          temperature: 0.7,
-          maxTokens: 2000
-        }
-      }
-
-      const result = validateAIProcessRequest(request)
-
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.value.parameters?.model).toBe('gpt-4')
-        expect(result.value.parameters?.temperature).toBe(0.7)
-      }
-    })
-
     it('should reject request with empty prompt', () => {
       const request = {
         taskId: '550e8400-e29b-41d4-a716-446655440000',
@@ -120,7 +90,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: 'test context',
         prompt: '', // 空提示词
-        priority: 'normal',
         timestamp: new Date()
       }
 
@@ -140,7 +109,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '',
         prompt: 'test',
-        priority: 'normal',
         timestamp: new Date()
       }
 
@@ -149,16 +117,12 @@ describe('AI Process Validator V2', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should reject request with invalid priority', () => {
+    it('should reject request with missing required fields', () => {
       const request = {
         taskId: '550e8400-e29b-41d4-a716-446655440000',
-        nodeId: '550e8400-e29b-41d4-a716-446655440001',
-        projectId: '550e8400-e29b-41d4-a716-446655440002',
-        userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '',
-        prompt: 'test',
-        priority: 'invalid-priority',
-        timestamp: new Date()
+        prompt: 'test'
+        // missing nodeId, projectId, userId, timestamp
       }
 
       const result = validateAIProcessRequest(request)
@@ -182,6 +146,7 @@ describe('AI Process Validator V2', () => {
           confidence: 0.95
         },
         stats: {
+          modelUsed: 'gpt-4', // 系统自动选择的模型
           processingTime: 1500
         },
         timestamp: new Date()
@@ -193,6 +158,7 @@ describe('AI Process Validator V2', () => {
       if (result.success) {
         expect(result.value.result?.content).toBe('生成的内容')
         expect(result.value.result?.confidence).toBe(0.95)
+        expect(result.value.stats?.modelUsed).toBe('gpt-4')
       }
     })
 
@@ -213,7 +179,7 @@ describe('AI Process Validator V2', () => {
           tags: ['电商', '系统设计']
         },
         stats: {
-          modelUsed: 'gpt-4',
+          modelUsed: 'claude-3-opus', // 系统根据内容复杂度自动选择
           tokenCount: 500,
           processingTime: 2000,
           requestId: 'req-123'
@@ -227,7 +193,7 @@ describe('AI Process Validator V2', () => {
       if (result.success) {
         expect(result.value.result?.semanticType).toBe('requirement')
         expect(result.value.result?.importanceLevel).toBe(4)
-        expect(result.value.stats?.modelUsed).toBe('gpt-4')
+        expect(result.value.stats?.modelUsed).toBe('claude-3-opus')
       }
     })
 
@@ -245,6 +211,7 @@ describe('AI Process Validator V2', () => {
           retryable: true
         },
         stats: {
+          modelUsed: 'gpt-4', // 失败时也记录使用的模型
           processingTime: 500
         },
         timestamp: new Date()
@@ -353,7 +320,6 @@ describe('AI Process Validator V2', () => {
         userId: '550e8400-e29b-41d4-a716-446655440003',
         context: '',
         prompt: 'test',
-        priority: 'normal',
         timestamp: new Date()
       }
 
@@ -381,6 +347,10 @@ describe('AI Process Validator V2', () => {
           content: 'test',
           title: 'test',
           confidence: 0.9
+        },
+        stats: {
+          modelUsed: 'gpt-4',
+          processingTime: 1000
         },
         timestamp: new Date()
       }
