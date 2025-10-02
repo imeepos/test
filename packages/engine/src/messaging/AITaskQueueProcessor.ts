@@ -10,7 +10,8 @@ import type {
 import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,
-  ROUTING_KEYS
+  ROUTING_KEYS,
+  getPriorityQueueName
 } from '@sker/models'
 
 /**
@@ -133,6 +134,9 @@ export class AITaskQueueProcessor extends EventEmitter {
    * 启动任务消费者
    */
   private async startTaskConsumers(): Promise<void> {
+    // 启动基础队列消费者（兼容旧版路由）
+    await this.startBaseQueueConsumer()
+
     // 为不同优先级的任务启动不同的消费者
 
     // 高优先级任务消费者
@@ -149,10 +153,36 @@ export class AITaskQueueProcessor extends EventEmitter {
   }
 
   /**
+   * 启动基础队列消费者
+   */
+  private async startBaseQueueConsumer(): Promise<void> {
+    const queueName = QUEUE_NAMES.AI_TASKS
+    const workerCount = this.config.normalPriorityWorkers
+
+    for (let i = 0; i < workerCount; i++) {
+      await this.broker.consume(
+        queueName,
+        async (message) => {
+          if (!message) return
+
+          const workerId = `base-worker-${i}`
+          await this.processTaskMessage(message, workerId)
+        },
+        {
+          noAck: false // 手动确认
+        }
+      )
+    }
+
+    console.log(`开始监听AI任务队列: ${queueName}`)
+  }
+
+  /**
    * 启动优先级消费者
    */
   private async startPriorityConsumer(priority: string, workerCount: number): Promise<void> {
-    const queueName = `${this.config.taskQueue}.${priority}`
+    // 使用正确的优先级队列名
+    const queueName = getPriorityQueueName(priority as 'low' | 'normal' | 'high')
 
     for (let i = 0; i < workerCount; i++) {
       await this.broker.consume(
@@ -169,7 +199,7 @@ export class AITaskQueueProcessor extends EventEmitter {
       )
     }
 
-    console.log(`启动 ${workerCount} 个 ${priority} 优先级工作者`)
+    console.log(`启动 ${workerCount} 个 ${priority} 优先级工作者，监听队列: ${queueName}`)
   }
 
   /**

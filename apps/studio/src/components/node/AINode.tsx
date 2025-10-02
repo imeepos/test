@@ -15,7 +15,8 @@ import {
   Zap,
   Clock,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
 import { NodeEditor } from './NodeEditor'
@@ -120,13 +121,17 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   }, [data.id, updateNode])
 
   /**
-   * 双击编辑处理
+   * 双击编辑处理 - 弹出提示词输入让AI修改
    */
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    setIsEditorOpen(true)
-  }, [])
+    // 触发编辑节点事件，由CanvasPage处理
+    const editEvent = new CustomEvent('edit-node', {
+      detail: { nodeId: data.id, currentContent: data.content, currentTitle: data.title }
+    })
+    window.dispatchEvent(editEvent)
+  }, [data.id, data.content, data.title])
 
   /**
    * 切换折叠/展开状态
@@ -135,6 +140,18 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     e.stopPropagation()
     setIsExpanded(!isExpanded)
   }, [isExpanded])
+
+  /**
+   * 重试AI生成
+   */
+  const handleRetry = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    // 触发重试事件
+    const retryEvent = new CustomEvent('retry-ai-generation', {
+      detail: { nodeId: data.id }
+    })
+    window.dispatchEvent(retryEvent)
+  }, [data.id])
 
 
   // ============= 样式计算 =============
@@ -184,7 +201,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
       <motion.div
         {...nodeAriaProps}
         className={`
-          group relative min-w-[200px] max-w-[300px] rounded-lg border-2 bg-canvas-node/95 cursor-pointer
+          group relative min-w-[200px] max-w-[300px] rounded-lg border-2 bg-canvas-node cursor-pointer
           ${importanceColors.border} ${importanceColors.bg}
           ${selected ? 'ring-2 ring-sidebar-accent shadow-xl' : 'shadow-lg'}
           transition-shadow duration-200
@@ -305,10 +322,10 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
         )}
 
 
-        {/* 处理状态遮罩 - 使用透明度而非全屏遮罩 */}
+        {/* 处理状态遮罩 - 完全不透明 */}
         {data.status === 'processing' && (
           <motion.div
-            className="absolute inset-0 bg-canvas-node/80 backdrop-blur-[2px] rounded-lg
+            className="absolute inset-0 bg-canvas-node backdrop-blur-sm rounded-lg
                      flex flex-col items-center justify-center gap-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -320,6 +337,23 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
             <Loader2 className="h-5 w-5 animate-spin text-sidebar-accent" aria-hidden="true" />
             <p className="text-xs text-sidebar-text">AI生成中...</p>
           </motion.div>
+        )}
+
+        {/* 错误状态重试按钮 - 悬浮在节点右上角 */}
+        {data.status === 'error' && (
+          <motion.button
+            onClick={handleRetry}
+            className="absolute -top-2 -right-2 p-1.5 bg-red-500 hover:bg-red-600 rounded-full shadow-lg
+                     flex items-center justify-center transition-colors z-10"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            title="重试AI生成"
+            aria-label="重试AI生成"
+          >
+            <RefreshCw className="h-3 w-3 text-white" />
+          </motion.button>
         )}
       </motion.div>
 

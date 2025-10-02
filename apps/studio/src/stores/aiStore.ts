@@ -176,19 +176,9 @@ export const useAIStore = create<AIState>()(
           }
         })
 
-        // 更新nodeStore中的节点状态
-        const nodeStore = useNodeStore.getState()
-        const node = nodeStore.getNode(nodeId)
-        if (node) {
-          console.log('✅ 更新节点状态为completed:', nodeId, result)
-          nodeStore.updateNode(nodeId, {
-            content: result.content,
-            title: result.title || node.title,
-            confidence: (result.confidence || 80) / 100, // 转换为0-1范围
-            status: 'completed',
-            tags: result.tags || node.tags,
-          })
-        }
+        // ✅ 不更新节点！由后端(Engine)负责更新数据库
+        // 前端只负责记录结果，UI会通过数据库变化自动刷新
+        console.log('✅ AI生成完成，结果已由后端更新到数据库:', nodeId)
       },
       
       failProcessing: (nodeId, error) => {
@@ -210,16 +200,9 @@ export const useAIStore = create<AIState>()(
 
         get().recordError()
 
-        // 更新nodeStore中的节点状态
-        const nodeStore = useNodeStore.getState()
-        const node = nodeStore.getNode(nodeId)
-        if (node) {
-          console.log('❌ 更新节点状态为error:', nodeId, error)
-          nodeStore.updateNode(nodeId, {
-            content: `AI生成失败: ${error}`,
-            status: 'error',
-          })
-        }
+        // ✅ 不更新节点！失败由调用方(CanvasPage)处理
+        // aiStore 只负责记录统计信息
+        console.log('❌ AI生成失败:', nodeId, error)
       },
       
       // WebSocket连接管理
@@ -283,10 +266,24 @@ export const useAIStore = create<AIState>()(
         // 监听AI生成响应
         const responseUnsubscribe = websocketService.subscribe('AI_GENERATE_RESPONSE', (message) => {
           console.log('📥 收到AI_GENERATE_RESPONSE:', message)
-          const { nodeId, result, taskId, requestId } = message.payload
+          const { nodeId, result, taskId, requestId, content, title, tags, confidence } = message.payload
+
+          // 尝试多种方式获取nodeId
           const effectiveNodeId = nodeId || taskId || requestId
-          if (effectiveNodeId && result) {
-            get().completeProcessing(effectiveNodeId, result)
+
+          // 构造结果对象 - 优先使用result对象，否则从顶层字段提取
+          const processedResult = result || {
+            content: content || '',
+            title: title || '', // title可能为空，后续会智能生成
+            tags: tags || [],
+            confidence: confidence !== undefined ? confidence : 0.8 // 默认80%置信度（0.8）
+          }
+
+          if (effectiveNodeId && (processedResult.content || processedResult)) {
+            console.log('✅ 完成AI生成，nodeId:', effectiveNodeId, 'result:', processedResult)
+            get().completeProcessing(effectiveNodeId, processedResult)
+          } else {
+            console.warn('⚠️ AI_GENERATE_RESPONSE缺少必要字段:', { nodeId, taskId, requestId, result, content })
           }
         })
 

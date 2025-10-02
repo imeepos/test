@@ -201,6 +201,17 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 保存结果到Store
       const savedResult = await this.saveTaskResult(taskMessage, aiResult)
 
+      // ✅ 如果有 nodeId，立即更新节点到数据库
+      if (taskMessage.nodeId) {
+        try {
+          await this.updateNodeWithResult(taskMessage.nodeId, taskMessage.projectId, aiResult)
+          console.log(`✅ 节点已更新到数据库: ${taskMessage.nodeId}`)
+        } catch (error) {
+          console.error(`❌ 更新节点失败: ${taskMessage.nodeId}`, error)
+          // 继续执行，不影响任务完成通知
+        }
+      }
+
       // 发布任务完成事件
       await this.publishTaskResult({
         taskId,
@@ -327,6 +338,41 @@ export class AITaskQueueConsumer extends EventEmitter {
 
     } catch (error) {
       console.error('保存AI任务结果失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 更新节点到数据库
+   */
+  private async updateNodeWithResult(nodeId: string, projectId: string, aiResult: any): Promise<void> {
+    try {
+      // ✅ 先获取节点当前状态
+      const currentNode = await this.storeClient.nodes.get(nodeId)
+
+      // ✅ 如果节点已经是 error 状态，说明前端已超时处理，不覆盖
+      if (currentNode && currentNode.status === 'error') {
+        console.log(`⚠️  节点已是error状态，跳过更新: ${nodeId}`)
+        return
+      }
+
+      // 调用 Store API 更新节点
+      await this.storeClient.nodes.update(nodeId, {
+        content: aiResult.content,
+        title: aiResult.title || aiResult.content?.slice(0, 20),
+        tags: aiResult.tags || [],
+        confidence: aiResult.confidence ? (aiResult.confidence > 1 ? aiResult.confidence / 100 : aiResult.confidence) : 0.8,
+        status: 'completed',
+        metadata: {
+          ...(aiResult.metadata || {}),
+          aiGenerated: true,
+          model: aiResult.metadata?.model,
+          tokenCount: aiResult.metadata?.tokenCount,
+          processingTime: aiResult.metadata?.processingTime
+        }
+      })
+    } catch (error) {
+      console.error(`更新节点失败 (nodeId: ${nodeId}):`, error)
       throw error
     }
   }

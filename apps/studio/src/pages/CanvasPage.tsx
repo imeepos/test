@@ -11,7 +11,7 @@ import type { Position } from '@/types'
 
 const CanvasPage: React.FC = () => {
   const { sidebarCollapsed, sidebarWidth, addToast } = useUIStore()
-  const { addNode, getNode, getNodes, createNodeWithSync, setCurrentProject } = useNodeStore()
+  const { addNode, getNode, getNodes, updateNode, updateNodeWithSync, createNodeWithSync, setCurrentProject } = useNodeStore()
   const { updateStats, selectedNodeIds, selectAll, currentProject } = useCanvasStore()
   const { startProcessing, connectionStatus } = useAIStore()
   const { status: syncStatus, lastSavedAt } = useSyncStore()
@@ -20,6 +20,11 @@ const CanvasPage: React.FC = () => {
   const [promptDialogOpen, setPromptDialogOpen] = React.useState(false)
   const [promptDialogPosition, setPromptDialogPosition] = React.useState<Position>({ x: 0, y: 0 })
   const [isCreatingNode, setIsCreatingNode] = React.useState(false)
+
+  // 编辑节点对话框状态
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null)
+  const [editingNodeContent, setEditingNodeContent] = React.useState('')
 
   // 启用自动保存(30秒间隔，3秒防抖)
   useAutoSave({
@@ -70,54 +75,84 @@ const CanvasPage: React.FC = () => {
         return
       }
 
-      setIsCreatingNode(true)
-
       try {
         console.log('CanvasPage: 开始AI生成节点, 提示词:', prompt)
 
-        // 使用nodeService的AI生成功能
-        const aiNode = await nodeService.createNode({
+        // 1. 立即创建一个processing状态的节点
+        const processingNode = await nodeService.createNode({
           position: promptDialogPosition,
-          content: prompt,
-          useAI: true,
-          context: [prompt],
+          content: '正在生成中...',
+          title: '生成中',
+          useAI: false,
         })
 
-        console.log('CanvasPage: AI生成节点完成:', aiNode)
+        // 设置为processing状态
+        processingNode.status = 'processing'
+        processingNode.tags = ['AI生成中']
 
-        // 保存到后端
-        await createNodeWithSync({
+        // 保存到后端和本地store
+        const savedNode = await createNodeWithSync({
           project_id: currentProject.id,
-          content: aiNode.content,
-          title: aiNode.title,
-          importance: aiNode.importance,
-          position: aiNode.position,
-          tags: aiNode.tags,
-          metadata: aiNode.metadata,
+          content: processingNode.content,
+          title: processingNode.title,
+          importance: processingNode.importance,
+          position: processingNode.position,
+          tags: processingNode.tags,
+          metadata: { ...processingNode.metadata, status: 'processing', originalPrompt: prompt },
         })
 
         // 关闭对话框
         setPromptDialogOpen(false)
+        setIsCreatingNode(false)
 
-        addToast({
-          type: 'success',
-          title: '节点创建成功',
-          message: 'AI已为你生成内容',
-          duration: 2000,
+        console.log('CanvasPage: Processing节点已创建:', savedNode)
+
+        // 2. 发送AI请求（带上nodeId，后端会自动更新节点）
+        nodeService.createNode({
+          position: promptDialogPosition,
+          content: prompt,
+          useAI: true,
+          context: [prompt],
+          nodeId: savedNode.id, // ✅ 传递 nodeId 给后端
+        }).then(() => {
+          // ✅ 后端会自动更新节点，前端只需要显示成功提示
+          addToast({
+            type: 'success',
+            title: '节点创建成功',
+            message: 'AI已为你生成内容',
+            duration: 2000,
+          })
+        }).catch(async (error) => {
+          console.error('CanvasPage: AI生成节点失败:', error)
+
+          // ❌ AI失败时仍需前端更新节点为error状态
+          await updateNodeWithSync(savedNode.id, {
+            status: 'error',
+            content: 'AI生成失败，请点击重试按钮',
+            tags: ['生成失败'],
+          })
+
+          addToast({
+            type: 'error',
+            title: 'AI生成失败',
+            message: error instanceof Error ? error.message : '请点击节点上的重试按钮',
+            duration: 3000,
+          })
         })
+
       } catch (error) {
-        console.error('CanvasPage: AI生成节点失败:', error)
+        console.error('CanvasPage: 创建节点失败:', error)
         addToast({
           type: 'error',
-          title: 'AI生成失败',
+          title: '创建失败',
           message: error instanceof Error ? error.message : '请稍后重试',
           duration: 3000,
         })
-      } finally {
+        setPromptDialogOpen(false)
         setIsCreatingNode(false)
       }
     },
-    [currentProject?.id, promptDialogPosition, createNodeWithSync, addToast]
+    [currentProject?.id, promptDialogPosition, createNodeWithSync, addToast, updateNode]
   )
 
   // 处理节点双击编辑
@@ -524,6 +559,192 @@ const CanvasPage: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [addToast, selectedNodeIds, getNode, getNodes, addNode, selectAll])
 
+  // 监听编辑节点事件
+  React.useEffect(() => {
+    const handleEditNode = (event: Event) => {
+      const customEvent = event as CustomEvent<{ nodeId: string; currentContent: string; currentTitle: string }>
+      const { nodeId, currentContent } = customEvent.detail
+      console.log('CanvasPage: 收到编辑节点请求, nodeId:', nodeId)
+
+      setEditingNodeId(nodeId)
+      setEditingNodeContent(currentContent)
+      setEditDialogOpen(true)
+    }
+
+    window.addEventListener('edit-node', handleEditNode)
+    return () => {
+      window.removeEventListener('edit-node', handleEditNode)
+    }
+  }, [])
+
+  // 处理编辑节点提示词提交
+  const handleEditSubmit = React.useCallback(
+    async (instruction: string) => {
+      if (!editingNodeId || !currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '修改失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        setEditDialogOpen(false)
+        return
+      }
+
+      const node = getNode(editingNodeId)
+      if (!node) {
+        addToast({
+          type: 'error',
+          title: '修改失败',
+          message: '找不到节点',
+          duration: 3000,
+        })
+        setEditDialogOpen(false)
+        return
+      }
+
+      try {
+        // 设置为processing状态并同步到数据库
+        await updateNodeWithSync(editingNodeId, {
+          status: 'processing',
+          tags: ['AI修改中'],
+        })
+
+        // 关闭对话框
+        setEditDialogOpen(false)
+
+        // 使用AI生成新内容
+        const aiNode = await nodeService.createNode({
+          position: node.position,
+          content: `${editingNodeContent}\n\n修改意见: ${instruction}`,
+          useAI: true,
+          context: [`当前内容: ${editingNodeContent}`, `修改意见: ${instruction}`],
+        })
+
+        // 更新节点并同步到数据库
+        await updateNodeWithSync(editingNodeId, {
+          content: aiNode.content,
+          title: aiNode.title,
+          tags: aiNode.tags,
+          confidence: aiNode.confidence,
+          status: 'completed',
+          metadata: {
+            ...aiNode.metadata,
+            editCount: (node.metadata?.editCount || 0) + 1,
+          },
+        })
+
+        addToast({
+          type: 'success',
+          title: '节点修改成功',
+          message: 'AI已根据你的意见修改内容',
+          duration: 2000,
+        })
+      } catch (error) {
+        console.error('CanvasPage: AI修改节点失败:', error)
+
+        // 更新节点为错误状态并同步到数据库
+        await updateNodeWithSync(editingNodeId, {
+          status: 'error',
+          tags: ['修改失败'],
+        })
+
+        addToast({
+          type: 'error',
+          title: 'AI修改失败',
+          message: error instanceof Error ? error.message : '请稍后重试',
+          duration: 3000,
+        })
+      }
+    },
+    [editingNodeId, editingNodeContent, currentProject?.id, getNode, updateNode, addToast]
+  )
+
+  // 监听重试AI生成事件
+  React.useEffect(() => {
+    const handleRetryAI = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ nodeId: string }>
+      const { nodeId } = customEvent.detail
+      console.log('CanvasPage: 收到重试AI生成请求, nodeId:', nodeId)
+
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '重试失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        return
+      }
+
+      const node = getNode(nodeId)
+      if (!node) {
+        addToast({
+          type: 'error',
+          title: '重试失败',
+          message: '找不到节点',
+          duration: 3000,
+        })
+        return
+      }
+
+      try {
+        // 设置为processing状态并同步到数据库
+        await updateNodeWithSync(nodeId, {
+          status: 'processing',
+          content: '正在重新生成...',
+          tags: ['AI生成中'],
+        })
+
+        // 使用原始提示词或节点内容重新生成
+        const prompt = (node.metadata as any)?.originalPrompt || node.content
+        const aiNode = await nodeService.createNode({
+          position: node.position,
+          content: prompt,
+          useAI: true,
+          context: [prompt],
+        })
+
+        // 更新节点并同步到数据库
+        await updateNodeWithSync(nodeId, {
+          content: aiNode.content,
+          title: aiNode.title,
+          tags: aiNode.tags,
+          confidence: aiNode.confidence,
+          status: 'completed',
+          metadata: aiNode.metadata,
+        })
+
+        addToast({
+          type: 'success',
+          title: '重新生成成功',
+          message: 'AI已为你重新生成内容',
+          duration: 2000,
+        })
+      } catch (error) {
+        console.error('CanvasPage: 重试AI生成失败:', error)
+
+        await updateNodeWithSync(nodeId, {
+          status: 'error',
+          content: 'AI生成失败，请点击重试按钮',
+          tags: ['生成失败'],
+        })
+
+        addToast({
+          type: 'error',
+          title: 'AI生成失败',
+          message: error instanceof Error ? error.message : '请稍后重试',
+          duration: 3000,
+        })
+      }
+    }
+
+    window.addEventListener('retry-ai-generation', handleRetryAI)
+    return () => {
+      window.removeEventListener('retry-ai-generation', handleRetryAI)
+    }
+  }, [currentProject?.id, getNode, updateNode, addToast])
+
   // 移除初始化提示
 
   return (
@@ -607,6 +828,16 @@ const CanvasPage: React.FC = () => {
         title="创建新节点"
         placeholder="在此输入你的想法...&#10;例如: 分析电商平台的技术架构"
         isLoading={isCreatingNode}
+      />
+
+      {/* 编辑节点对话框 */}
+      <PromptDialog
+        isOpen={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSubmit={handleEditSubmit}
+        title="AI修改节点"
+        placeholder="请输入修改意见...&#10;例如: 添加更多技术细节&#10;例如: 简化表述&#10;例如: 补充安全性考虑"
+        isLoading={false}
       />
     </div>
   )

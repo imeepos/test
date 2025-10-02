@@ -359,31 +359,43 @@ class WebSocketService {
     try {
       console.log(`📥 收到WebSocket消息:`, { eventName, data })
 
-      // 处理响应消息
-      if (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR')) {
-        // 根据requestId匹配对应的请求
-        const requestId = data.requestId || data.taskId
-        console.log(`🔍 匹配请求ID:`, { requestId, hasPending: this.pendingMessages.has(requestId), pendingKeys: Array.from(this.pendingMessages.keys()) })
+      // 尝试获取requestId/taskId，优先使用requestId
+      const requestId = data.requestId || data.taskId
 
-        if (requestId && this.pendingMessages.has(requestId)) {
+      // 处理响应消息 - 匹配pending请求
+      if (requestId && (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR') || eventName === 'ai_task_result')) {
+        console.log(`🔍 匹配请求ID:`, {
+          requestId,
+          eventName,
+          hasPending: this.pendingMessages.has(requestId),
+          pendingKeys: Array.from(this.pendingMessages.keys())
+        })
+
+        if (this.pendingMessages.has(requestId)) {
           const pendingMessage = this.pendingMessages.get(requestId)!
           clearTimeout(pendingMessage.timeout)
           this.pendingMessages.delete(requestId)
 
-          if (eventName.endsWith('_ERROR')) {
-            console.error(`❌ AI请求失败:`, data.error)
-            pendingMessage.reject(new Error(data.error?.message || data.error || '请求失败'))
+          // 根据事件类型和状态判断成功或失败
+          const isError = eventName.endsWith('_ERROR') ||
+                          (eventName === 'ai_task_result' && data.status === 'failed')
+
+          if (isError) {
+            console.error(`❌ AI请求失败:`, data.error || data)
+            const errorMsg = data.error?.message || data.error || data.message || '请求失败'
+            pendingMessage.reject(new Error(errorMsg))
           } else {
             console.log(`✅ AI请求成功:`, data)
-            pendingMessage.resolve(data)
+            // 对于ai_task_result，提取result字段
+            const responseData = eventName === 'ai_task_result' && data.result ? data.result : data
+            pendingMessage.resolve(responseData)
           }
-          return
-        } else {
-          console.warn(`⚠️ 收到响应消息但找不到对应的请求: ${eventName}, requestId: ${requestId}`)
+
+          // 即使匹配了pending请求，仍然继续广播给订阅者
         }
       }
 
-      // 处理广播消息
+      // 处理广播消息 - 总是触发订阅处理器
       const handler = this.messageHandlers.get(eventName)
       if (handler) {
         const message: WebSocketMessage = {
@@ -393,6 +405,9 @@ class WebSocketService {
           timestamp: Date.now()
         }
         handler(message)
+      } else if (!this.pendingMessages.has(requestId)) {
+        // 只有在没有pending请求且没有订阅处理器时才警告
+        console.log(`ℹ️ 收到未订阅的消息: ${eventName}`)
       }
 
       // Socket.IO 内置心跳不需要手动处理

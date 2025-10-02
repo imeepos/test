@@ -17,6 +17,7 @@ interface NodeCreationOptions {
   title?: string
   importance?: 1 | 2 | 3 | 4 | 5
   useAI?: boolean
+  nodeId?: string // ✅ 添加 nodeId 字段
   context?: string[]
   parentNodeIds?: string[]
 }
@@ -42,7 +43,8 @@ class NodeService {
       importance = 3,
       useAI = false,
       context = [],
-      parentNodeIds = []
+      parentNodeIds = [],
+      nodeId: externalNodeId // ✅ 接收外部传入的 nodeId
     } = options
 
     // 生成基础节点数据
@@ -57,36 +59,38 @@ class NodeService {
     // 如果启用AI生成
     if (useAI && (content || context.length > 0)) {
       try {
-        const aiRequest: AIGenerateRequest = {
+        const aiRequest: AIGenerateRequest & { nodeId?: string } = {
           inputs: context.length > 0 ? context : [content],
           context: this.buildContext(parentNodeIds),
-          type: context.length > 1 ? 'fusion' : 'generate'
+          type: context.length > 1 ? 'fusion' : 'generate',
+          nodeId: externalNodeId // ✅ 传递 nodeId 给后端
         }
 
         const aiResponse = await this.generateContentWithAI(aiRequest)
-        
+
         nodeContent = aiResponse.content || content
         nodeTitle = aiResponse.title || title
         nodeTags = aiResponse.tags || []
         confidence = aiResponse.confidence || 80 // 默认80%置信度
 
-      } catch (error) {
-        console.error('AI生成失败，使用默认内容:', error)
-        // AI失败时使用原始内容
-      }
-    }
+        // 如果没有标题，自动生成（在同一个 try 块内）
+        if (!nodeTitle && nodeContent) {
+          try {
+            const titleResponse = await this.generateContentWithAI({
+              inputs: [nodeContent],
+              type: 'generate',
+              instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）'
+            })
+            nodeTitle = titleResponse.title || titleResponse.content.slice(0, 20)
+          } catch {
+            nodeTitle = nodeContent.slice(0, 20) + (nodeContent.length > 20 ? '...' : '')
+          }
+        }
 
-    // 如果没有标题，自动生成
-    if (!nodeTitle && nodeContent) {
-      try {
-        const titleResponse = await this.generateContentWithAI({
-          inputs: [nodeContent],
-          type: 'generate',
-          instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）'
-        })
-        nodeTitle = titleResponse.title || titleResponse.content.slice(0, 20)
-      } catch {
-        nodeTitle = nodeContent.slice(0, 20) + (nodeContent.length > 20 ? '...' : '')
+      } catch (error) {
+        console.error('AI生成失败:', error)
+        // AI失败时抛出错误，由调用方处理
+        throw error
       }
     }
 
@@ -415,7 +419,7 @@ class NodeService {
    * 使用AI生成内容（通过WebSocket到Gateway）
    * 按照正确架构：WebSocket → Gateway → Broker → Engine
    */
-  private async generateContentWithAI(request: AIGenerateRequest): Promise<AIGenerateResponse> {
+  private async generateContentWithAI(request: AIGenerateRequest & { nodeId?: string }): Promise<AIGenerateResponse> {
     try {
       // 通过WebSocket发送到Gateway，由Gateway路由到消息队列
       const response = await websocketService.generateContent(request)
