@@ -69,11 +69,31 @@ export {
   validateAsync,
   validateBatch,
   validateOrThrow,
+  validateFromJSON,
+  validateFromBuffer,
   type InferSchema
 } from './message.validator.js'
 
 // ============================================================================
-// AI 任务验证器
+// AI 处理验证器 V2（新版 - context + prompt 模式）
+// ============================================================================
+
+export {
+  validateAIProcessRequest,
+  validateAIProcessResponse,
+  validateTaskProgressUpdate,
+  validateAIProcessRequestFromJSON,
+  validateAIProcessResponseFromJSON,
+  validateTaskProgressUpdateFromJSON,
+  validateAIProcessRequestFromBuffer,
+  validateAIProcessResponseFromBuffer,
+  isValidAIProcessRequest,
+  isValidAIProcessResponse,
+  isValidTaskProgressUpdate
+} from './ai-process.validator.js'
+
+// ============================================================================
+// AI 任务验证器 V1（旧版 - 兼容保留）
 // ============================================================================
 
 export {

@@ -259,6 +259,45 @@ export function validateOrThrow<T>(
   return defaultValidator.validateOrThrow(schema, data, context)
 }
 
+/**
+ * 从 JSON 字符串验证
+ */
+export function validateFromJSON<T>(
+  schema: ZodSchema<T>,
+  json: string,
+  context?: string
+): Result<T, SchemaValidationError> {
+  try {
+    const data = JSON.parse(json)
+    return validate(schema, data, context)
+  } catch (error) {
+    return err(
+      new SchemaValidationError('Invalid JSON string', {
+        issues: [
+          {
+            code: 'invalid_json',
+            message: error instanceof Error ? error.message : 'Unknown JSON parse error',
+            path: []
+          }
+        ]
+      })
+    )
+  }
+}
+
+/**
+ * 从 Buffer/Uint8Array 验证
+ */
+export function validateFromBuffer<T>(
+  schema: ZodSchema<T>,
+  buffer: Uint8Array,
+  context?: string
+): Result<T, SchemaValidationError> {
+  const decoder = new TextDecoder('utf-8')
+  const json = decoder.decode(buffer)
+  return validateFromJSON(schema, json, context)
+}
+
 // ============================================================================
 // 类型工具
 // ============================================================================

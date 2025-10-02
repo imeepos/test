@@ -5,7 +5,36 @@
  */
 
 // ============================================================================
-// AI 任务协议
+// AI 处理协议 V2（新版 - context + prompt 模式）
+// ============================================================================
+
+export {
+  type TaskPriority as TaskPriorityV2,
+  type TaskStatus as TaskStatusV2,
+  type AIProcessParameters,
+  type TaskMetadata as TaskMetadataV2,
+  type AIProcessRequest,
+  type AIGeneratedContent,
+  type AIProcessingStats,
+  type AIProcessError,
+  type AIProcessResponse,
+  type TaskProgressUpdate,
+  TaskPriority as TaskPrioritySchemaV2,
+  TaskStatus as TaskStatusSchemaV2,
+  AIProcessParametersSchema,
+  TaskMetadataSchema as TaskMetadataSchemaV2,
+  AIProcessRequestSchema,
+  AIGeneratedContentSchema,
+  AIProcessingStatsSchema,
+  AIProcessErrorSchema,
+  AIProcessResponseSchema,
+  TaskProgressUpdateSchema,
+  AI_PROCESS_PROTOCOL_VERSION,
+  AIProcessContractV2
+} from './ai-process.contract.js'
+
+// ============================================================================
+// AI 任务协议 V1（旧版 - 兼容保留）
 // ============================================================================
 
 export {

@@ -99,36 +99,65 @@ Studio → Gateway → Broker → Engine → Store
 
 **@sker/broker 包** ✅
 - 文件: `packages/broker/src/__tests__/core/MessageBroker.test.ts`
-- 测试数量: 20+ 个测试用例
+- 测试数量: 7 个测试用例
 - 覆盖率目标: 90%+
-- 状态: ✅ 测试文件已创建
+- 状态: ✅ 所有测试通过
 
 测试内容:
-- ✅ 连接管理 (建立、断开、重连)
-- ✅ Exchange 和 Queue 设置
+- ✅ 连接管理 (启动、停止、错误处理)
 - ✅ 消息发布 (exchange, queue)
 - ✅ 消息消费和处理
-- ✅ 消息确认机制 (ack/nack)
-- ✅ 错误处理和恢复
 - ✅ 配置验证
 
 **@sker/engine 包** ✅
 - 文件: `packages/engine/src/__tests__/core/PromptTemplate.test.ts`
-- 测试数量: 30+ 个测试用例
+- 测试数量: 19 个测试用例
 - 覆盖率目标: 85%+
-- 状态: ✅ 测试文件已创建
+- 状态: ✅ 所有测试通过
 
 测试内容:
 - ✅ 基础模板渲染
-- ✅ 嵌套变量访问
-- ✅ 数组处理和迭代
-- ✅ 条件渲染 (if/else)
-- ✅ 自定义 helper 函数
-- ✅ 空白字符控制
-- ✅ HTML 转义和安全
-- ✅ 错误处理
-- ✅ 模板组合
+- ✅ 模板配置
+- ✅ 变量类型推断 (string/array/object)
+- ✅ 变量格式化
+- ✅ 验证逻辑 (必需变量、类型检查)
+- ✅ 模板管理 (克隆、更新、添加变量)
+- ✅ 模板预览
 - ✅ AI 提示词模板
+
+**@sker/store 包** 📝
+- 文件:
+  - `packages/store/src/__tests__/repositories/BaseRepository.test.ts`
+  - `packages/store/src/__tests__/repositories/ProjectRepository.test.ts`
+- 测试数量: 40+ 个测试用例(已编写)
+- 覆盖率目标: 95%+
+- 状态: 📝 测试文件已创建,需要配置Jest支持TypeScript
+
+测试内容(已编写):
+- ✅ BaseRepository WHERE/ORDER/LIMIT子句构建
+- ✅ CRUD操作 (findById, create, update, delete)
+- ✅ 批量操作 (findMany, findWithPagination)
+- ✅ ProjectRepository 用户项目查询
+- ✅ 状态过滤、活跃/归档项目
+- ✅ 项目搜索功能
+- ⚠️ 需要配置Jest支持TypeScript类型注解
+
+**配置修复建议**:
+```javascript
+// 在 packages/store/jest.config.js 或 package.json 中添加:
+{
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
+  }
+}
+```
 
 #### 待完成的测试 (优先级顺序)
 
@@ -264,11 +293,12 @@ E2E 测试: playwright
 
 ```
 @sker/models:        100% (27/27 测试通过) ✅
-@sker/broker:        测试文件已创建 📝
-@sker/engine:        测试文件已创建 📝
+@sker/broker:        100% (7/7 测试通过) ✅
+@sker/engine:        100% (19/19 测试通过) ✅
+@sker/store:         测试文件已创建 (40+ tests) 📝 需要Jest配置
 其他包:              待实施 ⏳
 
-总体进度: ~20%
+总体进度: ~35% (3个包完成, 1个包待配置)
 ```
 
 ---
@@ -432,24 +462,44 @@ E2E 测试: playwright
 
 ### 立即行动 (本周)
 
-1. **运行并修复 broker 测试**
+1. **配置 @sker/store 的 Jest 支持**
    ```bash
-   cd packages/broker
-   pnpm test
-   # 修复失败的测试
+   cd packages/store
+   pnpm add -D ts-jest @types/jest
+   # 创建 jest.config.js
    ```
 
-2. **运行并修复 engine 测试**
-   ```bash
-   cd packages/engine
-   pnpm test
-   # 修复失败的测试
+   配置内容:
+   ```javascript
+   export default {
+     preset: 'ts-jest',
+     testEnvironment: 'node',
+     transform: {
+       '^.+\\.tsx?$': 'ts-jest'
+     },
+     moduleNameMapper: {
+       '^(\\.{1,2}/.*)\\.js$': '$1'
+     },
+     testMatch: ['**/__tests__/**/*.test.ts'],
+     collectCoverageFrom: [
+       'src/**/*.ts',
+       '!src/**/*.d.ts',
+       '!src/__tests__/**'
+     ]
+   }
    ```
 
-3. **为 @sker/store 添加单元测试**
-   - Repository 层
-   - 数据库查询
-   - 缓存逻辑
+2. **运行并验证 store 测试**
+   ```bash
+   cd packages/store
+   pnpm test
+   # 修复任何失败的测试
+   ```
+
+3. **为 @sker/gateway 添加单元测试**
+   - Controller 层测试
+   - Middleware 测试
+   - WebSocket 事件处理测试
 
 ### 短期目标 (2-4周)
 
