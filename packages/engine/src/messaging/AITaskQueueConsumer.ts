@@ -300,23 +300,23 @@ export class AITaskQueueConsumer extends EventEmitter {
    */
   private async saveTaskResult(taskMessage: UnifiedAITaskMessage, aiResult: any): Promise<any> {
     try {
-      // 构造Store API调用数据
+      // 构造Store API调用数据 - 使用下划线命名以匹配数据库schema
       const storeData = {
-        taskId: taskMessage.taskId,
-        projectId: taskMessage.projectId,
-        userId: taskMessage.userId,
+        task_id: taskMessage.taskId,
+        project_id: taskMessage.projectId,
+        user_id: taskMessage.userId,
         type: taskMessage.type,
         status: 'completed',
-        inputData: {
+        input_data: {
           inputs: taskMessage.inputs,
           context: taskMessage.context,
           instruction: taskMessage.instruction,
           parameters: taskMessage.parameters
         },
-        outputData: aiResult,
-        estimatedCost: this.calculateCost(taskMessage, aiResult),
-        processingTime: Date.now() - new Date(taskMessage.timestamp).getTime(),
-        completedAt: new Date()
+        output_data: aiResult,
+        estimated_cost: this.calculateCost(taskMessage, aiResult),
+        processing_time: Date.now() - new Date(taskMessage.timestamp).getTime(),
+        completed_at: new Date()
       }
 
       // 调用Store服务保存结果

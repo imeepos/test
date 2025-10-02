@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { websocketService } from '@/services'
-import type { 
-  AIProcessingState, 
-  AIGenerateRequest, 
-  AIGenerateResponse, 
+import { useNodeStore } from './nodeStore'
+import type {
+  AIProcessingState,
+  AIGenerateRequest,
+  AIGenerateResponse,
   AIModel,
-  WebSocketStatus 
+  WebSocketStatus
 } from '@/types'
 
 export interface AIState {
@@ -146,21 +147,21 @@ export const useAIStore = create<AIState>()(
         set((state) => {
           const newProcessingNodes = new Map(state.processingNodes)
           const newRecentResults = new Map(state.recentResults)
-          
+
           const processingState = newProcessingNodes.get(nodeId)
           if (processingState) {
             const responseTime = Date.now() - processingState.startTime.getTime()
             get().recordSuccess(responseTime)
-            
+
             newProcessingNodes.set(nodeId, {
               ...processingState,
               status: 'completed',
               endTime: new Date(),
             })
           }
-          
+
           newRecentResults.set(nodeId, result)
-          
+
           // 限制缓存大小
           if (newRecentResults.size > 50) {
             const firstKey = newRecentResults.keys().next().value
@@ -168,19 +169,33 @@ export const useAIStore = create<AIState>()(
               newRecentResults.delete(firstKey)
             }
           }
-          
+
           return {
             processingNodes: newProcessingNodes,
             recentResults: newRecentResults,
           }
         })
+
+        // 更新nodeStore中的节点状态
+        const nodeStore = useNodeStore.getState()
+        const node = nodeStore.getNode(nodeId)
+        if (node) {
+          console.log('✅ 更新节点状态为completed:', nodeId, result)
+          nodeStore.updateNode(nodeId, {
+            content: result.content,
+            title: result.title || node.title,
+            confidence: (result.confidence || 80) / 100, // 转换为0-1范围
+            status: 'completed',
+            tags: result.tags || node.tags,
+          })
+        }
       },
       
       failProcessing: (nodeId, error) => {
         set((state) => {
           const newProcessingNodes = new Map(state.processingNodes)
           const processingState = newProcessingNodes.get(nodeId)
-          
+
           if (processingState) {
             newProcessingNodes.set(nodeId, {
               ...processingState,
@@ -189,11 +204,22 @@ export const useAIStore = create<AIState>()(
               error,
             })
           }
-          
+
           return { processingNodes: newProcessingNodes }
         })
-        
+
         get().recordError()
+
+        // 更新nodeStore中的节点状态
+        const nodeStore = useNodeStore.getState()
+        const node = nodeStore.getNode(nodeId)
+        if (node) {
+          console.log('❌ 更新节点状态为error:', nodeId, error)
+          nodeStore.updateNode(nodeId, {
+            content: `AI生成失败: ${error}`,
+            status: 'error',
+          })
+        }
       },
       
       // WebSocket连接管理
@@ -256,17 +282,41 @@ export const useAIStore = create<AIState>()(
 
         // 监听AI生成响应
         const responseUnsubscribe = websocketService.subscribe('AI_GENERATE_RESPONSE', (message) => {
-          const { nodeId, result } = message.payload
-          if (nodeId && result) {
-            get().completeProcessing(nodeId, result)
+          console.log('📥 收到AI_GENERATE_RESPONSE:', message)
+          const { nodeId, result, taskId, requestId } = message.payload
+          const effectiveNodeId = nodeId || taskId || requestId
+          if (effectiveNodeId && result) {
+            get().completeProcessing(effectiveNodeId, result)
+          }
+        })
+
+        // 监听AI任务结果（从Gateway发送的消息）
+        const taskResultUnsubscribe = websocketService.subscribe('ai_task_result', (message) => {
+          console.log('📥 收到ai_task_result:', message)
+          const { taskId, requestId, status, result, error } = message.payload
+          const effectiveNodeId = taskId || requestId
+
+          if (!effectiveNodeId) {
+            console.warn('⚠️ ai_task_result缺少taskId/requestId')
+            return
+          }
+
+          if (status === 'completed' && result) {
+            get().completeProcessing(effectiveNodeId, result)
+          } else if (status === 'error' && error) {
+            get().failProcessing(effectiveNodeId, error.message || error)
+          } else if (status === 'processing') {
+            get().updateProcessingStatus(effectiveNodeId, { status: 'processing' })
           }
         })
 
         // 监听AI生成错误
         const errorUnsubscribe = websocketService.subscribe('AI_GENERATE_ERROR', (message) => {
-          const { nodeId, error } = message.payload
-          if (nodeId && error) {
-            get().failProcessing(nodeId, error)
+          console.log('📥 收到AI_GENERATE_ERROR:', message)
+          const { nodeId, error, taskId, requestId } = message.payload
+          const effectiveNodeId = nodeId || taskId || requestId
+          if (effectiveNodeId && error) {
+            get().failProcessing(effectiveNodeId, error)
           }
         })
 
@@ -289,6 +339,7 @@ export const useAIStore = create<AIState>()(
         return () => {
           statusUnsubscribe()
           responseUnsubscribe()
+          taskResultUnsubscribe()
           errorUnsubscribe()
           updateUnsubscribe()
           get().disconnectWebSocket()

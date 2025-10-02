@@ -64,7 +64,7 @@ export class AITaskController extends BaseController {
   createAITask = this.asyncHandler(async (req: Request, res: Response) => {
     const allowedFields = [
       'type', 'node_id', 'project_id', 'user_id',
-      'input_data', 'priority', 'metadata'
+      'input_data', 'metadata'
     ]
     const taskData = this.sanitizeInput(req.body, allowedFields)
 
@@ -75,9 +75,23 @@ export class AITaskController extends BaseController {
       return this.validationError(res, requiredErrors)
     }
 
+    // 映射前端type到数据库type
+    const typeMapping: Record<string, string> = {
+      'generate': 'content_generation',
+      'optimize': 'content_optimization',
+      'analyze': 'semantic_analysis',
+      'fusion': 'content_fusion',
+      'expand': 'node_enhancement',
+      'batch': 'batch_processing'
+    }
+
+    // 如果type需要映射，则进行映射；否则保持原值
+    if (taskData.type && typeMapping[taskData.type]) {
+      taskData.type = typeMapping[taskData.type]
+    }
+
     // 设置默认值
     taskData.status = 'pending'
-    taskData.priority = taskData.priority || 'normal'
 
     const task = await this.aiTaskRepo.create(taskData)
     this.created(res, task)
@@ -90,7 +104,7 @@ export class AITaskController extends BaseController {
   updateAITask = this.asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params
     const allowedFields = [
-      'status', 'output_data', 'error_data', 'priority',
+      'status', 'output_data', 'error_data',
       'processing_time', 'metadata'
     ]
     const updateData = this.sanitizeInput(req.body, allowedFields)

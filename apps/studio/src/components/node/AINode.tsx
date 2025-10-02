@@ -13,7 +13,9 @@ import {
   AlertCircle,
   Tag,
   Zap,
-  Clock
+  Clock,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
 import { NodeEditor } from './NodeEditor'
@@ -34,6 +36,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // 状态管理
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false) // 默认折叠
 
   // 键盘导航支持
   useKeyboardNavigation({
@@ -125,6 +128,14 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     setIsEditorOpen(true)
   }, [])
 
+  /**
+   * 切换折叠/展开状态
+   */
+  const toggleExpanded = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsExpanded(!isExpanded)
+  }, [isExpanded])
+
 
   // ============= 样式计算 =============
 
@@ -186,8 +197,19 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
       >
         {/* 头部 - 统一的信息栏 */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-canvas-node-border">
-          {/* 标题和状态 */}
+          {/* 折叠/展开按钮 + 标题和状态 */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button
+              onClick={toggleExpanded}
+              className="p-0.5 hover:bg-sidebar-accent/10 rounded transition-colors"
+              aria-label={isExpanded ? "折叠详细信息" : "展开详细信息"}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-sidebar-text-muted" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-sidebar-text-muted" />
+              )}
+            </button>
             {data.title && (
               <h3 className="text-sm font-medium text-sidebar-text truncate">
                 {data.title}
@@ -195,82 +217,89 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
             )}
             {statusIcon}
           </div>
+        </div>
 
-          {/* 统一的版本信息 - 仅显示一次 */}
-          <div
-            className="flex items-center gap-2 cursor-help"
-            title={versionTooltip}
-            aria-label={versionTooltip}
-          >
-            <div className="flex items-center gap-1 text-xs text-sidebar-text-muted">
-              <Clock className="h-3 w-3" aria-hidden="true" />
-              <span aria-label={`版本 ${data.version}`}>v{data.version}</span>
-            </div>
-
-            {data.metadata?.autoSaved && (
-              <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
-                         bg-green-500/20 text-green-400 border border-green-500/30"
-                title="自动保存"
-                aria-label="自动保存"
+        {/* 详细信息区域 - 仅在展开时显示 */}
+        {isExpanded && (
+          <>
+            {/* 版本信息 - 仅展开时显示 */}
+            <div className="flex items-center justify-end px-3 py-2 border-b border-canvas-node-border">
+              <div
+                className="flex items-center gap-2 cursor-help"
+                title={versionTooltip}
+                aria-label={versionTooltip}
               >
-                AS
-              </span>
-            )}
-          </div>
-        </div>
+                <div className="flex items-center gap-1 text-xs text-sidebar-text-muted">
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  <span aria-label={`版本 ${data.version}`}>v{data.version}</span>
+                </div>
 
-        {/* 内容区域 - 增加padding */}
-        <div className="px-4 py-3">
-          <p
-            id={`node-content-${data.id}`}
-            className="text-sm text-sidebar-text leading-relaxed whitespace-pre-wrap break-words"
-          >
-            {contentPreview}
-          </p>
-        </div>
-
-        {/* 元信息栏 */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-canvas-node-border">
-          {/* 重要性星级 */}
-          {renderStars(data.importance)}
-
-          {/* 置信度 */}
-          <div className="flex items-center gap-1">
-            <Zap className="h-3 w-3" aria-hidden="true" />
-            <span
-              className={`text-xs font-medium ${confidenceInfo.text}`}
-              aria-label={`置信度 ${Math.round(data.confidence * 100)}%`}
-            >
-              {Math.round(data.confidence * 100)}%
-            </span>
-          </div>
-        </div>
-
-        {/* 标签 - 最多显示2个 */}
-        {data.tags.length > 0 && (
-          <div className="px-3 pb-3">
-            <div className="flex flex-wrap gap-1" role="list" aria-label="节点标签">
-              {data.tags.slice(0, 2).map((tag, index) => (
-                <span
-                  key={index}
-                  role="listitem"
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-sidebar-accent/10 text-sidebar-accent"
-                >
-                  <Tag className="h-2.5 w-2.5" aria-hidden="true" />
-                  {tag}
-                </span>
-              ))}
-              {data.tags.length > 2 && (
-                <span
-                  className="text-xs text-sidebar-text-muted self-center"
-                  aria-label={`还有 ${data.tags.length - 2} 个标签`}
-                >
-                  +{data.tags.length - 2}
-                </span>
-              )}
+                {data.metadata?.autoSaved && (
+                  <span
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                             bg-green-500/20 text-green-400 border border-green-500/30"
+                    title="自动保存"
+                    aria-label="自动保存"
+                  >
+                    AS
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+
+            {/* 内容区域 - 增加padding */}
+            <div className="px-4 py-3">
+              <p
+                id={`node-content-${data.id}`}
+                className="text-sm text-sidebar-text leading-relaxed whitespace-pre-wrap break-words"
+              >
+                {contentPreview}
+              </p>
+            </div>
+
+            {/* 元信息栏 */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-canvas-node-border">
+              {/* 重要性星级 */}
+              {renderStars(data.importance)}
+
+              {/* 置信度 */}
+              <div className="flex items-center gap-1">
+                <Zap className="h-3 w-3" aria-hidden="true" />
+                <span
+                  className={`text-xs font-medium ${confidenceInfo.text}`}
+                  aria-label={`置信度 ${Math.round(data.confidence * 100)}%`}
+                >
+                  {Math.round(data.confidence * 100)}%
+                </span>
+              </div>
+            </div>
+
+            {/* 标签 - 最多显示2个 */}
+            {data.tags.length > 0 && (
+              <div className="px-3 pb-3">
+                <div className="flex flex-wrap gap-1" role="list" aria-label="节点标签">
+                  {data.tags.slice(0, 2).map((tag, index) => (
+                    <span
+                      key={index}
+                      role="listitem"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-sidebar-accent/10 text-sidebar-accent"
+                    >
+                      <Tag className="h-2.5 w-2.5" aria-hidden="true" />
+                      {tag}
+                    </span>
+                  ))}
+                  {data.tags.length > 2 && (
+                    <span
+                      className="text-xs text-sidebar-text-muted self-center"
+                      aria-label={`还有 ${data.tags.length - 2} 个标签`}
+                    >
+                      +{data.tags.length - 2}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
 

@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client'
 import type { WebSocketStatus, AIGenerateRequest, AIGenerateResponse } from '@/types'
+import { useNodeStore } from '@/stores/nodeStore'
 
 interface WebSocketMessage {
   id: string
@@ -183,7 +184,8 @@ class WebSocketService {
       type,
       payload: {
         ...payload,
-        requestId // 确保payload中包含requestId
+        requestId, // 确保payload中包含requestId
+        taskId: requestId // 同时设置taskId，确保与Gateway兼容
       },
       timestamp: Date.now(),
     }
@@ -274,8 +276,36 @@ class WebSocketService {
   /**
    * AI内容生成请求
    */
-  async generateContent(request: AIGenerateRequest): Promise<AIGenerateResponse> {
-    return this.sendMessage('AI_GENERATE_REQUEST', request)
+  async generateContent(request: AIGenerateRequest & { nodeId?: string }): Promise<AIGenerateResponse> {
+    // 自动注入 projectId（从 nodeStore 获取）
+    const projectId = request.projectId || this.getCurrentProjectId()
+
+    // 验证 projectId 是否存在
+    if (!projectId) {
+      throw new Error('请先选择或创建项目后再使用AI功能')
+    }
+
+    const enrichedRequest = {
+      ...request,
+      projectId,
+      // 如果提供了nodeId，将它作为自定义标识符传递
+      nodeId: request.nodeId
+    }
+    return this.sendMessage('AI_GENERATE_REQUEST', enrichedRequest)
+  }
+
+  /**
+   * 获取当前项目ID
+   */
+  private getCurrentProjectId(): string | undefined {
+    // 从 nodeStore 获取当前项目ID
+    try {
+      const nodeStore = useNodeStore.getState()
+      return nodeStore.currentProjectId || undefined
+    } catch (error) {
+      console.warn('无法获取当前项目ID:', error)
+      return undefined
+    }
   }
 
   /**

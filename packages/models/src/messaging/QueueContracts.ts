@@ -103,6 +103,8 @@ export interface ModelQueueConfig {
   durable: boolean
   exclusive: boolean
   autoDelete: boolean
+  exchange?: string
+  routingKey?: string | string[]
   arguments?: Record<string, any>
 }
 
@@ -158,6 +160,8 @@ export const DEFAULT_QUEUE_CONFIGS: Record<string, ModelQueueConfig> = {
     durable: true,
     exclusive: false,
     autoDelete: false,
+    exchange: EXCHANGE_NAMES.AI_RESULTS,
+    routingKey: ROUTING_KEYS.AI_RESULT,
     arguments: {
       'x-message-ttl': 1800000, // 30分钟
       'x-max-length': 10000

@@ -92,7 +92,7 @@ class AIService {
     try {
       const response = await this.generateContent({
         inputs: [content],
-        type: 'title',
+        type: 'generate',
         instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）',
       })
 
@@ -110,7 +110,7 @@ class AIService {
     try {
       const response = await this.generateContent({
         inputs: [content],
-        type: 'tags',
+        type: 'analyze',
         instruction: '为以下内容提取3-5个关键标签，返回JSON数组格式',
       })
 

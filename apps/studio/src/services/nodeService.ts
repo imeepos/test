@@ -81,7 +81,7 @@ class NodeService {
       try {
         const titleResponse = await this.generateContentWithAI({
           inputs: [nodeContent],
-          type: 'title',
+          type: 'generate',
           instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）'
         })
         nodeTitle = titleResponse.title || titleResponse.content.slice(0, 20)
@@ -329,42 +329,49 @@ class NodeService {
   }
 
   /**
-   * 拖拽扩展生成
+   * 拖拽扩展生成（异步版本）
+   * 立即创建processing状态的节点，后台异步生成内容
    */
   async dragExpandGenerate(sourceNode: AINode, targetPosition: Position): Promise<AINode> {
     const context = [sourceNode.content]
-    
-    try {
-      const aiRequest: AIGenerateRequest = {
-        inputs: context,
-        context: `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`,
-        type: 'expand',
-        instruction: '请基于提供的内容，生成相关的扩展内容或下一步思考'
+    const nodeId = this.generateNodeId()
+    const now = new Date()
+
+    // 立即创建processing状态的节点
+    const processingNode: AINode = {
+      id: nodeId,
+      content: '正在生成中...',
+      title: `${sourceNode.title || '节点'}的扩展`,
+      importance: sourceNode.importance,
+      confidence: 0.5,
+      status: 'processing',
+      tags: ['AI生成中'],
+      position: targetPosition,
+      connections: [],
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        semantic: [], // 语义类型将在AI生成后自动检测
+        editCount: 0,
       }
-
-      const aiResponse = await this.generateContentWithAI(aiRequest)
-      
-      return this.createNode({
-        position: targetPosition,
-        content: aiResponse.content,
-        title: aiResponse.title,
-        importance: sourceNode.importance,
-        useAI: false, // 已经生成了
-        context,
-        parentNodeIds: [sourceNode.id],
-      })
-
-    } catch (error) {
-      // AI扩展失败时创建空节点
-      return this.createNode({
-        position: targetPosition,
-        content: '请输入内容...',
-        title: `${sourceNode.title || '节点'}的扩展`,
-        importance: sourceNode.importance,
-        useAI: false,
-        parentNodeIds: [sourceNode.id],
-      })
     }
+
+    // 后台异步发送AI请求（不等待结果）
+    const aiRequest: AIGenerateRequest & { nodeId: string } = {
+      inputs: context,
+      context: `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`,
+      type: 'expand',
+      instruction: '请基于提供的内容，生成相关的扩展内容或下一步思考',
+      nodeId: nodeId // 传递节点ID，以便接收到结果时能找到对应节点
+    }
+
+    // 异步发送AI请求，不阻塞返回
+    // AI结果会通过WebSocket监听器（aiStore）自动处理并更新节点状态
+    this.generateContentWithAIAsync(aiRequest, nodeId)
+
+    // 立即返回processing状态的节点
+    return processingNode
   }
 
   /**
@@ -425,6 +432,24 @@ class NodeService {
         '3. 后端消息队列或AI引擎服务异常\n\n' +
         '请检查网络连接和服务状态后重试'
       )
+    }
+  }
+
+  /**
+   * 异步发送AI请求（不等待响应，通过WebSocket监听器处理结果）
+   */
+  private async generateContentWithAIAsync(request: AIGenerateRequest & { nodeId: string }, nodeId: string): Promise<void> {
+    try {
+      console.log('🚀 异步发送AI请求:', { nodeId, request })
+      // 发送请求，但不等待响应（Promise会在WebSocket发送后立即resolve）
+      // 实际的AI结果会通过WebSocket的监听器（aiStore）处理
+      websocketService.generateContent(request).catch((error) => {
+        console.error('❌ AI请求发送失败:', error)
+        // 错误会通过WebSocket监听器处理
+      })
+    } catch (error) {
+      console.error('❌ 发送AI请求异常:', error)
+      // 即使失败也不抛出错误，让监听器处理
     }
   }
 

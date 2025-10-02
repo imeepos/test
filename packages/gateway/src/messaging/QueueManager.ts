@@ -129,7 +129,7 @@ export class QueueManager extends EventEmitter {
       },
       {
         exchange: EXCHANGE_NAMES.AI_RESULTS,
-        routingKey: 'task.result.*',
+        routingKey: `${ROUTING_KEYS.AI_RESULT}.#`, // 使用通配符匹配所有结果消息
         autoAck: false
       }
     )
@@ -290,7 +290,8 @@ export class QueueManager extends EventEmitter {
    */
   async publishAITask(task: UnifiedAITaskMessage): Promise<void> {
     try {
-      const routingKey = `${ROUTING_KEYS.AI_PROCESS}.${task.type}.${task.priority || 'normal'}`
+      // 使用简化的路由键：llm.process（不包含type和priority后缀）
+      const routingKey = ROUTING_KEYS.AI_PROCESS
 
       await this.broker.publishWithConfirm(
         EXCHANGE_NAMES.LLM_DIRECT,
@@ -305,12 +306,13 @@ export class QueueManager extends EventEmitter {
           headers: {
             taskType: task.type,
             userId: task.userId,
-            projectId: task.projectId
+            projectId: task.projectId,
+            priority: task.priority || 'normal'
           }
         }
       )
 
-      console.log(`AI任务已发布: ${task.taskId}, 类型: ${task.type}`)
+      console.log(`AI任务已发布: ${task.taskId}, 类型: ${task.type}, 路由键: ${routingKey}`)
     } catch (error) {
       console.error('发布AI任务失败:', error)
       throw error

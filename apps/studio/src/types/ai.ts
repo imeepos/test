@@ -1,11 +1,15 @@
 // AI服务相关类型定义
 
+// 统一的AI任务类型 - 必须与后端保持一致
+export type UnifiedAITaskType = 'generate' | 'optimize' | 'fusion' | 'analyze' | 'expand'
+
 // AI生成请求
 export interface AIGenerateRequest {
   inputs: string[]
   context?: string
   nodeId?: string
-  type?: string
+  projectId?: string  // 项目ID，必需字段（但设为可选以兼容旧代码）
+  type?: UnifiedAITaskType
   instruction?: string
   options?: AIGenerateOptions
 }

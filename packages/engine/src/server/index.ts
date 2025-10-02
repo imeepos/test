@@ -82,11 +82,18 @@ async function main() {
           'llm.direct': {
             type: 'direct',
             durable: true
+          },
+          'ai.results.topic': {
+            type: 'topic',
+            durable: true
           }
         },
         queues: {
-          'ai.tasks': {
-            durable: true
+          'llm.process.queue': {
+            durable: true,
+            exchange: 'llm.direct',
+            routingKey: 'llm.process',
+            maxPriority: 10  // 必须与broker的配置一致
           }
         },
         retry: {
@@ -104,6 +111,9 @@ async function main() {
         authToken: process.env.STORE_AUTH_TOKEN,
         timeout: parseInt(process.env.STORE_TIMEOUT || '30000')
       })
+
+      // 初始化 StoreClient
+      await storeClient.initialize()
 
       queueConsumer = new AITaskQueueConsumer(
         messageBroker,

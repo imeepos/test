@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { EventEmitter } from 'events'
 import jwt from 'jsonwebtoken'
+import type { TaskPriority } from '@sker/models'
 import type {
   WebSocketConfig,
   AuthConfig
@@ -270,6 +271,23 @@ export class WebSocketManager extends EventEmitter {
     }
 
     try {
+      // 校验任务类型
+      const validTaskTypes = ['generate', 'optimize', 'fusion', 'analyze', 'expand']
+      const taskType = data.type || 'generate'
+
+      if (!validTaskTypes.includes(taskType)) {
+        socket.emit(WebSocketEventType.AI_GENERATE_ERROR, {
+          requestId: data.requestId,
+          error: {
+            code: 'INVALID_TASK_TYPE',
+            message: `不支持的任务类型: ${taskType}。支持的类型: ${validTaskTypes.join(', ')}`,
+            timestamp: new Date()
+          }
+        })
+        console.error(`❌ 无效的AI任务类型: ${taskType}`)
+        return
+      }
+
       // 发送处理中状态
       socket.emit(WebSocketEventType.AI_GENERATE_PROGRESS, {
         requestId: data.requestId,
@@ -278,17 +296,48 @@ export class WebSocketManager extends EventEmitter {
         message: 'Request queued for processing'
       } as AIProgressEvent)
 
-      // 构造AI任务消息
+      // 验证必需字段：projectId
+      if (!data.projectId || typeof data.projectId !== 'string' || data.projectId.trim() === '') {
+        socket.emit(WebSocketEventType.AI_GENERATE_ERROR, {
+          requestId: data.requestId,
+          error: {
+            code: 'MISSING_PROJECT_ID',
+            message: 'projectId is required',
+            timestamp: new Date()
+          }
+        })
+        console.error(`❌ AI任务缺少 projectId`)
+        return
+      }
+
+      // 验证 projectId 格式（UUID）
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(data.projectId)) {
+        socket.emit(WebSocketEventType.AI_GENERATE_ERROR, {
+          requestId: data.requestId,
+          error: {
+            code: 'INVALID_PROJECT_ID',
+            message: `projectId must be a valid UUID, got: ${data.projectId}`,
+            timestamp: new Date()
+          }
+        })
+        console.error(`❌ 无效的 projectId 格式: ${data.projectId}`)
+        return
+      }
+
+      // 构造AI任务消息，使用requestId或taskId作为任务ID
+      const taskId = data.requestId || data.taskId || this.generateEventId()
       const taskMessage = {
-        taskId: data.requestId || this.generateEventId(),
-        type: data.type || 'generate',
+        taskId,
+        requestId: taskId, // 保持兼容性
+        type: taskType,
         inputs: data.inputs || [],
-        context: data.context,
-        instruction: data.instruction,
-        nodeId: data.nodeId,
-        projectId: data.projectId,
-        userId: connection.userId,
-        priority: data.priority || 'normal',
+        context: data.context || '',
+        instruction: data.instruction || '',
+        nodeId: data.nodeId || taskId, // 使用taskId作为默认nodeId
+        projectId: data.projectId, // 已验证的projectId
+        userId: connection.userId, // 来自连接认证的userId
+        priority: (data.priority || 'normal') as TaskPriority,
         timestamp: new Date(),
         metadata: {
           socketId: socket.id,
@@ -299,7 +348,7 @@ export class WebSocketManager extends EventEmitter {
       // 触发AI任务发布事件，让Gateway的QueueManager处理
       this.emit('aiTaskRequest', taskMessage)
 
-      console.log(`AI任务请求已接收: ${taskMessage.taskId}, 用户: ${connection.userId}`)
+      console.log(`AI任务请求已接收: ${taskMessage.taskId}, 用户: ${connection.userId}, 类型: ${taskType}`)
 
     } catch (error) {
       console.error('处理AI生成请求失败:', error)

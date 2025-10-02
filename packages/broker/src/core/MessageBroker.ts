@@ -225,30 +225,23 @@ export class MessageBroker extends EventEmitter {
       appId: options.appId || '@sker/broker'
     }
 
-    return new Promise((resolve, reject) => {
-      try {
-        const result = this.confirmChannel!.publish(exchange, routingKey, messageBuffer, messageOptions)
-        if (!result) {
-          reject(new Error('Failed to publish message - channel flow control'))
-          return
-        }
-
-        // 获取下一个序列号 - 使用时间戳作为唯一标识
-        const seqNo = Date.now() + Math.random()
-
-        // 设置确认超时
-        const timer = setTimeout(() => {
-          this.pendingConfirmations.delete(seqNo)
-          reject(new Error('Message confirmation timeout'))
-        }, confirmTimeout)
-
-        // 保存确认回调
-        this.pendingConfirmations.set(seqNo, { resolve, reject, timer })
-
-      } catch (error) {
-        reject(error)
+    try {
+      // 发布消息
+      const result = this.confirmChannel.publish(exchange, routingKey, messageBuffer, messageOptions)
+      if (!result) {
+        throw new Error('Failed to publish message - channel flow control')
       }
-    })
+
+      // 使用 waitForConfirms 等待确认，带超时
+      const confirmPromise = this.confirmChannel.waitForConfirms()
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Message confirmation timeout')), confirmTimeout)
+      })
+
+      await Promise.race([confirmPromise, timeoutPromise])
+    } catch (error) {
+      throw error
+    }
   }
 
   /**
