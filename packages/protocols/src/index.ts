@@ -19,10 +19,28 @@ export * from './contracts/index.js'
 export * from './validators/index.js'
 
 // ============================================================================
+// 工具函数
+// ============================================================================
+
+export * from './utils/index.js'
+
+// ============================================================================
 // 事件系统
 // ============================================================================
 
 export * from './events/index.js'
+
+// ============================================================================
+// 数据结构
+// ============================================================================
+
+export * from './structures/index.js'
+
+// ============================================================================
+// 执行引擎
+// ============================================================================
+
+export * from './execution/index.js'
 
 // ============================================================================
 // 版本信息
@@ -39,7 +57,20 @@ import {
   NODE_PROTOCOL_VERSION
 } from './contracts/index.js'
 
+import {
+  CHAIN_PROTOCOL_VERSION,
+  EDGE_PROTOCOL_VERSION,
+  GRAPH_PROTOCOL_VERSION,
+  TREE_PROTOCOL_VERSION,
+  ENHANCED_NODE_PROTOCOL_VERSION
+} from './structures/index.js'
+
 export const PROTOCOL_VERSIONS = {
   aiProcess: AI_PROCESS_PROTOCOL_VERSION,
-  node: NODE_PROTOCOL_VERSION
+  node: NODE_PROTOCOL_VERSION,
+  chain: CHAIN_PROTOCOL_VERSION,
+  edge: EDGE_PROTOCOL_VERSION,
+  graph: GRAPH_PROTOCOL_VERSION,
+  tree: TREE_PROTOCOL_VERSION,
+  enhancedNode: ENHANCED_NODE_PROTOCOL_VERSION
 } as const

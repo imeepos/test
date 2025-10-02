@@ -53,7 +53,5 @@ export {
   NODE_PROTOCOL_VERSION,
   NodeContractV1,
   isValidNodeStatus,
-  isValidNode as isValidNodeContract,
-  calculateNodeConfidence,
-  shouldAutoSaveNode
+  isValidNode as isValidNodeContract
 } from './node.contract.js'
