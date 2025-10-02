@@ -55,7 +55,8 @@ export class AuthService {
         skipAuthError: true, // 关键：跳过401认证错误处理
         skipRetry: true // 登出不需要重试
       }
-      await apiClient.post('/api/users/auth/logout', null, config)
+      // 使用 undefined 代替 null，避免发送 "null" 字符串
+      await apiClient.post('/api/users/auth/logout', undefined, config)
     } catch (error) {
       console.error('登出请求失败:', error)
       // 即使请求失败也要清除本地Token
