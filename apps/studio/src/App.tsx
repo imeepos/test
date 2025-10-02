@@ -11,10 +11,11 @@ import { initializeServices, cleanupServices } from '@/services'
 import { useProjectInit } from '@/hooks/useProjectInit'
 
 function App() {
-  const { theme } = useUIStore()
-  const { initializeWebSocket } = useAIStore()
-  const { currentProject } = useCanvasStore()
-  const { status: authStatus, initialize: initializeAuth } = useAuthStore()
+  const theme = useUIStore((state) => state.theme)
+  const initializeWebSocket = useAIStore((state) => state.initializeWebSocket)
+  const currentProject = useCanvasStore((state) => state.currentProject)
+  const authStatus = useAuthStore((state) => state.status)
+  const initializeAuth = useAuthStore((state) => state.initialize)
 
   // 页面状态：'login' | 'register' | 'forgot-password' | 'app'
   const [page, setPage] = React.useState<'login' | 'register' | 'forgot-password' | 'app'>('login')

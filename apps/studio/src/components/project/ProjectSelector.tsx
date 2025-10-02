@@ -9,15 +9,13 @@ import { useNodeStore } from '@/stores/nodeStore'
 import { Plus, FolderOpen, Clock, Loader2 } from 'lucide-react'
 
 export const ProjectSelector: React.FC = () => {
-  const {
-    projects,
-    currentProject,
-    isLoadingProject,
-    projectError,
-    loadProjects,
-    loadProject,
-    createProject,
-  } = useCanvasStore()
+  // 使用 selector 避免不必要的重新渲染
+  const projects = useCanvasStore((state) => state.projects)
+  const currentProject = useCanvasStore((state) => state.currentProject)
+  const isLoadingProject = useCanvasStore((state) => state.isLoadingProject)
+  const projectError = useCanvasStore((state) => state.projectError)
+  const loadProject = useCanvasStore((state) => state.loadProject)
+  const createProject = useCanvasStore((state) => state.createProject)
 
   const { syncFromBackend, setCurrentProject } = useNodeStore()
 
@@ -25,10 +23,9 @@ export const ProjectSelector: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectDescription, setNewProjectDescription] = useState('')
 
-  // 加载项目列表
-  useEffect(() => {
-    loadProjects()
-  }, [loadProjects])
+  // ❌ 不要在这里加载项目列表！
+  // 项目列表已经在 useProjectInit 中加载
+  // 这里重复加载会导致死循环
 
   // 打开项目
   const handleOpenProject = async (projectId: string) => {

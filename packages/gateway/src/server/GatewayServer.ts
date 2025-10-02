@@ -85,7 +85,7 @@ export class GatewayServer {
       ...dependencies,
       queueManager: this.queueManager
     })
-    this.wsManager = new WebSocketManager(this.server, config.websocket)
+    this.wsManager = new WebSocketManager(this.server, config.websocket, config.auth)
 
     this.setupMiddleware()
     this.setupRoutes()

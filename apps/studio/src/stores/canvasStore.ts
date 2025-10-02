@@ -174,6 +174,12 @@ export const useCanvasStore = create<CanvasStoreState>()(
 
         // 项目管理Actions实现
         loadProjects: async (userId) => {
+          // 防止重复加载：如果正在加载中，直接返回
+          if (get().isLoadingProject) {
+            console.log('⏳ 项目列表正在加载中，跳过重复请求')
+            return
+          }
+
           set({ isLoadingProject: true, projectError: null })
 
           try {

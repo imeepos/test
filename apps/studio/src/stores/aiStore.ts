@@ -73,6 +73,9 @@ export interface AIState {
   cacheResult: (inputs: string[], result: AIGenerateResponse) => void
   getCachedResult: (inputs: string[]) => AIGenerateResponse | undefined
   clearCache: () => void
+
+  // 队列请求处理
+  processQueuedRequests: () => Promise<void>
 }
 
 const generateRequestId = () => `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -98,17 +101,34 @@ export const useAIStore = create<AIState>()(
       
       // AI处理管理
       startProcessing: (nodeId, request) => {
+        console.log('🚀 startProcessing called:', { nodeId, request })
+
         const processingState: AIProcessingState = {
           nodeId,
           status: 'queued',
           startTime: new Date(),
         }
-        
+
         set((state) => {
           const newProcessingNodes = new Map(state.processingNodes)
           newProcessingNodes.set(nodeId, processingState)
           return { processingNodes: newProcessingNodes }
         })
+
+        // 将请求添加到队列，确保断线重连后可以继续处理
+        const queueId = get().addToQueue(request, 1)
+        console.log('📥 Request added to queue:', { queueId, queueLength: get().requestQueue.length })
+
+        // 如果已连接，立即处理队列
+        const connectionStatus = get().connectionStatus
+        console.log('🔌 Connection status:', connectionStatus)
+
+        if (connectionStatus === 'connected') {
+          console.log('✅ Connection is ready, processing queue immediately')
+          get().processQueuedRequests()
+        } else {
+          console.warn('⚠️ Connection not ready, request queued until connection is established')
+        }
       },
       
       updateProcessingStatus: (nodeId, updates) => {
@@ -183,9 +203,19 @@ export const useAIStore = create<AIState>()(
           lastConnectionTime: connectionStatus === 'connected' ? new Date() : get().lastConnectionTime,
           isAvailable: connectionStatus === 'connected',
         })
-        
+
         if (connectionStatus === 'connected') {
           get().resetReconnectAttempts()
+          // 连接恢复后，处理队列中的请求
+          get().processQueuedRequests()
+        } else if (connectionStatus === 'disconnected') {
+          // 断线时，将处理中的任务标记为等待重连
+          const state = get()
+          state.processingNodes.forEach((node, nodeId) => {
+            if (node.status === 'processing') {
+              get().updateProcessingStatus(nodeId, { status: 'queued' })
+            }
+          })
         }
       },
       
@@ -364,6 +394,44 @@ export const useAIStore = create<AIState>()(
           recentResults: new Map(),
           processingNodes: new Map(),
         })
+      },
+
+      // 处理队列中的请求
+      processQueuedRequests: async () => {
+        const queue = get().requestQueue
+        console.log(`🔄 processQueuedRequests called, queue length: ${queue.length}`)
+
+        if (queue.length === 0) {
+          console.log('📭 Queue is empty, nothing to process')
+          return
+        }
+
+        console.log(`🔄 处理队列中的 ${queue.length} 个AI请求`)
+
+        // 逐个处理队列中的请求
+        for (const item of queue) {
+          const nodeId = item.request.nodeId
+          console.log(`📤 Processing queued request:`, { id: item.id, nodeId, request: item.request })
+
+          if (!nodeId) {
+            console.warn('队列请求缺少 nodeId，跳过')
+            get().removeFromQueue(item.id)
+            continue
+          }
+
+          try {
+            get().updateProcessingStatus(nodeId, { status: 'processing' })
+            console.log(`🚀 Calling websocketService.generateContent for nodeId: ${nodeId}`)
+            const result = await websocketService.generateContent(item.request)
+            console.log(`✅ generateContent completed:`, result)
+            get().completeProcessing(nodeId, result)
+            get().removeFromQueue(item.id)
+          } catch (error) {
+            console.error(`❌ 处理队列请求失败 (${nodeId}):`, error)
+            get().failProcessing(nodeId, error instanceof Error ? error.message : '请求失败')
+            get().removeFromQueue(item.id)
+          }
+        }
       },
     }),
     {

@@ -13,9 +13,13 @@ import { validateAPIConfig, logAPIConfig } from '@/config/api'
  * 项目初始化Hook
  */
 export function useProjectInit() {
-  const { currentProject, loadProjects, isLoadingProject, projectError } = useCanvasStore()
-  const { syncFromBackend, setCurrentProject } = useNodeStore()
-  const { checkOnlineStatus } = useSyncStore()
+  const currentProject = useCanvasStore((state) => state.currentProject)
+  const loadProjects = useCanvasStore((state) => state.loadProjects)
+  const isLoadingProject = useCanvasStore((state) => state.isLoadingProject)
+  const projectError = useCanvasStore((state) => state.projectError)
+  const syncFromBackend = useNodeStore((state) => state.syncFromBackend)
+  const setCurrentProject = useNodeStore((state) => state.setCurrentProject)
+  const checkOnlineStatus = useSyncStore((state) => state.checkOnlineStatus)
   const [isInitialized, setIsInitialized] = useState(false)
 
   /**
@@ -102,15 +106,16 @@ export function useProjectInit() {
    * 监听当前项目变化,同步节点数据
    */
   useEffect(() => {
-    const loadProjectData = async () => {
-      if (!currentProject) {
-        return
-      }
+    const projectId = currentProject?.id
+    if (!projectId) {
+      return
+    }
 
+    const loadProjectData = async () => {
       try {
-        console.log('🔄 同步项目数据:', currentProject.id)
-        setCurrentProject(currentProject.id)
-        await syncFromBackend(currentProject.id)
+        console.log('🔄 同步项目数据:', projectId)
+        setCurrentProject(projectId)
+        await syncFromBackend(projectId)
         console.log('✅ 项目数据同步完成')
       } catch (error) {
         console.error('❌ 同步项目数据失败:', error)
@@ -118,6 +123,7 @@ export function useProjectInit() {
     }
 
     loadProjectData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject?.id]) // 只在项目ID变化时执行
 
   /**
@@ -126,11 +132,13 @@ export function useProjectInit() {
   useEffect(() => {
     const handleOnline = () => {
       console.log('🌐 网络连接恢复')
+      const { checkOnlineStatus } = useSyncStore.getState()
       checkOnlineStatus()
     }
 
     const handleOffline = () => {
       console.warn('⚠️ 网络连接丢失')
+      const { checkOnlineStatus } = useSyncStore.getState()
       checkOnlineStatus()
     }
 
@@ -141,7 +149,7 @@ export function useProjectInit() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [checkOnlineStatus])
+  }, [])
 
   return {
     isReady: isInitialized,

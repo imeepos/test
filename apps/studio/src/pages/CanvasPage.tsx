@@ -2,7 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Canvas, CanvasControls } from '@/components/canvas'
 import { Sidebar } from '@/components/sidebar'
-import { ToastContainer } from '@/components/ui'
+import { ToastContainer, PromptDialog } from '@/components/ui'
 import { useCanvasStore, useNodeStore, useUIStore, useAIStore } from '@/stores'
 import { useSyncStore } from '@/stores/syncStore'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -15,6 +15,11 @@ const CanvasPage: React.FC = () => {
   const { updateStats, selectedNodeIds, selectAll, currentProject } = useCanvasStore()
   const { startProcessing, connectionStatus } = useAIStore()
   const { status: syncStatus, lastSavedAt } = useSyncStore()
+
+  // 提示词对话框状态
+  const [promptDialogOpen, setPromptDialogOpen] = React.useState(false)
+  const [promptDialogPosition, setPromptDialogPosition] = React.useState<Position>({ x: 0, y: 0 })
+  const [isCreatingNode, setIsCreatingNode] = React.useState(false)
 
   // 启用自动保存(30秒间隔，3秒防抖)
   useAutoSave({
@@ -30,10 +35,10 @@ const CanvasPage: React.FC = () => {
     }
   }, [currentProject?.id, setCurrentProject])
 
-  // 处理画布双击创建节点
+  // 处理画布双击 - 打开提示词对话框
   const handleCanvasDoubleClick = React.useCallback(
-    async (position: Position) => {
-      console.log('CanvasPage: 处理画布双击创建节点, 位置:', position)
+    (position: Position) => {
+      console.log('CanvasPage: 画布双击, 位置:', position)
 
       if (!currentProject?.id) {
         addToast({
@@ -45,30 +50,74 @@ const CanvasPage: React.FC = () => {
         return
       }
 
-      try {
-        // 使用后端同步方法创建节点
-        const newNode = await createNodeWithSync({
-          project_id: currentProject.id,
-          content: '请输入内容或描述你的想法...',
-          importance: 3,
-          position,
-          tags: [],
-        })
+      // 保存位置并打开提示词对话框
+      setPromptDialogPosition(position)
+      setPromptDialogOpen(true)
+    },
+    [currentProject?.id, addToast]
+  )
 
-        console.log('CanvasPage: 创建节点成功:', newNode)
-
-        // 成功时不显示toast，静默创建
-      } catch (error) {
-        console.error('CanvasPage: 创建节点失败:', error)
+  // 处理提示词提交 - AI生成节点
+  const handlePromptSubmit = React.useCallback(
+    async (prompt: string) => {
+      if (!currentProject?.id) {
         addToast({
           type: 'error',
           title: '创建失败',
+          message: '请先选择或创建项目',
+        })
+        setPromptDialogOpen(false)
+        return
+      }
+
+      setIsCreatingNode(true)
+
+      try {
+        console.log('CanvasPage: 开始AI生成节点, 提示词:', prompt)
+
+        // 使用nodeService的AI生成功能
+        const aiNode = await nodeService.createNode({
+          position: promptDialogPosition,
+          content: prompt,
+          useAI: true,
+          context: [prompt],
+        })
+
+        console.log('CanvasPage: AI生成节点完成:', aiNode)
+
+        // 保存到后端
+        await createNodeWithSync({
+          project_id: currentProject.id,
+          content: aiNode.content,
+          title: aiNode.title,
+          importance: aiNode.importance,
+          position: aiNode.position,
+          tags: aiNode.tags,
+          metadata: aiNode.metadata,
+        })
+
+        // 关闭对话框
+        setPromptDialogOpen(false)
+
+        addToast({
+          type: 'success',
+          title: '节点创建成功',
+          message: 'AI已为你生成内容',
+          duration: 2000,
+        })
+      } catch (error) {
+        console.error('CanvasPage: AI生成节点失败:', error)
+        addToast({
+          type: 'error',
+          title: 'AI生成失败',
           message: error instanceof Error ? error.message : '请稍后重试',
           duration: 3000,
         })
+      } finally {
+        setIsCreatingNode(false)
       }
     },
-    [currentProject?.id, createNodeWithSync, addToast]
+    [currentProject?.id, promptDialogPosition, createNodeWithSync, addToast]
   )
 
   // 处理节点双击编辑
@@ -549,6 +598,16 @@ const CanvasPage: React.FC = () => {
 
       {/* Toast 通知容器 */}
       <ToastContainer />
+
+      {/* 提示词输入对话框 */}
+      <PromptDialog
+        isOpen={promptDialogOpen}
+        onClose={() => setPromptDialogOpen(false)}
+        onSubmit={handlePromptSubmit}
+        title="创建新节点"
+        placeholder="在此输入你的想法...&#10;例如: 分析电商平台的技术架构"
+        isLoading={isCreatingNode}
+      />
     </div>
   )
 }

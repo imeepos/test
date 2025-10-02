@@ -28,9 +28,15 @@ class WebSocketService {
   private statusHandlers: Set<StatusHandler> = new Set()
   private reconnectAttempts: number = 0
   private currentStatus: WebSocketStatus = 'disconnected'
+  private heartbeatTimer: NodeJS.Timeout | null = null
 
   constructor(config: WebSocketConfig) {
     this.config = config
+    console.log('🔧 WebSocket服务初始化:', {
+      url: config.url,
+      heartbeatInterval: config.heartbeatInterval,
+      reconnectInterval: config.reconnectInterval
+    })
   }
 
   /**
@@ -48,42 +54,93 @@ class WebSocketService {
         this.socket = io(this.config.url, {
           autoConnect: false,
           timeout: this.config.messageTimeout,
-          retries: this.config.maxReconnectAttempts,
-          forceNew: true
+          reconnection: true,
+          reconnectionAttempts: this.config.maxReconnectAttempts,
+          reconnectionDelay: this.config.reconnectInterval,
+          reconnectionDelayMax: 10000,
+          forceNew: false
+          // Socket.IO 会使用服务端的心跳配置
+        })
+
+        // 监听所有发送的数据包
+        this.socket.io.on('packet', (packet) => {
+          console.log('📦 发送数据包:', packet)
+        })
+
+        // 监听 Socket.IO 引擎事件
+        this.socket.io.engine?.on('packet', (packet: any) => {
+          console.log('🔧 引擎数据包:', packet)
         })
         
         this.socket.on('connect', () => {
+          console.log('✅ WebSocket已连接:', {
+            socketId: this.socket!.id,
+            transport: (this.socket!.io.engine as any)?.transport?.name
+          })
           this.updateStatus('connected')
           this.reconnectAttempts = 0
           this.authenticate()
           this.processMessageQueue()
+          // 移除自定义心跳，使用 Socket.IO 内置机制
+          // this.startHeartbeat()
+
           resolve()
         })
 
         this.socket.on('disconnect', (reason) => {
+          console.log('❌ WebSocket断开连接:', reason)
           this.updateStatus('disconnected')
-          
+          // 移除自定义心跳停止
+          // this.stopHeartbeat()
+
+          // Socket.IO 会自动重连，除非是服务器主动断开
           if (reason === 'io server disconnect') {
-            // 服务器断开连接，需要手动重连
-            if (this.reconnectAttempts < this.config.maxReconnectAttempts) {
-              this.scheduleReconnect()
-            }
+            console.warn('服务器主动断开连接，需要手动重连')
           }
         })
 
         this.socket.on('connect_error', (error) => {
-          console.error('Socket.IO连接错误:', error)
+          console.error('❌ WebSocket连接错误:', {
+            error: error.message,
+            attempts: this.reconnectAttempts,
+            maxAttempts: this.config.maxReconnectAttempts
+          })
+          this.reconnectAttempts++
+
           if (this.currentStatus === 'connecting') {
-            reject(new Error('Socket.IO连接失败'))
+            // 第一次连接失败
+            if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+              reject(new Error('WebSocket连接失败: ' + error.message))
+            }
           }
         })
 
-        this.socket.on('authenticated', () => {
-          console.log('Socket.IO认证成功')
+        this.socket.on('authenticated', (data) => {
+          console.log('✅ WebSocket认证成功:', data)
         })
 
         this.socket.on('error', (error) => {
-          console.error('Socket.IO错误:', error)
+          console.error('❌ WebSocket错误:', error)
+        })
+
+        // 监听重连事件
+        this.socket.io.on('reconnect', (attempt) => {
+          console.log('🔄 WebSocket重连成功，尝试次数:', attempt)
+          this.reconnectAttempts = 0
+        })
+
+        this.socket.io.on('reconnect_attempt', (attempt) => {
+          console.log('🔄 WebSocket尝试重连:', attempt)
+          this.updateStatus('connecting')
+        })
+
+        this.socket.io.on('reconnect_error', (error) => {
+          console.error('❌ WebSocket重连错误:', error.message)
+        })
+
+        this.socket.io.on('reconnect_failed', () => {
+          console.error('❌ WebSocket重连失败，已达最大尝试次数')
+          this.updateStatus('disconnected')
         })
 
         // 监听响应消息
@@ -103,12 +160,17 @@ class WebSocketService {
    * 断开连接
    */
   disconnect(): void {
+    // 移除自定义心跳停止
+    // this.stopHeartbeat()
+
     if (this.socket) {
       this.socket.disconnect()
+      this.socket.removeAllListeners()
       this.socket = null
     }
-    
+
     this.updateStatus('disconnected')
+    console.log('🔌 WebSocket已断开')
   }
 
   /**
@@ -129,13 +191,24 @@ class WebSocketService {
     if (!this.socket?.connected) {
       // 如果连接不可用，添加到队列
       this.messageQueue.push(message)
-      
-      // 尝试重连
+      console.log(`📥 消息已加入队列 (${this.messageQueue.length}条待发送):`, type)
+
+      // 异步尝试重连，不阻塞当前请求
       if (this.currentStatus === 'disconnected') {
-        await this.connect()
+        this.connect().catch(err => {
+          console.warn('后台重连失败:', err)
+        })
       }
-      
-      return Promise.reject(new Error('Socket.IO未连接'))
+
+      // 返回一个 Promise，将在重连后处理
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.pendingMessages.delete(requestId)
+          reject(new Error('消息等待发送超时'))
+        }, this.config.messageTimeout)
+
+        this.pendingMessages.set(requestId, { resolve, reject, timeout })
+      })
     }
 
     return new Promise((resolve, reject) => {
@@ -146,10 +219,51 @@ class WebSocketService {
       }, this.config.messageTimeout)
 
       this.pendingMessages.set(requestId, { resolve, reject, timeout })
-      
+
       try {
-        this.socket!.emit(type, message.payload)
+        console.log(`📤 发送WebSocket消息:`, {
+          type,
+          requestId,
+          payload: message.payload,
+          socketConnected: this.socket?.connected,
+          socketId: this.socket?.id
+        })
+
+        if (!this.socket) {
+          throw new Error('Socket未初始化')
+        }
+
+        if (!this.socket.connected) {
+          throw new Error('Socket未连接')
+        }
+
+        // 检查 socket 的详细状态
+        const transport = (this.socket.io.engine as any)?.transport?.name
+        console.log(`🔍 Socket详细状态:`, {
+          connected: this.socket.connected,
+          disconnected: this.socket.disconnected,
+          active: this.socket.active,
+          recovered: this.socket.recovered,
+          transport: transport,
+          readyState: (this.socket.io.engine as any)?.readyState
+        })
+
+        // 使用 emit 发送消息
+        console.log(`🚀 准备发送事件:`, type, message.payload)
+
+        // 尝试直接发送数据包
+        const socket = this.socket
+        const result = socket.emit(type, message.payload, (ack: any) => {
+          console.log(`📨 收到ACK响应:`, ack)
+        })
+
+        console.log(`✅ emit调用完成:`, {
+          type,
+          result: typeof result,
+          listeners: socket.listeners(type).length
+        })
       } catch (error) {
+        console.error(`❌ 发送消息失败:`, error)
         this.pendingMessages.delete(requestId)
         clearTimeout(timeout)
         reject(error)
@@ -213,23 +327,29 @@ class WebSocketService {
   // 私有方法
   private handleMessage(eventName: string, data: any): void {
     try {
+      console.log(`📥 收到WebSocket消息:`, { eventName, data })
+
       // 处理响应消息
       if (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR')) {
         // 根据requestId匹配对应的请求
         const requestId = data.requestId || data.taskId
+        console.log(`🔍 匹配请求ID:`, { requestId, hasPending: this.pendingMessages.has(requestId), pendingKeys: Array.from(this.pendingMessages.keys()) })
+
         if (requestId && this.pendingMessages.has(requestId)) {
           const pendingMessage = this.pendingMessages.get(requestId)!
           clearTimeout(pendingMessage.timeout)
           this.pendingMessages.delete(requestId)
-          
+
           if (eventName.endsWith('_ERROR')) {
+            console.error(`❌ AI请求失败:`, data.error)
             pendingMessage.reject(new Error(data.error?.message || data.error || '请求失败'))
           } else {
+            console.log(`✅ AI请求成功:`, data)
             pendingMessage.resolve(data)
           }
           return
         } else {
-          console.warn(`收到响应消息但找不到对应的请求: ${eventName}, requestId: ${requestId}`)
+          console.warn(`⚠️ 收到响应消息但找不到对应的请求: ${eventName}, requestId: ${requestId}`)
         }
       }
 
@@ -245,11 +365,9 @@ class WebSocketService {
         handler(message)
       }
 
-      // 处理心跳响应
-      if (eventName === 'pong') {
-        console.log('Socket.IO心跳正常')
-      }
-      
+      // Socket.IO 内置心跳不需要手动处理
+      // 移除自定义 pong 处理
+
     } catch (error) {
       console.error('Socket.IO消息处理错误:', error)
     }
@@ -259,24 +377,30 @@ class WebSocketService {
    * 认证方法
    */
   private authenticate(): void {
-    if (this.socket) {
-      // 从localStorage获取认证token
-      const token = localStorage.getItem('auth_token')
+    if (!this.socket || !this.socket.connected) {
+      console.warn('⚠️ Socket未连接，无法认证')
+      return
+    }
 
-      if (token) {
-        // 使用真实用户token进行认证
-        this.socket.emit('authenticate', {
-          token
-        })
-        console.log('WebSocket: 使用认证Token连接')
-      } else {
-        // 没有token时使用guest用户
-        console.warn('WebSocket: 未找到认证Token，使用guest用户')
-        this.socket.emit('authenticate', {
-          userId: 'guest',
-          token: null
-        })
-      }
+    // 从localStorage获取认证token
+    const token = localStorage.getItem('auth_token')
+
+    console.log('🔐 开始WebSocket认证...', {
+      hasToken: !!token,
+      socketId: this.socket.id
+    })
+
+    if (token) {
+      // 使用真实用户token进行认证
+      this.socket.emit('authenticate', {
+        token
+      })
+    } else {
+      // 没有token时使用guest用户
+      this.socket.emit('authenticate', {
+        userId: 'guest',
+        token: null
+      })
     }
   }
 
@@ -295,48 +419,34 @@ class WebSocketService {
     }
   }
 
-  private scheduleReconnect(): void {
-    this.reconnectAttempts++
-    const delay = Math.min(
-      this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1),
-      30000 // 最大30秒
-    )
-
-    console.log(`${delay}ms后尝试第${this.reconnectAttempts}次重连...`)
-    
-    setTimeout(async () => {
-      try {
-        await this.connect()
-      } catch (error) {
-        console.error('重连失败:', error)
-        if (this.reconnectAttempts < this.config.maxReconnectAttempts) {
-          this.scheduleReconnect()
-        } else {
-          console.error('达到最大重连次数，停止重连')
-        }
-      }
-    }, delay)
-  }
+  // Socket.IO 自动重连机制已启用，移除手动重连逻辑
 
   private processMessageQueue(): void {
+    console.log(`📤 开始处理消息队列 (${this.messageQueue.length}条消息)`)
+
     while (this.messageQueue.length > 0 && this.socket?.connected) {
       const message = this.messageQueue.shift()!
       try {
-        // 为队列中的消息重新设置Promise处理器
-        const timeout = setTimeout(() => {
-          this.pendingMessages.delete(message.id)
-        }, this.config.messageTimeout)
+        // 检查是否已有 pending handler (在 sendMessage 中创建的)
+        if (this.pendingMessages.has(message.id)) {
+          // 直接发送，使用已有的 Promise handler
+          this.socket.emit(message.type, message.payload)
+          console.log(`✅ 队列消息已发送: ${message.type}`)
+        } else {
+          // 为旧消息创建新的处理器
+          const timeout = setTimeout(() => {
+            this.pendingMessages.delete(message.id)
+          }, this.config.messageTimeout)
 
-        // 重新创建Promise处理器（如果还没有的话）
-        if (!this.pendingMessages.has(message.id)) {
           this.pendingMessages.set(message.id, {
-            resolve: () => {}, // 队列消息的resolve会被忽略
-            reject: () => {},  // 队列消息的reject会被忽略
+            resolve: () => {}, // 旧消息的resolve会被忽略
+            reject: () => {},  // 旧消息的reject会被忽略
             timeout
           })
-        }
 
-        this.socket.emit(message.type, message.payload)
+          this.socket.emit(message.type, message.payload)
+          console.log(`✅ 队列消息已发送(旧): ${message.type}`)
+        }
       } catch (error) {
         console.error('队列消息发送失败:', error)
         // 重新加入队列头部
@@ -344,19 +454,37 @@ class WebSocketService {
         break
       }
     }
+
+    if (this.messageQueue.length === 0) {
+      console.log('✅ 消息队列已清空')
+    }
   }
 
   private generateMessageId(): string {
     return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
+
+  // 移除自定义心跳机制，使用 Socket.IO 内置心跳
+  // Socket.IO 会自动发送 ping/pong，无需手动实现
 }
 
 // 默认配置
 const defaultConfig: WebSocketConfig = {
-  url: import.meta.env.VITE_WS_URL || 'http://localhost:3000',
-  reconnectInterval: 2000, // 2秒
+  // 根据环境自动选择URL
+  // 开发环境: 使用localhost:8000
+  // 生产环境(Docker): 使用当前域名的8000端口
+  url: import.meta.env.VITE_WS_URL || (() => {
+    if (import.meta.env.PROD) {
+      // 生产环境：使用当前域名替换端口为8000
+      const { protocol, hostname } = window.location
+      return `${protocol}//${hostname}:8000`
+    }
+    // 开发环境：使用localhost
+    return 'http://localhost:8000'
+  })(),
+  reconnectInterval: 1000, // 1秒 (Socket.IO 会指数退避)
   maxReconnectAttempts: 10,
-  heartbeatInterval: 30000, // 30秒
+  heartbeatInterval: 25000, // 25秒 (与 Socket.IO pingInterval 保持一致)
   messageTimeout: 30000, // 30秒
 }
 

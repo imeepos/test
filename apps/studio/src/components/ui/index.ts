@@ -31,3 +31,6 @@ export { Input } from './Input'
 export type { InputProps } from './Input'
 
 export { Spinner } from './Spinner'
+
+export { PromptDialog } from './PromptDialog'
+export type { PromptDialogProps } from './PromptDialog'

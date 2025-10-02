@@ -463,7 +463,7 @@ class NodeService {
       'plan': ['计划', '安排', '步骤', 'plan', 'schedule', 'roadmap', 'timeline'],
       'analysis': ['分析', '评估', '研究', 'analysis', 'evaluate', 'research', 'study'],
       'idea': ['想法', '创意', '点子', 'idea', 'concept', 'brainstorm'],
-      'question': ['问题', '疑问', '？', 'question', 'why', 'how', 'what', '?'],
+      'question': ['问题', '疑问', '？', 'question', 'why', 'how', 'what'],
       'answer': ['答案', '回答', '解答', 'answer', 'response', 'reply'],
       'decision': ['决定', '选择', '确定', 'decision', 'choose', 'select', 'decide'],
       'fusion': ['融合', '合并', '整合', 'fusion', 'merge', 'integrate'],
@@ -480,7 +480,9 @@ class NodeService {
     for (const [type, keywords] of Object.entries(semanticRules)) {
       let score = 0
       keywords.forEach(keyword => {
-        const matches = (lowerContent.match(new RegExp(keyword, 'g')) || []).length
+        // 转义正则表达式特殊字符
+        const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const matches = (lowerContent.match(new RegExp(escapedKeyword, 'g')) || []).length
         score += matches
       })
 

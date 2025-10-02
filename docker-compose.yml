@@ -196,6 +196,7 @@ services:
       dockerfile: packages/engine/Dockerfile
     environment:
       - NODE_ENV=production
+      - ENGINE_RUN_MODE=both
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-ae5d479531684e3081dad2ba4800cf26}
       - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       - STUDIO_API_PORT=8001
@@ -217,6 +218,8 @@ services:
       - OPENAI_DEFAULT_MODEL=${OPENAI_DEFAULT_MODEL:-deepseek-chat}
       - OPENAI_TIMEOUT=${OPENAI_TIMEOUT:-30000}
       - OPENAI_MAX_RETRIES=${OPENAI_MAX_RETRIES:-3}
+      # Store 服务配置
+      - STORE_API_URL=http://store:3001
       # CORS 配置
       - STUDIO_CORS_ORIGIN=${STUDIO_CORS_ORIGIN:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
       # 限流配置
@@ -245,8 +248,8 @@ services:
       - STORE_SERVICE_URL=http://store:3001
       - BROKER_SERVICE_URL=http://broker:3002
       - ENGINE_SERVICE_URL=http://engine:8001
-      # RabbitMQ 配置 - 临时禁用以解决启动问题
-      # - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
+      # RabbitMQ 配置 - AI任务队列
+      - RABBITMQ_URL=amqp://sker_user:sker_password@rabbitmq:5672
       # 认证配置
       - JWT_SECRET=${JWT_SECRET:-sker-development-jwt-secret-key-2024}
       # 数据库配置 (如果 Gateway 需要直接数据库访问)

@@ -40,8 +40,18 @@ export class WebSocketManager extends EventEmitter {
         methods: ['GET', 'POST']
       },
       maxHttpBufferSize: 1e6, // 1MB
-      pingTimeout: config.timeout,
-      pingInterval: config.heartbeatInterval
+      // 心跳配置
+      pingTimeout: 60000, // 60秒 ping 超时
+      pingInterval: 25000, // 25秒发送一次 ping
+      // 允许升级到 WebSocket
+      allowUpgrades: true,
+      transports: ['polling', 'websocket']
+    })
+
+    console.log('🔧 WebSocket服务器初始化:', {
+      path: config.path,
+      pingTimeout: 60000,
+      pingInterval: 25000
     })
 
     this.setupEventHandlers()
@@ -76,14 +86,20 @@ export class WebSocketManager extends EventEmitter {
         this.handleDisconnection(socket.id, reason)
       })
 
-      // 监听心跳
-      socket.on('ping', () => {
-        socket.emit('pong')
-        this.updateConnectionActivity(socket.id)
+      // Socket.IO 内置心跳机制已启用，移除自定义 ping/pong
+      // Socket.IO 会自动处理 ping/pong，无需手动监听
+
+      // 监听所有事件用于调试（生产环境应移除或减少日志）
+      socket.onAny((eventName, ...args) => {
+        // 过滤掉 Socket.IO 内部事件，减少日志噪音
+        if (!['ping', 'pong'].includes(eventName)) {
+          console.log(`📨 WebSocket收到事件: ${eventName}`, args)
+        }
       })
 
       // 监听AI处理请求
       socket.on(WebSocketEventType.AI_GENERATE_REQUEST, (data) => {
+        console.log(`🎯 收到AI生成请求:`, data)
         this.handleAIGenerateRequest(socket, data)
       })
 
@@ -121,13 +137,21 @@ export class WebSocketManager extends EventEmitter {
    */
   private async handleAuthentication(socket: any, data: WebSocketAuthPayload): Promise<void> {
     try {
+      // 检查是否已经认证过
+      if (this.connections.has(socket.id)) {
+        console.warn(`⚠️ Socket ${socket.id} 重复认证，忽略`)
+        return
+      }
+
       let userId: string | undefined
 
       // 如果提供了认证配置，验证JWT token
       if (this.authConfig && data.token) {
         try {
           const decoded = jwt.verify(data.token, this.authConfig.secret) as any
+          console.log('🔑 JWT 解码内容:', decoded)
           userId = decoded.sub || decoded.userId || decoded.id
+          console.log('🔑 提取的 userId:', userId)
         } catch (error) {
           socket.emit('error', {
             code: 'INVALID_TOKEN',
@@ -139,6 +163,7 @@ export class WebSocketManager extends EventEmitter {
       } else {
         // 如果没有认证配置，使用提供的userId
         userId = data.userId
+        console.log('🔑 使用提供的 userId:', userId)
       }
 
       // 检查连接数限制
