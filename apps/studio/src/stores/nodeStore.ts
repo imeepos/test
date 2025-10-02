@@ -44,7 +44,7 @@ export interface NodeState {
 
   // 后端同步Actions
   setCurrentProject: (projectId: string) => void
-  syncFromBackend: (projectId: string) => Promise<void>
+  syncFromBackend: (projectId: string, options?: { silent?: boolean }) => Promise<void>
   createNodeWithSync: (params: CreateNodeParams) => Promise<AINode>
   updateNodeWithSync: (id: string, updates: UpdateNodeParams) => Promise<void>
   deleteNodeWithSync: (id: string, permanent?: boolean) => Promise<void>
@@ -462,11 +462,14 @@ export const useNodeStore = create<NodeState>()(
           set({ currentProjectId: projectId })
         },
 
-        syncFromBackend: async (projectId) => {
+        syncFromBackend: async (projectId, options = {}) => {
+          const { silent = false } = options
           const { addToast } = useUIStore.getState()
           const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
 
-          startSaving()
+          if (!silent) {
+            startSaving()
+          }
 
           try {
             // 从后端加载节点数据
@@ -491,21 +494,25 @@ export const useNodeStore = create<NodeState>()(
               }))
             })
 
-            savingComplete()
-            addToast({
-              type: 'success',
-              title: '同步完成',
-              message: `成功加载 ${nodes.length} 个节点`,
-            })
+            if (!silent) {
+              savingComplete()
+              addToast({
+                type: 'success',
+                title: '同步完成',
+                message: `成功加载 ${nodes.length} 个节点`,
+              })
+            }
             console.log(`✅ 成功从后端同步 ${nodes.length} 个节点`)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '同步失败'
-            savingFailed(errorMessage)
-            addToast({
-              type: 'error',
-              title: '同步失败',
-              message: errorMessage,
-            })
+            if (!silent) {
+              savingFailed(errorMessage)
+              addToast({
+                type: 'error',
+                title: '同步失败',
+                message: errorMessage,
+              })
+            }
             console.error('❌ 同步节点数据失败:', error)
             throw error
           }

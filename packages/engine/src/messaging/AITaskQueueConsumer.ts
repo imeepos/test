@@ -174,6 +174,7 @@ export class AITaskQueueConsumer extends EventEmitter {
    */
   private async processAITask(taskMessage: UnifiedAITaskMessage, originalMessage: any): Promise<void> {
     const { taskId, nodeId } = taskMessage
+    const startTime = Date.now()
 
     // 防止重复处理
     if (this.processingTasks.has(taskId)) {
@@ -192,6 +193,9 @@ export class AITaskQueueConsumer extends EventEmitter {
         status: 'processing',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: false,
+        processingTime: 0,
+        timestamp: new Date(),
         progress: 0,
         message: '开始处理AI任务'
       })
@@ -221,8 +225,11 @@ export class AITaskQueueConsumer extends EventEmitter {
         status: 'completed',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: true,
         result: aiResult,
         savedData: savedResult,
+        processingTime: Date.now() - startTime,
+        timestamp: new Date(),
         progress: 100,
         message: 'AI任务处理完成'
       })
@@ -240,6 +247,9 @@ export class AITaskQueueConsumer extends EventEmitter {
         status: 'failed',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: false,
+        processingTime: Date.now() - startTime,
+        timestamp: new Date(),
         error: {
           code: 'AI_PROCESSING_ERROR',
           message: error instanceof Error ? error.message : '未知错误',

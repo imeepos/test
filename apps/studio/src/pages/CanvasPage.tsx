@@ -1,20 +1,35 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { Canvas, CanvasControls } from '@/components/canvas'
 import { Sidebar } from '@/components/sidebar'
-import { ToastContainer, PromptDialog } from '@/components/ui'
+import { PromptDialog } from '@/components/ui'
 import { useCanvasStore, useNodeStore, useUIStore, useAIStore } from '@/stores'
 import { useSyncStore } from '@/stores/syncStore'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { nodeService } from '@/services'
 import type { Position } from '@/types'
 
 const CanvasPage: React.FC = () => {
+  const navigate = useNavigate()
+
+  // 从 URL 加载项目
+  const { projectIdFromUrl, hasProjectInUrl } = useProjectFromUrl()
+
   const { sidebarCollapsed, sidebarWidth, addToast } = useUIStore()
-  const { addNode, getNode, getNodes, updateNode, updateNodeWithSync, createNodeWithSync, setCurrentProject } = useNodeStore()
+  const { addNode, getNode, getNodes, updateNode, updateNodeWithSync, createNodeWithSync, setCurrentProject, syncFromBackend } = useNodeStore()
   const { updateStats, selectedNodeIds, selectAll, currentProject } = useCanvasStore()
   const { startProcessing, connectionStatus } = useAIStore()
   const { status: syncStatus, lastSavedAt } = useSyncStore()
+
+  // 如果 URL 中没有 projectId，重定向到项目选择页
+  React.useEffect(() => {
+    if (!hasProjectInUrl) {
+      console.log('Canvas 页面缺少 projectId，重定向到 /projects')
+      navigate('/projects', { replace: true })
+    }
+  }, [hasProjectInUrl, navigate])
 
   // 提示词对话框状态
   const [promptDialogOpen, setPromptDialogOpen] = React.useState(false)
@@ -33,12 +48,18 @@ const CanvasPage: React.FC = () => {
     debounceDelay: 3000,
   })
 
-  // 同步当前项目ID到NodeStore
+  // 同步当前项目ID到NodeStore并加载节点
   React.useEffect(() => {
     if (currentProject?.id) {
       setCurrentProject(currentProject.id)
+
+      // 从后端静默加载节点数据
+      syncFromBackend(currentProject.id, { silent: true }).catch((error) => {
+        console.error('❌ 加载节点数据失败:', error)
+        // 不显示错误提示，避免打扰用户
+      })
     }
-  }, [currentProject?.id, setCurrentProject])
+  }, [currentProject?.id, setCurrentProject, syncFromBackend])
 
   // 处理画布双击 - 打开提示词对话框
   const handleCanvasDoubleClick = React.useCallback(
@@ -816,9 +837,6 @@ const CanvasPage: React.FC = () => {
           </motion.div>
         )}
       </motion.main>
-
-      {/* Toast 通知容器 */}
-      <ToastContainer />
 
       {/* 提示词输入对话框 */}
       <PromptDialog

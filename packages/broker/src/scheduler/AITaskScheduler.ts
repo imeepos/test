@@ -107,54 +107,13 @@ export class AITaskScheduler extends EventEmitter {
 
   /**
    * 设置结果消费者
+   * 注意：broker 不再消费结果队列，结果应该由 gateway 直接消费并转发给客户端
+   * broker 只负责任务调度和超时管理
    */
   private async setupResultConsumer(): Promise<void> {
-    const maxRetries = 10
-    const retryDelay = 1000 // 1秒
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // 检查broker是否完全准备就绪
-        if (!this.broker.isReady()) {
-          if (attempt === maxRetries) {
-            throw new Error(`Broker not ready after ${maxRetries} attempts`)
-          }
-          console.log(`⏳ Broker not ready, waiting... (attempt ${attempt}/${maxRetries})`)
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
-          continue
-        }
-
-        // 消费AI处理结果
-        await this.broker.consume(
-          QUEUE_NAMES.AI_RESULTS,
-          async (message) => {
-            if (!message) return
-
-            try {
-              const result: AIResultMessage = JSON.parse(message.content.toString())
-              await this.handleTaskResult(result)
-              this.broker.ack(message)
-            } catch (error) {
-              console.error('Error processing AI result:', error)
-              this.broker.nack(message, false) // 不重新入队
-            }
-          }
-        )
-
-        console.log('✅ AI task result consumer set up successfully')
-        return // 成功设置，退出重试循环
-
-      } catch (error) {
-        console.error(`❌ Failed to setup result consumer (attempt ${attempt}/${maxRetries}):`, error)
-        
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to setup result consumer after ${maxRetries} attempts: ${error.message}`)
-        }
-        
-        // 等待后重试
-        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
-      }
-    }
+    console.log('ℹ️ Broker 不再消费结果队列，结果由 gateway 直接处理')
+    // 不再设置结果消费者
+    return
   }
 
   /**

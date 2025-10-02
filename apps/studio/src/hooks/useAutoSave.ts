@@ -57,7 +57,6 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
     try {
       await saveCanvasState()
       savingComplete()
-      console.log('🔄 自动保存完成')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '自动保存失败'
       savingFailed(errorMessage)
@@ -99,8 +98,6 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
     saveTimerRef.current = setInterval(() => {
       performSave()
     }, finalConfig.interval)
-
-    console.log(`🔄 自动保存已启动 (间隔: ${finalConfig.interval / 1000}秒)`)
 
     return () => {
       if (saveTimerRef.current) {

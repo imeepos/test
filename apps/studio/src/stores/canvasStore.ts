@@ -176,7 +176,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
         loadProjects: async (userId) => {
           // 防止重复加载：如果正在加载中，直接返回
           if (get().isLoadingProject) {
-            console.log('⏳ 项目列表正在加载中，跳过重复请求')
             return
           }
 
@@ -187,7 +186,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
             // 确保 projects 是数组，防止 map 报错
             const projectList = Array.isArray(projects) ? projects : []
             set({ projects: projectList, isLoadingProject: false })
-            console.log(`✅ 加载了 ${projectList.length} 个项目`)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '加载项目失败'
             set({ projectError: errorMessage, isLoadingProject: false, projects: [] })
@@ -214,8 +212,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
 
             // 更新最后访问时间
             await projectService.updateLastAccessed(projectId)
-
-            console.log('✅ 项目加载成功:', project.name)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '加载项目失败'
             set({ projectError: errorMessage, isLoadingProject: false })
@@ -244,7 +240,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
               isLoadingProject: false,
             }))
 
-            console.log('✅ 项目创建成功:', project.name)
             return project
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '创建项目失败'
@@ -257,7 +252,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
         saveCurrentProject: async () => {
           const project = get().currentProject
           if (!project) {
-            console.warn('没有当前项目,无法保存')
             return
           }
 
@@ -269,8 +263,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
                 filters: {},
               },
             })
-
-            console.log('✅ 项目保存成功')
           } catch (error) {
             console.error('❌ 项目保存失败:', error)
             throw error
@@ -293,7 +285,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
             }
 
             await projectService.saveCanvasState(project.id, canvasState)
-            console.log('✅ 画布状态保存成功')
           } catch (error) {
             console.error('❌ 画布状态保存失败:', error)
           }
@@ -306,7 +297,6 @@ export const useCanvasStore = create<CanvasStoreState>()(
             viewMode: 'preview',
             selectedNodeIds: [],
           })
-          console.log('✅ 项目已关闭')
         },
       }),
       {

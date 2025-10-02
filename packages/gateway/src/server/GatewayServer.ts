@@ -230,7 +230,9 @@ export class GatewayServer {
           data: {
             requestId: taskResult.taskId, // 主要使用 requestId
             taskId: taskResult.taskId,    // 兼容字段
-            ...taskResult.result
+            nodeId: taskResult.nodeId,    // ✅ 添加 nodeId 字段
+            result: taskResult.result,    // 保留 result 对象
+            ...taskResult.result          // 同时展开 result 内容以兼容旧代码
           }
         })
       } else if (taskResult.status === 'failed') {
@@ -240,6 +242,7 @@ export class GatewayServer {
           data: {
             requestId: taskResult.taskId, // 主要使用 requestId
             taskId: taskResult.taskId,    // 兼容字段
+            nodeId: taskResult.nodeId,    // ✅ 添加 nodeId 字段
             error: taskResult.error || {
               code: 'AI_PROCESSING_FAILED',
               message: 'AI processing failed',
