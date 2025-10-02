@@ -6,7 +6,6 @@
  */
 
 import { z } from 'zod'
-import type { NodeId, ProjectId, UserId } from './ai-task.contract.js'
 
 // ============================================================================
 // 节点状态定义
@@ -37,7 +36,7 @@ export type NodePosition = z.infer<typeof NodePositionSchema>
 // ============================================================================
 
 export const NodeMetadataSchema = z.object({
-  aiGenerated: z.boolean().optional().default(false),
+  aiGenerated: z.boolean().optional(),
   model: z.string().optional(),
   processingTime: z.number().nonnegative().optional(),
   lastModifiedBy: z.string().optional(),
@@ -62,20 +61,20 @@ export const NodeSchemaV1 = z.object({
   // 内容信息
   content: z.string(),
   title: z.string().optional(),
-  tags: z.array(z.string()).default([]),
+  tags: z.array(z.string()).optional(),
 
   // 质量指标
-  importance: z.number().int().min(1).max(5).default(3),
-  confidence: z.number().min(0).max(1).default(0.5),
+  importance: z.number().int().min(1).max(5).optional(),
+  confidence: z.number().min(0).max(1).optional(),
 
   // 状态信息
-  status: NodeStatus.default('idle'),
+  status: NodeStatus.optional(),
 
   // 位置信息
   position: NodePositionSchema,
 
   // 版本控制
-  version: z.number().int().positive().default(1),
+  version: z.number().int().positive().optional(),
 
   // 元数据
   metadata: NodeMetadataSchema.optional(),
@@ -141,8 +140,8 @@ export const QueryNodesRequestSchema = z.object({
   minImportance: z.number().int().min(1).max(5).optional(),
   tags: z.array(z.string()).optional(),
   createdAfter: z.date().optional(),
-  limit: z.number().int().positive().max(1000).default(100),
-  offset: z.number().int().nonnegative().default(0)
+  limit: z.number().int().positive().max(1000).optional(),
+  offset: z.number().int().nonnegative().optional()
 }).strict()
 
 export type QueryNodesRequest = z.infer<typeof QueryNodesRequestSchema>

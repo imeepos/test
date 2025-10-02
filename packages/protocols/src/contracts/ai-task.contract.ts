@@ -65,14 +65,14 @@ export type TaskStatus = z.infer<typeof TaskStatus>
 // ============================================================================
 
 export const TaskMetadataSchema = z.object({
-  model: z.string().optional().default('gpt-4'),
-  temperature: z.number().min(0).max(2).optional().default(0.7),
-  maxTokens: z.number().positive().optional().default(2000),
-  timeout: z.number().positive().optional().default(30000), // 30s
-  retryCount: z.number().int().min(0).max(3).optional().default(0),
+  model: z.string().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().positive().optional(),
+  timeout: z.number().positive().optional(),
+  retryCount: z.number().int().min(0).max(3).optional(),
   originalRequestId: z.string().optional(),
   sessionId: z.string().optional(),
-  tags: z.array(z.string()).optional().default([]),
+  tags: z.array(z.string()).optional(),
   batchId: z.string().optional()
 }).strict()
 
@@ -172,7 +172,7 @@ export type ResultMetadata = z.infer<typeof ResultMetadataSchema>
 // AI结果消息 Schema (V1)
 // ============================================================================
 
-export const AIResultMessageSchemaV1 = z.object({
+const AIResultMessageSchemaBase = z.object({
   // 任务标识
   taskId: z.string().uuid(),
   type: AITaskType,
@@ -203,7 +203,9 @@ export const AIResultMessageSchemaV1 = z.object({
 
   // 元数据
   metadata: ResultMetadataSchema.optional()
-}).strict().refine(
+}).strict()
+
+export const AIResultMessageSchemaV1 = AIResultMessageSchemaBase.refine(
   (data) => {
     // 成功时必须有result，失败时必须有error
     if (data.success && !data.result) return false
@@ -222,9 +224,9 @@ export type AIResultMessage = z.infer<typeof AIResultMessageSchemaV1>
 // ============================================================================
 
 export const BatchTaskOptionsSchema = z.object({
-  concurrency: z.number().int().min(1).max(10).default(5),
-  failFast: z.boolean().default(false),
-  collectResults: z.boolean().default(true)
+  concurrency: z.number().int().min(1).max(10).optional(),
+  failFast: z.boolean().optional(),
+  collectResults: z.boolean().optional()
 }).strict()
 
 export type BatchTaskOptions = z.infer<typeof BatchTaskOptionsSchema>
