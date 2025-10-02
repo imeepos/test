@@ -220,7 +220,7 @@ describe('@sker/store - BaseRepository', () => {
 
     it('应该支持分页查询', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '50' }] }) // 总数查询
+        .mockResolvedValueOnce({ rows: [{ count: 50 }] }) // 总数查询 - 使用数字而不是字符串
         .mockResolvedValueOnce({
           rows: [
             { id: '1', name: 'Item 1', status: 'active' },
@@ -243,17 +243,18 @@ describe('@sker/store - BaseRepository', () => {
 
   describe('事务支持', () => {
     it('应该在事务中执行操作', async () => {
-      const mockClient = {
-        query: vi.fn(),
-        release: vi.fn(),
+      const mockClient: any = {
+        query: jest.fn(),
+        release: jest.fn(),
       }
 
-      const mockPool = {
-        connect: vi.fn().mockResolvedValue(mockClient),
+      const mockPool: any = {
+        // @ts-expect-error - Mock typing issue with jest
+        connect: jest.fn().mockResolvedValue(mockClient),
       }
 
       const { databaseManager } = require('../../config/database.js')
-      databaseManager.getPostgresPool = vi.fn(() => mockPool)
+      databaseManager.getPostgresPool = jest.fn(() => mockPool)
 
       mockClient.query
         .mockResolvedValueOnce({ rows: [] }) // BEGIN

@@ -75,7 +75,7 @@ export {
 } from './message.validator.js'
 
 // ============================================================================
-// AI 处理验证器 V2（新版 - context + prompt 模式）
+// AI 处理验证器 V2（context + prompt 模式）
 // ============================================================================
 
 export {
@@ -91,31 +91,6 @@ export {
   isValidAIProcessResponse,
   isValidTaskProgressUpdate
 } from './ai-process.validator.js'
-
-// ============================================================================
-// AI 任务验证器 V1（旧版 - 兼容保留）
-// ============================================================================
-
-export {
-  validateAITask,
-  validateAIResult,
-  validateBatchTask,
-  validateBatchResult,
-  validateTaskStatusUpdate,
-  validateTaskCancel,
-  validateAITaskBatch,
-  validateAIResultBatch,
-  validateTaskType,
-  validateTaskPriority,
-  validateTaskStatus,
-  validateAITaskFromJSON,
-  validateAIResultFromJSON,
-  validateAITaskFromBuffer,
-  validateAIResultFromBuffer,
-  isValidAITask,
-  isValidAIResult,
-  isValidBatchTask
-} from './ai-task.validator.js'
 
 // ============================================================================
 // 节点验证器
@@ -137,31 +112,3 @@ export {
   isValidCreateNodeRequest,
   isValidUpdateNodeRequest
 } from './node.validator.js'
-
-// ============================================================================
-// 事件验证器
-// ============================================================================
-
-export {
-  validateDomainEvent,
-  validateEventMetadata,
-  validateNodeCreatedPayload,
-  validateNodeUpdatedPayload,
-  validateAITaskQueuedPayload,
-  validateAITaskCompletedPayload,
-  validateAITaskFailedPayload,
-  validateSystemErrorPayload,
-  validateEventPayloadByType,
-  validateDomainEventWithPayload,
-  validateDomainEventBatch,
-  validateDomainEventFromJSON,
-  validateDomainEventWithPayloadFromJSON,
-  validateDomainEventFromBuffer,
-  validateDomainEventWithPayloadFromBuffer,
-  isValidDomainEvent,
-  isValidEventMetadata,
-  isEventOfType,
-  isNodeEvent,
-  isAITaskEvent,
-  isSystemEvent
-} from './event.validator.js'

@@ -5,7 +5,7 @@
  */
 
 // ============================================================================
-// AI 处理协议 V2（新版 - context + prompt 模式）
+// AI 处理协议 V2（context + prompt 模式）
 // ============================================================================
 
 export {
@@ -28,59 +28,6 @@ export {
   AI_PROCESS_PROTOCOL_VERSION,
   AIProcessContractV2
 } from './ai-process.contract.js'
-
-// ============================================================================
-// AI 任务协议 V1（旧版 - 兼容保留）
-// ============================================================================
-
-export {
-  type TaskId,
-  type NodeId,
-  type ProjectId,
-  type UserId,
-  type AITaskType,
-  type TaskPriority,
-  type TaskStatus,
-  type TaskMetadata,
-  type AITaskMessage,
-  type AIProcessingMetadata,
-  type AIProcessingResult,
-  type AIProcessingError,
-  type ResultMetadata,
-  type AIResultMessage,
-  type BatchTaskOptions,
-  type BatchTaskMessage,
-  type BatchResultSummary,
-  type BatchResultMessage,
-  type TaskStatusUpdateMessage,
-  type TaskCancelMessage,
-  AITaskType as AITaskTypeSchema,
-  TaskPriority as TaskPrioritySchema,
-  TaskStatus as TaskStatusSchema,
-  TaskMetadataSchema,
-  AITaskMessageSchemaV1,
-  AIProcessingMetadataSchema,
-  AIProcessingResultSchema,
-  AIProcessingErrorSchema,
-  ResultMetadataSchema,
-  AIResultMessageSchemaV1,
-  BatchTaskOptionsSchema,
-  BatchTaskMessageSchemaV1,
-  BatchResultSummarySchema,
-  BatchResultMessageSchemaV1,
-  TaskStatusUpdateMessageSchema,
-  TaskCancelMessageSchema,
-  PRIORITY_VALUES,
-  AI_TASK_PROTOCOL_VERSION,
-  AITaskContractV1,
-  isValidTaskType,
-  isValidPriority,
-  isValidTaskStatus,
-  createTaskId,
-  createNodeId,
-  createProjectId,
-  createUserId
-} from './ai-task.contract.js'
 
 // ============================================================================
 // 节点协议
@@ -110,40 +57,3 @@ export {
   calculateNodeConfidence,
   shouldAutoSaveNode
 } from './node.contract.js'
-
-// ============================================================================
-// 事件协议
-// ============================================================================
-
-export {
-  type EventMetadata,
-  type DomainEvent,
-  type DomainEventType,
-  type NodeCreatedPayload,
-  type NodeUpdatedPayload,
-  type AITaskQueuedPayload,
-  type AITaskCompletedPayload,
-  type AITaskFailedPayload,
-  type SystemErrorPayload,
-  type EventSubscriptionPattern,
-  type EventStore,
-  type EventHandler,
-  type Subscription,
-  type EventProjection,
-  EventMetadataSchema,
-  DomainEventSchemaV1,
-  DomainEventTypes,
-  NodeCreatedPayloadSchema,
-  NodeUpdatedPayloadSchema,
-  AITaskQueuedPayloadSchema,
-  AITaskCompletedPayloadSchema,
-  AITaskFailedPayloadSchema,
-  SystemErrorPayloadSchema,
-  EventSubscriptionPatternSchema,
-  EVENT_PROTOCOL_VERSION,
-  EventContractV1,
-  createDomainEvent,
-  matchesPattern,
-  sortEventsByVersion,
-  sortEventsByTimestamp
-} from './event.contract.js'

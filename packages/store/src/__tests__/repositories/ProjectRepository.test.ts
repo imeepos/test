@@ -31,9 +31,24 @@ describe('@sker/store - ProjectRepository', () => {
     description: 'A test project',
     status: 'active',
     is_archived: false,
-    settings: {},
+    canvas_data: {
+      viewport: { x: 0, y: 0, zoom: 1 },
+      config: {
+        maxZoom: 2,
+        minZoom: 0.1,
+        gridSize: 20,
+        snapToGrid: true,
+        showGrid: true
+      }
+    },
+    settings: {
+      collaboration: { enabled: true, permissions: 'admin' },
+      ai_assistance: { enabled: true, auto_optimize: true, suggestion_level: 'moderate' },
+      version_control: { enabled: true, auto_save_interval: 300 }
+    },
     created_at: new Date(),
     updated_at: new Date(),
+    last_accessed_at: new Date(),
     ...overrides,
   })
 
@@ -70,7 +85,7 @@ describe('@sker/store - ProjectRepository', () => {
   describe('findByUserWithPagination', () => {
     it('应该分页查找用户的项目', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '25' }] }) // 总数
+        .mockResolvedValueOnce({ rows: [{ count: 25 }] }) // 总数 - 使用数字
         .mockResolvedValueOnce({
           rows: [
             createMockProject({ id: '1' }),
@@ -252,7 +267,7 @@ describe('@sker/store - ProjectRepository', () => {
       const result = await repository.update('project-123', updates)
 
       expect(result).toBeDefined()
-      expect(result.name).toBe('Updated Project Name')
+      expect(result?.name).toBe('Updated Project Name')
       expect(mockQuery).toHaveBeenCalled()
     })
 

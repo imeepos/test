@@ -28,20 +28,18 @@ export * from './events/index.js'
 // 版本信息
 // ============================================================================
 
-export const PROTOCOLS_VERSION = '1.0.0' as const
+export const PROTOCOLS_VERSION = '2.0.0' as const
 
 // ============================================================================
 // 协议版本映射
 // ============================================================================
 
 import {
-  AI_TASK_PROTOCOL_VERSION,
-  NODE_PROTOCOL_VERSION,
-  EVENT_PROTOCOL_VERSION
+  AI_PROCESS_PROTOCOL_VERSION,
+  NODE_PROTOCOL_VERSION
 } from './contracts/index.js'
 
 export const PROTOCOL_VERSIONS = {
-  aiTask: AI_TASK_PROTOCOL_VERSION,
-  node: NODE_PROTOCOL_VERSION,
-  event: EVENT_PROTOCOL_VERSION
+  aiProcess: AI_PROCESS_PROTOCOL_VERSION,
+  node: NODE_PROTOCOL_VERSION
 } as const
