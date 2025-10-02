@@ -479,6 +479,11 @@ class NodeRepositoryClient {
     return response.data.data
   }
 
+  // Alias for findById
+  async get(id: string) {
+    return this.findById(id)
+  }
+
   async findMany(filter: any = {}, options: any = {}) {
     const response = await this.http.get<ApiResponse>('/api/v1/nodes', {
       params: { ...filter, ...options }
