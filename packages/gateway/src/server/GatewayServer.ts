@@ -222,24 +222,24 @@ export class GatewayServer {
     this.queueManager.on('aiTaskResult', (taskResult, metadata) => {
       console.log(`转发AI任务结果到WebSocket: ${taskResult.taskId}`)
 
-      // 根据任务状态发送不同的WebSocket消息
+      // 根据任务状态发送不同的WebSocket消息（统一使用 AI_GENERATE_* 事件）
       if (taskResult.status === 'completed' && taskResult.result) {
-        // 发送成功的AI生成结果，同时包含requestId和taskId
+        // 发送成功的AI生成结果
         this.wsManager.sendToUser(taskResult.userId, {
           type: 'AI_GENERATE_RESPONSE',
           data: {
-            requestId: taskResult.taskId,
-            taskId: taskResult.taskId,
+            requestId: taskResult.taskId, // 主要使用 requestId
+            taskId: taskResult.taskId,    // 兼容字段
             ...taskResult.result
           }
         })
       } else if (taskResult.status === 'failed') {
-        // 发送AI处理错误，同时包含requestId和taskId
+        // 发送AI处理错误
         this.wsManager.sendToUser(taskResult.userId, {
           type: 'AI_GENERATE_ERROR',
           data: {
-            requestId: taskResult.taskId,
-            taskId: taskResult.taskId,
+            requestId: taskResult.taskId, // 主要使用 requestId
+            taskId: taskResult.taskId,    // 兼容字段
             error: taskResult.error || {
               code: 'AI_PROCESSING_FAILED',
               message: 'AI processing failed',
@@ -248,24 +248,18 @@ export class GatewayServer {
           }
         })
       } else if (taskResult.status === 'progress') {
-        // 发送处理进度，同时包含requestId和taskId
+        // 发送处理进度
         this.wsManager.sendToUser(taskResult.userId, {
           type: 'AI_GENERATE_PROGRESS',
           data: {
-            requestId: taskResult.taskId,
-            taskId: taskResult.taskId,
+            requestId: taskResult.taskId, // 主要使用 requestId
+            taskId: taskResult.taskId,    // 兼容字段
             stage: 'processing',
             progress: taskResult.progress || 50,
             message: taskResult.message || 'Processing...'
           }
         })
       }
-
-      // 同时发送通用的任务结果消息（供queueService使用）
-      this.wsManager.sendToUser(taskResult.userId, {
-        type: 'ai_task_result',
-        data: taskResult
-      })
     })
 
     // 处理WebSocket广播消息
@@ -332,13 +326,15 @@ export class GatewayServer {
 
         console.log(`AI任务已发布到队列: ${taskMessage.taskId}`)
 
-        // 发送确认消息给WebSocket客户端
+        // 发送确认消息给WebSocket客户端（使用统一的 AI_GENERATE_PROGRESS 事件）
         if (taskMessage.userId) {
           this.wsManager.sendToUser(taskMessage.userId, {
-            type: 'ai_task_queued',
+            type: 'AI_GENERATE_PROGRESS',
             data: {
-              taskId: taskMessage.taskId,
-              status: 'queued',
+              requestId: taskMessage.taskId, // 主要使用 requestId
+              taskId: taskMessage.taskId,    // 兼容字段
+              stage: 'queued',
+              progress: 0,
               message: 'Task successfully queued for processing'
             }
           })
@@ -346,27 +342,13 @@ export class GatewayServer {
       } catch (error) {
         console.error('处理AI任务请求失败:', error)
 
-        // 发送错误消息给WebSocket客户端
+        // 发送错误消息给WebSocket客户端（统一使用 AI_GENERATE_ERROR 事件）
         if (taskMessage.userId) {
-          this.wsManager.sendToUser(taskMessage.userId, {
-            type: 'ai_task_error',
-            data: {
-              taskId: taskMessage.taskId,
-              requestId: taskMessage.requestId, // 添加requestId以兼容前端
-              error: {
-                code: 'QUEUE_PUBLISH_ERROR',
-                message: error instanceof Error ? error.message : 'Failed to queue task',
-                timestamp: new Date()
-              }
-            }
-          })
-
-          // 同时发送AI_GENERATE_ERROR事件以确保兼容性
           this.wsManager.sendToUser(taskMessage.userId, {
             type: 'AI_GENERATE_ERROR',
             data: {
-              requestId: taskMessage.requestId,
-              taskId: taskMessage.taskId,
+              requestId: taskMessage.taskId, // 主要使用 requestId
+              taskId: taskMessage.taskId,    // 兼容字段
               error: {
                 code: 'QUEUE_PUBLISH_ERROR',
                 message: error instanceof Error ? error.message : 'Failed to queue task',

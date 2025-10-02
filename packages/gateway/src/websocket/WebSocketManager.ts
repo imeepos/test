@@ -334,7 +334,7 @@ export class WebSocketManager extends EventEmitter {
         inputs: data.inputs || [],
         context: data.context || '',
         instruction: data.instruction || '',
-        nodeId: data.nodeId || taskId, // 使用taskId作为默认nodeId
+        nodeId: data.nodeId || '', // ✅ 修复：只使用前端传来的 nodeId，不使用 taskId 作为默认值
         projectId: data.projectId, // 已验证的projectId
         userId: connection.userId, // 来自连接认证的userId
         priority: (data.priority || 'normal') as TaskPriority,

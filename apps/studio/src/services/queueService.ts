@@ -1,6 +1,5 @@
 import type { AIGenerateRequest, AIGenerateResponse } from '@/types'
 import { websocketService } from './websocketService'
-import { aiService } from './aiService'
 
 /**
  * 任务状态类型
@@ -52,10 +51,8 @@ class QueueService {
       }
     })
 
-    // 订阅AI任务相关的WebSocket事件
-    websocketService.subscribe('ai_task_queued', this.handleTaskQueued.bind(this))
-    websocketService.subscribe('ai_task_result', this.handleTaskResult.bind(this))
-    websocketService.subscribe('ai_task_error', this.handleTaskError.bind(this))
+    // 订阅AI任务相关的WebSocket事件（统一使用 AI_GENERATE_* 事件）
+    websocketService.subscribe('AI_GENERATE_PROGRESS', this.handleAIProgress.bind(this))
     websocketService.subscribe('AI_GENERATE_RESPONSE', this.handleAIResponse.bind(this))
     websocketService.subscribe('AI_GENERATE_ERROR', this.handleAIError.bind(this))
   }
@@ -68,9 +65,8 @@ class QueueService {
     request: AIGenerateRequest,
     options: QueueTaskOptions = {}
   ): Promise<string> {
-    if (!this.isWebSocketConnected) {
-      throw new Error('WebSocket连接未建立，无法提交AI任务')
-    }
+    // 移除连接检查，利用websocketService的内置队列机制
+    // websocketService会自动缓存离线消息并在重连后发送
 
     const taskId = this.generateTaskId()
     const { callback } = options
@@ -79,7 +75,9 @@ class QueueService {
       taskId,
       status: 'pending',
       startTime: new Date(),
-      message: '正在发送任务到服务器...'
+      message: this.isWebSocketConnected
+        ? '正在发送任务到服务器...'
+        : '连接中断，任务将在重连后自动发送...'
     }
 
     this.tasks.set(taskId, taskProgress)
@@ -190,54 +188,28 @@ class QueueService {
   // 私有方法
 
   /**
-   * 处理任务入队确认
+   * 处理AI进度更新（包括queued状态）
    */
-  private handleTaskQueued(message: any): void {
-    const { taskId, status, message: statusMessage } = message.payload
+  private handleAIProgress(message: any): void {
+    const { requestId, taskId, stage, progress, message: statusMessage } = message.payload
+    const id = requestId || taskId
 
-    this.updateTaskProgress(taskId, {
-      status: status || 'queued',
-      message: statusMessage || '任务已入队，等待处理'
-    })
-  }
+    if (!id) return
 
-  /**
-   * 处理任务结果
-   */
-  private handleTaskResult(message: any): void {
-    const { taskId, result, processingTime } = message.payload
+    // 将stage映射到TaskStatus
+    let status: TaskStatus = 'processing'
+    if (stage === 'queued') {
+      status = 'queued'
+    } else if (stage === 'completed') {
+      status = 'completed'
+    } else if (stage === 'error') {
+      status = 'failed'
+    }
 
-    this.updateTaskProgress(taskId, {
-      status: 'completed',
-      result,
-      message: '任务处理完成',
-      endTime: new Date()
-    })
-  }
-
-  /**
-   * 处理任务错误
-   */
-  private handleTaskError(message: any): void {
-    const { taskId, error } = message.payload
-
-    this.updateTaskProgress(taskId, {
-      status: 'failed',
-      error: error?.message || error || '任务处理失败',
-      endTime: new Date()
-    })
-  }
-
-  /**
-   * 处理任务状态更新（兼容旧消息格式）
-   */
-  private handleTaskStatusUpdate(message: any): void {
-    const { taskId, status, progress, statusMessage } = message.payload
-
-    this.updateTaskProgress(taskId, {
+    this.updateTaskProgress(id, {
       status,
       progress,
-      message: statusMessage
+      message: statusMessage || `任务${stage === 'queued' ? '已入队' : '处理中'}...`
     })
   }
 
@@ -245,9 +217,12 @@ class QueueService {
    * 处理AI响应
    */
   private handleAIResponse(message: any): void {
-    const { taskId, result } = message.payload
+    const { requestId, taskId, ...result } = message.payload
+    const id = requestId || taskId
 
-    this.updateTaskProgress(taskId, {
+    if (!id) return
+
+    this.updateTaskProgress(id, {
       status: 'completed',
       result,
       endTime: new Date(),
@@ -259,11 +234,14 @@ class QueueService {
    * 处理AI错误
    */
   private handleAIError(message: any): void {
-    const { taskId, error } = message.payload
+    const { requestId, taskId, error } = message.payload
+    const id = requestId || taskId
 
-    this.updateTaskProgress(taskId, {
+    if (!id) return
+
+    this.updateTaskProgress(id, {
       status: 'failed',
-      error: error.message || '处理失败',
+      error: error?.message || error || '处理失败',
       endTime: new Date()
     })
   }

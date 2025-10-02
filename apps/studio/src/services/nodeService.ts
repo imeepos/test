@@ -8,7 +8,6 @@ import type {
   SemanticType
 } from '@/types'
 import { NodeDataConverter } from '@/types/converter'
-import { aiService } from './aiService'
 import { websocketService } from './websocketService'
 
 interface NodeCreationOptions {
@@ -251,13 +250,22 @@ class NodeService {
       })
 
       // 调用AI融合生成
-      const aiResponse = await aiService.fusionGenerate(inputs, fusionType)
+      const aiResponse = await this.generateContentWithAI({
+        inputs,
+        type: 'fusion',
+        instruction: this.getFusionInstruction(fusionType)
+      })
 
       // 生成标题
       let nodeTitle = aiResponse.title || ''
       if (!nodeTitle) {
         try {
-          nodeTitle = await aiService.generateTitle(aiResponse.content)
+          const titleResponse = await this.generateContentWithAI({
+            inputs: [aiResponse.content],
+            type: 'generate',
+            instruction: '为以下内容生成一个简洁准确的标题（不超过20个字符）'
+          })
+          nodeTitle = titleResponse.title || titleResponse.content.slice(0, 20)
         } catch {
           const typeMap = {
             summary: '总结',
@@ -463,13 +471,25 @@ class NodeService {
    */
   private async optimizeContentWithAI(content: string, currentNode: AINode): Promise<AIGenerateResponse> {
     const context = `当前节点信息 - 标题: ${currentNode.title || '无'}, 重要性: ${currentNode.importance}, 标签: ${currentNode.tags.join(', ')}`
-    
+
     return this.generateContentWithAI({
       inputs: [content],
       context,
       type: 'optimize',
       instruction: '请优化以下内容，使其更清晰、准确、有价值'
     })
+  }
+
+  /**
+   * 获取融合生成的指令文本
+   */
+  private getFusionInstruction(fusionType: 'summary' | 'synthesis' | 'comparison'): string {
+    const instructions = {
+      summary: '请总结以下多个内容的核心要点',
+      synthesis: '请综合以下多个内容，生成统一的整合内容',
+      comparison: '请比较分析以下多个内容的异同点'
+    }
+    return instructions[fusionType]
   }
 
   /**

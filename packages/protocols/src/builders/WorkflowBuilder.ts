@@ -4,10 +4,18 @@
  * 提供声明式的工作流构建能力，类似LangGraph的易用性
  */
 
-import type { Graph, GraphExecutionPlan } from '../structures/graph.js'
-import type { Edge, EdgeType, EdgeCondition } from '../structures/edge.js'
+import type { Graph } from '../structures/graph.js'
+import type { Edge, EdgeType } from '../structures/edge.js'
 import type { EnhancedNode } from '../structures/node-enhanced.js'
 import { GraphExecutor, type NodeExecutor, type GraphExecutionOptions } from '../execution/graph-executor.js'
+import {
+  GraphStreamExecutor,
+  type StreamingNodeExecutor,
+  adaptNodeExecutor,
+  type GraphStreamInput
+} from '../execution/GraphStreamExecutor.js'
+import type { StreamEvent } from '../execution/StreamEvents.js'
+import type { StreamExecutionOptions } from '../execution/StreamingExecutor.js'
 
 // ============================================================================
 // 条件路由函数
@@ -43,7 +51,6 @@ export interface WorkflowEdgeConfig {
   to: string
   type?: EdgeType
   weight?: number
-  condition?: EdgeCondition
   metadata?: Record<string, unknown>
 }
 
@@ -64,7 +71,6 @@ export class WorkflowBuilder {
     routes: ConditionalRouteMap
   }> = new Map()
 
-  private startNodeId?: string
   private endNodeIds: Set<string> = new Set()
 
   private executionOptions: GraphExecutionOptions = {}
@@ -78,7 +84,9 @@ export class WorkflowBuilder {
     this.projectId = options.projectId
     this.userId = options.userId
     this.name = options.name
-    this.description = options.description
+    if (options.description !== undefined) {
+      this.description = options.description
+    }
   }
 
   /**
@@ -89,11 +97,22 @@ export class WorkflowBuilder {
     timeout?: number
     metadata?: Record<string, unknown>
   }): this {
-    this.nodes.set(id, {
+    const nodeConfig: WorkflowNodeConfig = {
       id,
-      handler,
-      ...config
-    })
+      handler
+    }
+
+    if (config?.retryPolicy !== undefined) {
+      nodeConfig.retryPolicy = config.retryPolicy
+    }
+    if (config?.timeout !== undefined) {
+      nodeConfig.timeout = config.timeout
+    }
+    if (config?.metadata !== undefined) {
+      nodeConfig.metadata = config.metadata
+    }
+
+    this.nodes.set(id, nodeConfig)
     return this
   }
 
@@ -103,14 +122,24 @@ export class WorkflowBuilder {
   addEdge(from: string, to: string, config?: {
     type?: EdgeType
     weight?: number
-    condition?: EdgeCondition
     metadata?: Record<string, unknown>
   }): this {
-    this.edges.push({
+    const edge: WorkflowEdgeConfig = {
       from,
-      to,
-      ...config
-    })
+      to
+    }
+
+    if (config?.type !== undefined) {
+      edge.type = config.type
+    }
+    if (config?.weight !== undefined) {
+      edge.weight = config.weight
+    }
+    if (config?.metadata !== undefined) {
+      edge.metadata = config.metadata
+    }
+
+    this.edges.push(edge)
     return this
   }
 
@@ -129,16 +158,6 @@ export class WorkflowBuilder {
     return this
   }
 
-  /**
-   * 设置起始节点
-   */
-  setEntryPoint(nodeId: string): this {
-    if (!this.nodes.has(nodeId)) {
-      throw new Error(`Node ${nodeId} not found`)
-    }
-    this.startNodeId = nodeId
-    return this
-  }
 
   /**
    * 添加结束节点
@@ -215,22 +234,31 @@ export class WorkflowBuilder {
     // 构建Graph对象
     const nodeIds = Array.from(this.nodes.keys())
 
-    const edges: Edge[] = this.edges.map((edgeConfig, index) => ({
-      id: crypto.randomUUID(),
-      projectId: this.projectId,
-      sourceNodeId: edgeConfig.from,
-      targetNodeId: edgeConfig.to,
-      type: edgeConfig.type || 'dataflow',
-      direction: 'directed' as const,
-      weight: edgeConfig.weight ?? 1,
-      priority: index,
-      isActive: true,
-      isValidated: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      condition: edgeConfig.condition,
-      metadata: edgeConfig.metadata
-    }))
+    const edges: Edge[] = this.edges.map((edgeConfig, index) => {
+      const edge: Edge = {
+        id: crypto.randomUUID(),
+        projectId: this.projectId,
+        sourceNodeId: edgeConfig.from,
+        targetNodeId: edgeConfig.to,
+        type: edgeConfig.type || 'dataflow',
+        direction: 'directed' as const,
+        weight: edgeConfig.weight ?? 1,
+        priority: index,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      if (edgeConfig.metadata) {
+        // 确保metadata符合EdgeMetadata schema
+        edge.metadata = {
+          userCreated: true,
+          ...(edgeConfig.metadata as any)
+        }
+      }
+
+      return edge
+    })
 
     // 添加条件路由生成的边
     for (const [sourceNode, { routes }] of this.conditionalRoutes) {
@@ -246,7 +274,6 @@ export class WorkflowBuilder {
             weight: 1,
             priority: edges.length,
             isActive: true,
-            isValidated: false,
             createdAt: new Date(),
             updatedAt: new Date()
           })
@@ -266,8 +293,7 @@ export class WorkflowBuilder {
       stats: {
         nodeCount: nodeIds.length,
         edgeCount: edges.length,
-        maxDepth: 0,
-        avgDegree: edges.length / nodeIds.length
+        maxDepth: 0
       },
       executionStatus: 'idle',
       config: {
@@ -343,7 +369,7 @@ export class CompiledWorkflow {
   /**
    * 执行工作流
    */
-  async execute(initialState?: any): Promise<any> {
+  async execute(_initialState?: any): Promise<any> {
     // 创建节点执行器包装
     const nodeExecutor: NodeExecutor = {
       execute: async (node: EnhancedNode, context: any) => {
@@ -379,7 +405,7 @@ export class CompiledWorkflow {
 
     // 创建节点Map
     const nodeMap = new Map<string, EnhancedNode>()
-    for (const [nodeId, config] of this.nodeConfigs) {
+    for (const [nodeId] of this.nodeConfigs) {
       // 创建增强节点（简化版本，实际应该从数据库加载）
       const enhancedNode: EnhancedNode = {
         id: nodeId,
@@ -393,10 +419,7 @@ export class CompiledWorkflow {
         relationships: {
           childIds: [],
           dependencyIds: [],
-          dependentIds: [],
-          referenceIds: [],
-          referencedByIds: [],
-          siblingIds: []
+          dependentIds: []
         }
       }
       nodeMap.set(nodeId, enhancedNode)
@@ -409,15 +432,83 @@ export class CompiledWorkflow {
     return result
   }
 
+
   /**
-   * 获取执行计划
+   * 流式执行工作流
    */
-  async getExecutionPlan(): Promise<GraphExecutionPlan> {
+  async *stream(
+    initialState?: any,
+    options?: StreamExecutionOptions
+  ): AsyncIterableIterator<StreamEvent> {
+    // 创建节点执行器包装
     const nodeExecutor: NodeExecutor = {
-      execute: async () => {}
+      execute: async (node: EnhancedNode, context: any) => {
+        const config = this.nodeConfigs.get(node.id)
+        if (!config) {
+          throw new Error(`Node configuration not found: ${node.id}`)
+        }
+
+        // 检查是否有条件路由
+        const conditionalRoute = this.conditionalRoutes.get(node.id)
+        if (conditionalRoute) {
+          const result = await config.handler.execute(node, context)
+          const routeKey = await conditionalRoute.routingFn(result)
+          const targetNodeId = conditionalRoute.routes[routeKey]
+
+          if (!targetNodeId) {
+            throw new Error(`Routing function returned unknown key: ${routeKey}`)
+          }
+
+          context.__nextNodeId = targetNodeId
+          return result
+        }
+
+        return config.handler.execute(node, context)
+      }
     }
-    const executor = new GraphExecutor(nodeExecutor)
-    return executor.createExecutionPlan(this.graph)
+
+    // 创建流式节点执行器
+    const streamingNodeExecutor: StreamingNodeExecutor = adaptNodeExecutor(nodeExecutor)
+
+    // 创建节点Map
+    const nodeMap = new Map<string, EnhancedNode>()
+    for (const [nodeId] of this.nodeConfigs) {
+      const enhancedNode: EnhancedNode = {
+        id: nodeId,
+        projectId: this.graph.projectId,
+        userId: this.graph.userId,
+        content: '',
+        position: { x: 0, y: 0 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        enhancementType: 'graph-node',
+        relationships: {
+          childIds: [],
+          dependencyIds: [],
+          dependentIds: []
+        }
+      }
+      nodeMap.set(nodeId, enhancedNode)
+    }
+
+    // 创建流式执行器
+    const streamExecutor = new GraphStreamExecutor(
+      streamingNodeExecutor,
+      this.executionOptions
+    )
+
+    // 构建输入
+    const input: GraphStreamInput = {
+      graph: this.graph,
+      nodeMap,
+      initialState,
+      options: this.executionOptions
+    }
+
+    // 流式执行
+    for await (const event of streamExecutor.stream(input, options)) {
+      yield event
+    }
   }
 
   /**
@@ -426,10 +517,12 @@ export class CompiledWorkflow {
   toJSON(): any {
     return {
       graph: this.graph,
-      nodes: Array.from(this.nodeConfigs.entries()).map(([id, config]) => ({
-        id,
-        ...config,
-        handler: undefined // 不序列化函数
+      nodes: Array.from(this.nodeConfigs.entries()).map(([nodeId, config]) => ({
+        nodeId,
+        retryPolicy: config.retryPolicy,
+        timeout: config.timeout,
+        metadata: config.metadata
+        // handler不序列化
       })),
       conditionalRoutes: Array.from(this.conditionalRoutes.entries()).map(([source, { routes }]) => ({
         source,

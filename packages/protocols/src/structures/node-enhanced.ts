@@ -33,12 +33,7 @@ export const NodeRelationshipSchema = z.object({
   dependencyIds: z.array(z.string().uuid()).default([]),
   dependentIds: z.array(z.string().uuid()).default([]),
 
-  // 引用关系
-  referenceIds: z.array(z.string().uuid()).default([]),
-  referencedByIds: z.array(z.string().uuid()).default([]),
-
-  // 同级关系
-  siblingIds: z.array(z.string().uuid()).default([]),
+  // 链式关系
   previousId: z.string().uuid().optional(),
   nextId: z.string().uuid().optional()
 }).strict()
@@ -152,7 +147,7 @@ export const BatchNodeOperationSchema = z.object({
   operation: z.enum(['create', 'update', 'delete', 'link', 'unlink']),
   nodeIds: z.array(z.string().uuid()).min(1),
   updates: z.record(z.unknown()).optional(),
-  linkType: z.enum(['parent-child', 'dependency', 'reference']).optional(),
+  linkType: z.enum(['parent-child', 'dependency']).optional(),
   targetNodeId: z.string().uuid().optional()
 }).strict()
 
@@ -216,10 +211,7 @@ export function enhanceNode(node: z.infer<typeof NodeSchemaV1>, type: NodeEnhanc
     relationships: {
       childIds: [],
       dependencyIds: [],
-      dependentIds: [],
-      referenceIds: [],
-      referencedByIds: [],
-      siblingIds: []
+      dependentIds: []
     },
     structureRefs: {
       chainIds: [],

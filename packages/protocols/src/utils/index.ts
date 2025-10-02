@@ -29,3 +29,20 @@ export {
   isTerminalStatus,
   canRetryTask
 } from './ai-process.utils.js'
+
+// ============================================================================
+// 流式处理工具函数
+// ============================================================================
+
+export {
+  toSSE,
+  toSSEStream,
+  NodeOutputCollector,
+  ProgressTracker,
+  StateSnapshotCollector,
+  ErrorCollector,
+  StreamEventHandler,
+  monitorStream,
+  extractNodeOutputs,
+  waitForFinalState
+} from './streaming-helpers.js'

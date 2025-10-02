@@ -43,30 +43,14 @@ export const TreeNodeSchema = z.object({
   // 层次关系
   parentId: z.string().uuid().optional(),
   childIds: z.array(z.string().uuid()).default([]),
-  siblingIds: z.array(z.string().uuid()).default([]),
 
   // 层次信息
   level: z.number().int().nonnegative(),       // 层级（root为0）
   path: z.array(z.string().uuid()),            // 从根到当前节点的路径
   order: z.number().int().nonnegative(),       // 同级节点中的顺序
 
-  // 子树统计
-  subtreeStats: z.object({
-    nodeCount: z.number().int().nonnegative(),
-    maxDepth: z.number().int().nonnegative(),
-    leafCount: z.number().int().nonnegative()
-  }).optional(),
-
-  // 节点状态
-  isExpanded: z.boolean().default(true),
-  isSelected: z.boolean().default(false),
-  isVisible: z.boolean().default(true),
-
   // 元数据
   metadata: z.object({
-    label: z.string().optional(),
-    icon: z.string().optional(),
-    color: z.string().optional(),
     customData: z.record(z.unknown()).optional()
   }).optional()
 }).strict()
@@ -128,20 +112,11 @@ export const TreeSchema = z.object({
     totalNodes: z.number().int().nonnegative(),
     maxDepth: z.number().int().nonnegative(),
     branchCount: z.number().int().nonnegative(),
-    leafCount: z.number().int().nonnegative(),
-    avgBranchingFactor: z.number().nonnegative()
+    leafCount: z.number().int().nonnegative()
   }),
 
   // 遍历配置
   defaultTraversal: TraversalStrategy.default('bfs'),
-
-  // 可视化配置
-  visualization: z.object({
-    orientation: z.enum(['vertical', 'horizontal']).default('vertical'),
-    nodeSpacing: z.number().positive().default(50),
-    levelSpacing: z.number().positive().default(100),
-    collapsible: z.boolean().default(true)
-  }).optional(),
 
   // 元数据
   metadata: z.object({
@@ -172,12 +147,6 @@ export const CreateTreeRequestSchema = z.object({
     order: z.number().int().nonnegative().optional()
   })).min(1),
   defaultTraversal: TraversalStrategy.optional(),
-  visualization: z.object({
-    orientation: z.enum(['vertical', 'horizontal']).optional(),
-    nodeSpacing: z.number().positive().optional(),
-    levelSpacing: z.number().positive().optional(),
-    collapsible: z.boolean().optional()
-  }).optional(),
   metadata: z.object({
     tags: z.array(z.string()).optional(),
     customData: z.record(z.unknown()).optional()
@@ -194,12 +163,6 @@ export const UpdateTreeRequestSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
   defaultTraversal: TraversalStrategy.optional(),
-  visualization: z.object({
-    orientation: z.enum(['vertical', 'horizontal']).optional(),
-    nodeSpacing: z.number().positive().optional(),
-    levelSpacing: z.number().positive().optional(),
-    collapsible: z.boolean().optional()
-  }).optional(),
   metadata: z.object({
     tags: z.array(z.string()).optional(),
     customData: z.record(z.unknown()).optional()
@@ -213,7 +176,7 @@ export type UpdateTreeRequest = z.infer<typeof UpdateTreeRequestSchema>
 // ============================================================================
 
 export const TreeNodeOperationSchema = z.object({
-  operation: z.enum(['add', 'move', 'delete', 'expand', 'collapse']),
+  operation: z.enum(['add', 'move', 'delete']),
   nodeId: z.string().uuid(),
   targetParentId: z.string().uuid().optional(),  // 用于move/add操作
   newNodeId: z.string().uuid().optional(),       // 用于add操作
@@ -232,8 +195,7 @@ export const TraverseTreeRequestSchema = z.object({
   startNodeId: z.string().uuid().optional(),     // 起始节点（默认root）
   maxDepth: z.number().int().positive().optional(), // 最大深度限制
   filter: z.object({
-    nodeType: TreeNodeType.optional(),
-    includeCollapsed: z.boolean().optional()
+    nodeType: TreeNodeType.optional()
   }).optional()
 }).strict()
 

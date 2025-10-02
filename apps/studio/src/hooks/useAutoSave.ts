@@ -36,7 +36,7 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   const { currentProject, saveCanvasState } = useCanvasStore()
-  const { lastSyncTime } = useNodeStore()
+  const { lastSavedAt } = useSyncStore()
   const { startSaving, savingComplete, savingFailed } = useSyncStore()
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -117,11 +117,11 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
       return
     }
 
-    // 当lastSyncTime变化时,说明有数据更新,触发防抖保存
-    if (lastSyncTime) {
+    // 当lastSavedAt变化时,说明有数据更新,触发防抖保存
+    if (lastSavedAt) {
       debouncedSave()
     }
-  }, [lastSyncTime, currentProject, finalConfig.enabled, debouncedSave])
+  }, [lastSavedAt, currentProject, finalConfig.enabled, debouncedSave])
 
   /**
    * 清理函数

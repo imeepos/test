@@ -352,24 +352,4 @@ export class GraphExecutor {
     return levels.map(level => level[0]).filter((id): id is string => id !== undefined)
   }
 
-  /**
-   * 暂停执行
-   */
-  async pause(_context: GraphExecutionContext): Promise<void> {
-    // TODO: 实现暂停逻辑
-  }
-
-  /**
-   * 恢复执行
-   */
-  async resume(_context: GraphExecutionContext): Promise<void> {
-    // TODO: 实现恢复逻辑
-  }
-
-  /**
-   * 取消执行
-   */
-  async cancel(_context: GraphExecutionContext): Promise<void> {
-    // TODO: 实现取消逻辑
-  }
 }

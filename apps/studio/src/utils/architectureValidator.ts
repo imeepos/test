@@ -278,7 +278,7 @@ export class ArchitectureValidator {
   private async checkServiceAvailability(): Promise<void> {
     await this.performAsyncCheck('service-availability', async () => {
       // 检查所有核心服务是否可用
-      const requiredServices = ['ai', 'websocket', 'node', 'queue', 'version']
+      const requiredServices = ['websocket', 'node', 'queue', 'version']
 
       requiredServices.forEach(serviceName => {
         if (!(serviceName in services)) {
@@ -286,10 +286,10 @@ export class ArchitectureValidator {
         }
       })
 
-      // 检查AI服务健康状态
-      const aiHealthy = await services.ai.checkHealth()
-      if (!aiHealthy) {
-        this.addWarning('service-health', 'AI服务不可用，系统将使用回退模式')
+      // 检查WebSocket服务状态（AI功能依赖WebSocket）
+      const wsStatus = services.websocket.getStatus()
+      if (wsStatus !== 'connected') {
+        this.addWarning('service-health', `WebSocket服务状态异常: ${wsStatus}，AI功能可能不可用`)
       }
     })
   }

@@ -124,13 +124,11 @@ export const GraphSchema = z.object({
   stats: z.object({
     nodeCount: z.number().int().nonnegative(),
     edgeCount: z.number().int().nonnegative(),
-    maxDepth: z.number().int().nonnegative(),
-    avgDegree: z.number().nonnegative()
+    maxDepth: z.number().int().nonnegative()
   }),
 
   // 执行状态
   executionStatus: GraphExecutionStatus.default('idle'),
-  currentPlan: GraphExecutionPlanSchema.optional(),
 
   // 验证结果
   validation: GraphValidationResultSchema.optional(),
@@ -154,8 +152,7 @@ export const GraphSchema = z.object({
 
   // 时间戳
   createdAt: z.date(),
-  updatedAt: z.date(),
-  lastExecutedAt: z.date().optional()
+  updatedAt: z.date()
 }).strict()
 
 export type Graph = z.infer<typeof GraphSchema>

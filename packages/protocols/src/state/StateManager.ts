@@ -250,20 +250,6 @@ export class StateManager<TSchema extends StateSchema = StateSchema> {
   }
 
   /**
-   * 回滚到指定版本
-   */
-  rollback(version: number): void {
-    const snapshot = this.history.find(s => s.version === version)
-
-    if (!snapshot) {
-      throw new Error(`Snapshot version ${version} not found`)
-    }
-
-    this.currentState = { ...snapshot.data }
-    this.saveSnapshot(`rollback_to_v${version}`)
-  }
-
-  /**
    * 回滚到上一个状态
    */
   undo(): void {
@@ -272,48 +258,14 @@ export class StateManager<TSchema extends StateSchema = StateSchema> {
     }
 
     const previousSnapshot = this.history[this.history.length - 2]
+    if (!previousSnapshot) {
+      throw new Error('Previous snapshot not found')
+    }
+
     this.currentState = { ...previousSnapshot.data }
 
     // 不添加新快照，只移除最后一个
     this.history.pop()
-  }
-
-  /**
-   * 清除历史
-   */
-  clearHistory(): void {
-    const currentSnapshot = this.history[this.history.length - 1]
-    this.history = currentSnapshot ? [currentSnapshot] : []
-  }
-
-  /**
-   * 导出为JSON
-   */
-  toJSON(): any {
-    return {
-      schema: Object.entries(this.schema).map(([key, config]) => ({
-        key,
-        reducer: typeof config.reducer === 'string' ? config.reducer : 'custom',
-        initialValue: config.initialValue
-      })),
-      currentState: this.currentState,
-      historySize: this.history.length
-    }
-  }
-
-  /**
-   * 克隆状态管理器
-   */
-  clone(): StateManager<TSchema> {
-    const cloned = new StateManager(this.schema, {
-      maxHistorySize: this.maxHistorySize,
-      enableHistory: false
-    })
-
-    cloned.currentState = { ...this.currentState }
-    cloned.history = [...this.history]
-
-    return cloned
   }
 }
 
@@ -334,17 +286,6 @@ export function createStateManager<TSchema extends StateSchema>(
   return new StateManager(schema, options)
 }
 
-/**
- * 创建简单的消息状态
- */
-export function createMessageState() {
-  return createStateManager({
-    messages: {
-      reducer: 'append',
-      initialValue: []
-    }
-  })
-}
 
 /**
  * 创建Agent状态

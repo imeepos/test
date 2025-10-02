@@ -173,7 +173,7 @@ export class AITaskQueueConsumer extends EventEmitter {
    * 处理AI任务
    */
   private async processAITask(taskMessage: UnifiedAITaskMessage, originalMessage: any): Promise<void> {
-    const { taskId } = taskMessage
+    const { taskId, nodeId } = taskMessage
 
     // 防止重复处理
     if (this.processingTasks.has(taskId)) {
@@ -187,6 +187,7 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务开始事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'processing',
         userId: taskMessage.userId,
@@ -202,12 +203,12 @@ export class AITaskQueueConsumer extends EventEmitter {
       const savedResult = await this.saveTaskResult(taskMessage, aiResult)
 
       // ✅ 如果有 nodeId，立即更新节点到数据库
-      if (taskMessage.nodeId) {
+      if (nodeId) {
         try {
-          await this.updateNodeWithResult(taskMessage.nodeId, taskMessage.projectId, aiResult)
-          console.log(`✅ 节点已更新到数据库: ${taskMessage.nodeId}`)
+          await this.updateNodeWithResult(nodeId, taskMessage.projectId, aiResult)
+          console.log(`✅ 节点已更新到数据库: ${nodeId}`)
         } catch (error) {
-          console.error(`❌ 更新节点失败: ${taskMessage.nodeId}`, error)
+          console.error(`❌ 更新节点失败: ${nodeId}`, error)
           // 继续执行，不影响任务完成通知
         }
       }
@@ -215,6 +216,7 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务完成事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'completed',
         userId: taskMessage.userId,
@@ -233,6 +235,7 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务失败事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'failed',
         userId: taskMessage.userId,

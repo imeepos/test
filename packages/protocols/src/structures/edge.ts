@@ -33,33 +33,12 @@ export const EdgeDirection = z.enum([
 export type EdgeDirection = z.infer<typeof EdgeDirection>
 
 // ============================================================================
-// 条件触发配置
-// ============================================================================
-
-export const EdgeConditionSchema = z.object({
-  enabled: z.boolean(),
-  expression: z.string().optional(),           // 条件表达式
-  sourceField: z.string().optional(),          // 源节点字段
-  operator: z.enum(['eq', 'ne', 'gt', 'lt', 'gte', 'lte', 'contains', 'matches']).optional(),
-  value: z.unknown().optional()
-}).strict()
-
-export type EdgeCondition = z.infer<typeof EdgeConditionSchema>
-
-// ============================================================================
 // 边元数据
 // ============================================================================
 
 export const EdgeMetadataSchema = z.object({
-  label: z.string().optional(),                // 边标签
-  color: z.string().optional(),                // 可视化颜色
-  style: z.enum(['solid', 'dashed', 'dotted']).optional(),
-  animated: z.boolean().optional(),            // 是否动画
   userCreated: z.boolean().default(false),     // 是否用户手动创建
-  aiSuggested: z.boolean().default(false),     // 是否AI建议
-  confidence: z.number().min(0).max(1).optional(), // AI建议置信度
-  reasoning: z.string().optional(),            // AI建议理由
-  customData: z.record(z.unknown()).optional()
+  customData: z.record(z.unknown()).optional() // 自定义数据
 }).strict()
 
 export type EdgeMetadata = z.infer<typeof EdgeMetadataSchema>
@@ -83,15 +62,11 @@ export const EdgeSchema = z.object({
   weight: z.number().min(0).max(1).default(1),       // 边权重 0-1
   priority: z.number().int().min(0).default(0),      // 执行优先级
 
-  // 条件触发
-  condition: EdgeConditionSchema.optional(),
-
   // 元数据
   metadata: EdgeMetadataSchema.optional(),
 
   // 状态标记
   isActive: z.boolean().default(true),
-  isValidated: z.boolean().default(false),
 
   // 时间戳
   createdAt: z.date(),
@@ -112,7 +87,6 @@ export const CreateEdgeRequestSchema = z.object({
   direction: EdgeDirection.optional(),
   weight: z.number().min(0).max(1).optional(),
   priority: z.number().int().min(0).optional(),
-  condition: EdgeConditionSchema.optional(),
   metadata: EdgeMetadataSchema.optional()
 }).strict()
 
@@ -127,10 +101,8 @@ export const UpdateEdgeRequestSchema = z.object({
   direction: EdgeDirection.optional(),
   weight: z.number().min(0).max(1).optional(),
   priority: z.number().int().min(0).optional(),
-  condition: EdgeConditionSchema.optional(),
   metadata: EdgeMetadataSchema.optional(),
-  isActive: z.boolean().optional(),
-  isValidated: z.boolean().optional()
+  isActive: z.boolean().optional()
 }).strict()
 
 export type UpdateEdgeRequest = z.infer<typeof UpdateEdgeRequestSchema>

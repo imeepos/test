@@ -10,6 +10,10 @@ SKER 系统的协议定义和验证器包，提供类型安全的契约定义和
 - 🔄 **版本管理** - 协议版本化，支持平滑升级
 - ✅ **详细错误** - 验证失败时提供清晰的错误信息
 - 🎨 **事件驱动** - 类型安全的事件系统 EventKey<T>
+- 🔗 **图执行** - DAG/树/链条多种执行模式
+- 🌊 **流式输出** - 实时事件推送和SSE支持
+- 🏗️ **流式构建** - LangGraph风格的声明式API
+- 📊 **状态管理** - Redux风格的reducer模式
 
 ## 📦 安装
 
@@ -336,6 +340,196 @@ eventBus.on('ai.task.completed', (data: any) => {
 // ✅ 新版 - 类型安全
 eventBus.on(EventKeys.AI_TASK_COMPLETED, (event) => {
   console.log(event.result.content)  // 类型安全
+})
+```
+
+## 🔗 图执行和流式API
+
+### WorkflowBuilder - 声明式工作流构建
+
+类似LangGraph的流式API，提供直观的workflow构建体验：
+
+```typescript
+import { WorkflowBuilder, StateManager, createAgentState } from '@sker/protocols'
+
+// 创建工作流
+const workflow = new WorkflowBuilder({
+  projectId: uuid(),
+  userId: uuid(),
+  name: 'AI Agent'
+})
+
+// 添加节点
+workflow
+  .addNode('input', inputHandler)
+  .addNode('process', processHandler)
+  .addNode('decide', decideHandler)
+  .addNode('action1', action1Handler)
+  .addNode('action2', action2Handler)
+  .addNode('output', outputHandler)
+
+// 添加边
+workflow
+  .addEdge('input', 'process')
+  .addEdge('process', 'decide')
+
+// 添加条件路由
+workflow.addConditionalEdge(
+  'decide',
+  (state) => state.decision, // 路由函数
+  {
+    'option1': 'action1',
+    'option2': 'action2'
+  }
+)
+
+workflow
+  .addEdge('action1', 'output')
+  .addEdge('action2', 'output')
+
+// 配置执行选项
+workflow
+  .enableParallel(5)
+  .failFast(false)
+  .onProgress((completed, total) => {
+    console.log(`Progress: ${completed}/${total}`)
+  })
+
+// 编译工作流
+const compiled = await workflow.compile()
+
+// 执行（非流式）
+const result = await compiled.execute({ input: 'data' })
+
+// 流式执行
+for await (const event of compiled.stream({ input: 'data' })) {
+  console.log(event.type, event.data)
+}
+```
+
+### StateManager - 状态管理
+
+使用LangGraph风格的reducer模式管理状态：
+
+```typescript
+import { StateManager, createAgentState } from '@sker/protocols'
+
+// 创建状态管理器
+const state = createAgentState()
+
+// 或自定义状态schema
+const customState = new StateManager({
+  messages: {
+    reducer: 'append',      // 追加到数组
+    initialValue: []
+  },
+  context: {
+    reducer: 'merge',       // 合并对象
+    initialValue: {}
+  },
+  iteration: {
+    reducer: 'sum',         // 累加数字
+    initialValue: 0
+  },
+  maxScore: {
+    reducer: 'max',         // 保留最大值
+    initialValue: 0
+  }
+})
+
+// 更新状态
+customState.update({
+  messages: { role: 'user', content: 'Hello' },
+  context: { userId: '123' },
+  iteration: 1,
+  maxScore: 95
+})
+
+// 获取状态
+console.log(customState.getState())
+
+// 回滚
+customState.undo()
+
+// 查看历史
+console.log(customState.getHistory())
+```
+
+### 流式事件系统
+
+实时接收执行事件，支持SSE：
+
+```typescript
+import {
+  toSSEStream,
+  monitorStream,
+  StreamEventHandler
+} from '@sker/protocols'
+
+// 方式1: 手动处理事件
+for await (const event of workflow.stream()) {
+  switch (event.type) {
+    case 'node_start':
+      console.log(`节点 ${event.data.nodeId} 开始`)
+      break
+    case 'node_output':
+      console.log(`输出: ${event.data.chunk}`)
+      break
+    case 'node_complete':
+      console.log(`节点完成: ${event.data.result}`)
+      break
+    case 'complete':
+      console.log(`执行完成:`, event.data.finalState)
+      break
+  }
+}
+
+// 方式2: 使用监控工具
+const handler = await monitorStream(workflow.stream(), {
+  onProgress: (progress) => {
+    console.log(`进度: ${progress.progress * 100}%`)
+  },
+  onError: (error) => {
+    console.error(`错误: ${error.error.message}`)
+  },
+  onComplete: (summary) => {
+    console.log(`完成: ${summary.totalEvents} 个事件`)
+  }
+})
+
+// 方式3: 转换为SSE格式
+for await (const sse of toSSEStream(workflow.stream())) {
+  response.write(sse)
+}
+```
+
+### 图执行模式
+
+支持多种图结构的执行：
+
+```typescript
+import {
+  GraphExecutor,
+  TreeExecutor,
+  ChainExecutor
+} from '@sker/protocols'
+
+// DAG图执行 - 支持并行
+const graphExecutor = new GraphExecutor(nodeExecutor)
+const result = await graphExecutor.execute(graph, nodeMap)
+
+// 树执行 - DFS/BFS遍历
+const treeExecutor = new TreeExecutor(nodeExecutor)
+const result = await treeExecutor.execute(tree, nodeMap, {
+  strategy: 'dfs-preorder',  // 或 'bfs', 'dfs-inorder', 'dfs-postorder'
+  maxDepth: 5
+})
+
+// 链条执行 - 顺序执行，支持断点续传
+const chainExecutor = new ChainExecutor(nodeExecutor)
+const result = await chainExecutor.execute(chain, nodeMap, {
+  continueOnError: true,
+  maxRetries: 3
 })
 ```
 

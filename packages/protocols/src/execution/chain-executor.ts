@@ -292,43 +292,17 @@ export class ChainExecutor {
 
   /**
    * 检查是否跳过节点
+   *
+   * ⚠️ WARNING: skipCondition 功能当前已禁用
+   * 原因：使用 new Function() 存在代码注入安全风险
+   * TODO: 如需启用，请使用安全的表达式解析库（如 expr-eval）或回调函数方式
    */
   private async shouldSkipNode(
-    chainNode: ChainNode,
-    context: ChainExecutionContext
+    _chainNode: ChainNode,
+    _context: ChainExecutionContext
   ): Promise<boolean> {
-    if (!chainNode.skipCondition) return false
-
-    try {
-      // 简单的条件表达式求值
-      // 实际应用中应使用更安全的表达式解析器
-      const shouldSkip = this.evaluateCondition(
-        chainNode.skipCondition,
-        context.executionState
-      )
-      return shouldSkip
-    } catch (error) {
-      console.error('Error evaluating skip condition:', error)
-      return false
-    }
-  }
-
-  /**
-   * 求值条件表达式
-   */
-  private evaluateCondition(
-    condition: string,
-    state: Map<string, unknown>
-  ): boolean {
-    // 简化实现
-    // 实际应用中应使用安全的表达式解析器，如 expr-eval
-    try {
-      const stateObj = Object.fromEntries(state)
-      const fn = new Function('state', `return ${condition}`)
-      return fn(stateObj)
-    } catch {
-      return false
-    }
+    // 当前禁用条件跳过功能
+    return false
   }
 
   /**
@@ -371,39 +345,4 @@ export class ChainExecutor {
     }
   }
 
-  /**
-   * 从断点恢复
-   */
-  async resume(
-    chain: Chain,
-    checkpoint: ChainCheckpoint,
-    nodeMap: Map<string, EnhancedNode>,
-    options: ChainExecutionOptions = {}
-  ): Promise<ChainExecutionResult> {
-    return this.execute(chain, nodeMap, {
-      ...options,
-      fromCheckpoint: true,
-      checkpointId: checkpoint.id
-    })
-  }
-
-  /**
-   * 重试失败节点
-   */
-  async retryFailed(
-    chain: Chain,
-    nodeMap: Map<string, EnhancedNode>,
-    options: ChainExecutionOptions = {}
-  ): Promise<ChainExecutionResult> {
-    // 重置失败节点状态
-    chain.nodes.forEach(node => {
-      if (node.status === 'failed') {
-        node.status = 'pending'
-        node.retryCount = 0
-        node.error = undefined
-      }
-    })
-
-    return this.execute(chain, nodeMap, options)
-  }
 }

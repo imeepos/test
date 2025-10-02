@@ -115,17 +115,6 @@ export const ChainSchema = z.object({
   // 断点续传
   lastCheckpoint: ChainCheckpointSchema.optional(),
 
-  // 执行统计
-  executionStats: z.object({
-    totalNodes: z.number().int(),
-    completedNodes: z.number().int(),
-    failedNodes: z.number().int(),
-    skippedNodes: z.number().int(),
-    startTime: z.date().optional(),
-    endTime: z.date().optional(),
-    totalDuration: z.number().int().optional()
-  }).optional(),
-
   // 元数据
   metadata: z.object({
     tags: z.array(z.string()).optional(),
