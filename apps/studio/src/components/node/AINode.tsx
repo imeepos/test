@@ -169,20 +169,22 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   return (
     <>
-      {/* 输入连接点 */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-3 h-3 !border-2"
-        style={{ background: '#6366f1' }}
-        aria-label="节点输入连接点"
-      />
+      {/* 输入连接点 - 仅选中时显示 */}
+      {selected && (
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3 h-3 !border-2"
+          style={{ background: '#6366f1' }}
+          aria-label="节点输入连接点"
+        />
+      )}
 
       {/* 节点主体 */}
       <motion.div
         {...nodeAriaProps}
         className={`
-          group relative min-w-[200px] max-w-[300px] rounded-lg border-2 bg-canvas-node cursor-pointer
+          group relative min-w-[200px] max-w-[300px] rounded-lg border-2 bg-canvas-node/95 cursor-pointer
           ${importanceColors.border} ${importanceColors.bg}
           ${selected ? 'ring-2 ring-sidebar-accent shadow-xl' : 'shadow-lg'}
           transition-shadow duration-200
@@ -321,14 +323,16 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
         )}
       </motion.div>
 
-      {/* 输出连接点 */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 !border-2"
-        style={{ background: '#6366f1' }}
-        aria-label="节点输出连接点"
-      />
+      {/* 输出连接点 - 仅选中时显示 */}
+      {selected && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 !border-2"
+          style={{ background: '#6366f1' }}
+          aria-label="节点输出连接点"
+        />
+      )}
 
       {/* 节点编辑器 */}
       <NodeEditor
