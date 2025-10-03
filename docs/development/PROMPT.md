@@ -12,22 +12,7 @@
 
 ## 请检查相关日志，确定问题原因，制定解决方案，修复错误
 
-
-
-
-根据docs/architecture/mvp_plan.md设计文档
-我觉的协议应该进行下面几点的修改
-
-1. 不应该有：AITaskType 所有类型都是平等的结构，任务不应该有类型，不应该区别对待，不应该内置任何提示词，统一context+prompt生成文字，其中context是上下文信息，prompt是用户输入
-2. 协议层应该是平台无关的职责单一的,前端/后端/微服务等公用的 规范制定/协议制定
-3. 协议应该是类型安全的
-
-```
-type EventKey<T> = string & { __type?： T}；
-const DemoEventKey： EventKey<DemoEvent>;
-const EventOn = (key: EventKey<T>, event: T)=>{}
-```
-
+画布添加 一键删除失败的节点的功能
 
 ## 分析流程：
 

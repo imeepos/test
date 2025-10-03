@@ -1,7 +1,7 @@
 # 使用 Ubuntu 作为基础镜像
 FROM ubuntu:22.04
 
-# 设置环境变量以避免软件包安装过程中的交互式提示
+# 设置环境变量以避免软件包安装过程中的交互式提问
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
 
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Node.js (v20 LTS) 和 npm
+# 安装 Node.js (v20 LTS) 及 npm
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && \
@@ -51,9 +51,7 @@ RUN npm install -g pnpm @openai/codex --registry=https://registry.npmmirror.com
 
 RUN pnpm config set node-linker hoisted
 
-# 设置 Codex 环境变量（运行时将被 docker-compose 覆盖）
-ENV CRS_OAI_KEY=""
-ENV OPENAI_API_KEY=""
+# 确保全局安装的工具在 PATH 中可见
 ENV PATH="/usr/local/bin:${PATH}"
 
 # 设置默认密码环境变量（可以被覆盖）
@@ -73,7 +71,7 @@ RUN mkdir -p /root/.pnpm-store /home/ubuntu/.pnpm-store && \
     su - ubuntu -c "pnpm config set registry https://registry.npmmirror.com" && \
     su - ubuntu -c "pnpm config set store-dir /home/ubuntu/.pnpm-store"
 
-# 创建 SSH 目录并配置 SSH
+# 创建 SSH 目录并配置SSH
 RUN mkdir /var/run/sshd
 
 # 为 root 和 ubuntu 用户创建 SSH 目录
@@ -89,25 +87,6 @@ WORKDIR /workspace
 
 # 为两个用户创建用户级别的 Codex 配置目录
 RUN mkdir -p /root/.codex /home/ubuntu/.codex
-
-# 创建 Codex 配置文件 (config.toml)
-RUN echo 'model_provider = "crs"\n\
-model = "gpt-5-codex"\n\
-model_reasoning_effort = "high"\n\
-disable_response_storage = true\n\
-preferred_auth_method = "apikey"\n\
-\n\
-[model_providers.crs]\n\
-name = "crs"\n\
-base_url = "http://cc.openllm.chat/openai"\n\
-wire_api = "responses"\n\
-requires_openai_auth = true\n\
-env_key = "CRS_OAI_KEY"' > /root/.codex/config.toml && \
-    cp /root/.codex/config.toml /home/ubuntu/.codex/config.toml
-
-# 创建 Codex 认证文件 (auth.json)
-RUN echo '{\n  "OPENAI_API_KEY": null\n}' > /root/.codex/auth.json && \
-    cp /root/.codex/auth.json /home/ubuntu/.codex/auth.json
 
 # 设置工作区和用户配置的权限
 RUN chown -R ubuntu:ubuntu /workspace && \
