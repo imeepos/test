@@ -11,10 +11,15 @@ import {
   MousePointer2,
   Trash2,
   Search,
-  X
+  X,
+  Keyboard,
+  User,
+  LogOut
 } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { useCanvasStore, useUIStore, useNodeStore } from '@/stores'
+import { useCanvasStore, useUIStore, useNodeStore, useAuthStore } from '@/stores'
+import { useShortcutHelp } from '@/hooks/useShortcutHelp'
+import { ShortcutHelp } from '@/components/help/ShortcutHelp'
 import type { ViewMode } from '@/types'
 
 export interface CanvasControlsProps {
@@ -47,6 +52,14 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   } = useUIStore()
 
   const { deleteErrorNodes, getNodeStats, getNodes } = useNodeStore()
+  const { user, logout } = useAuthStore()
+
+  // 快捷键帮助
+  const { isOpen: showShortcutHelp, open: openShortcutHelp, close: closeShortcutHelp } = useShortcutHelp()
+
+  // 用户菜单显示状态
+  const [showUserMenu, setShowUserMenu] = React.useState(false)
+  const userMenuRef = React.useRef<HTMLDivElement>(null)
 
   // 搜索状态
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
@@ -207,6 +220,44 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
     searchInputRef.current?.focus()
   }
 
+  // 处理登出
+  const handleLogout = async () => {
+    if (confirm('确定要退出登录吗？')) {
+      try {
+        await logout()
+        addToast({
+          title: '已退出登录',
+          message: '期待您的再次光临',
+          type: 'info'
+        })
+      } catch (error) {
+        addToast({
+          title: '登出失败',
+          message: '请稍后重试',
+          type: 'error'
+        })
+      }
+    }
+    setShowUserMenu(false)
+  }
+
+  // 点击外部关闭用户菜单
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
+
   // 监听 Ctrl+F / Cmd+F 快捷键
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -232,14 +283,15 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   const zoomPercentage = Math.round((viewport?.zoom ?? 1) * 100)
 
   return (
-    <motion.div
-      className="fixed top-4 right-4 z-10 flex gap-2"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      role="toolbar"
-      aria-label="画布控制工具栏"
-    >
+    <>
+      <motion.div
+        className="fixed top-4 right-4 z-10 flex gap-2"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        role="toolbar"
+        aria-label="画布控制工具栏"
+      >
       {/* 搜索框 */}
       <AnimatePresence>
         {isSearchOpen && (
@@ -305,7 +357,99 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
         </button>
       </div>
-    </motion.div>
+
+      {/* 快捷键帮助按钮 */}
+      <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+        <button
+          onClick={openShortcutHelp}
+          className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-hover rounded text-sidebar-text-muted hover:text-sidebar-text transition-colors"
+          title="快捷键帮助"
+        >
+          <Keyboard className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* 用户信息和菜单 */}
+      {user && (
+        <div className="relative" ref={userMenuRef}>
+          <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-hover rounded transition-colors"
+              title={user.name}
+            >
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </button>
+          </div>
+
+          {/* 用户下拉菜单 */}
+          <AnimatePresence>
+            {showUserMenu && (
+              <motion.div
+                className="absolute top-12 right-0 w-64 bg-sidebar-surface/95 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-xl overflow-hidden"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* 用户信息 */}
+                <div className="p-4 border-b border-sidebar-border bg-sidebar-bg-secondary/50">
+                  <div className="flex items-center gap-3">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+                        <User className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-sidebar-text truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-sidebar-text-muted truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 退出登录按钮 */}
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>退出登录</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+      </motion.div>
+
+      {/* 快捷键帮助模态框 */}
+      <ShortcutHelp
+        isOpen={showShortcutHelp}
+        onClose={closeShortcutHelp}
+      />
+    </>
   )
 }
 

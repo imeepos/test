@@ -1,13 +1,10 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, LogOut, User, Keyboard } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { useUIStore, useAuthStore } from '@/stores'
-import { useToast } from '@/components/ui/Toast'
-import { useShortcutHelp } from '@/hooks/useShortcutHelp'
+import { useUIStore } from '@/stores'
 import { SearchBox } from './SearchBox'
 import { ZoomIndicator } from './ZoomIndicator'
-import { ShortcutHelp } from '@/components/help/ShortcutHelp'
 
 export interface SidebarProps {
   className?: string
@@ -21,27 +18,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     setSidebarWidth,
   } = useUIStore()
 
-  const { user, logout } = useAuthStore()
-  const toast = useToast()
-
-  // 快捷键帮助
-  const { isOpen: showShortcutHelp, open: openShortcutHelp, close: closeShortcutHelp } = useShortcutHelp()
-
   // 拖拽调整宽度
   const [isResizing, setIsResizing] = React.useState(false)
   const sidebarRef = React.useRef<HTMLDivElement>(null)
-
-  // 处理登出
-  const handleLogout = async () => {
-    if (confirm('确定要退出登录吗？')) {
-      try {
-        await logout()
-        toast.info('已退出登录', '期待您的再次光临')
-      } catch (error) {
-        toast.error('登出失败', '请稍后重试')
-      }
-    }
-  }
 
   const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -142,58 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
           {/* 缩放指示器 */}
           <ZoomIndicator />
-
-          {/* 快捷键帮助 */}
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={Keyboard}
-            onClick={openShortcutHelp}
-            className="w-full justify-start"
-          >
-            快捷键
-          </Button>
-
-          {/* 用户信息和登出 */}
-          {user && (
-            <div className="pt-4 mt-auto border-t border-sidebar-border space-y-2">
-              {/* 用户资料 */}
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-bg-secondary">
-                <div className="flex-shrink-0">
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-sidebar-text truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-sidebar-text-muted truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
-
-              {/* 登出按钮 */}
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={LogOut}
-                onClick={handleLogout}
-                className="w-full justify-start text-red-500 hover:bg-red-500/10"
-              >
-                退出登录
-              </Button>
-            </div>
-          )}
         </motion.div>
       )}
 
@@ -233,12 +160,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       {isResizing && (
         <div className="fixed inset-0 cursor-col-resize z-50" />
       )}
-
-      {/* 快捷键帮助模态框 */}
-      <ShortcutHelp
-        isOpen={showShortcutHelp}
-        onClose={closeShortcutHelp}
-      />
     </motion.div>
   )
 }

@@ -178,6 +178,11 @@ const Canvas: React.FC<CanvasProps> = ({
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rafRef = useRef<number | null>(null)
 
+  // Ctrl+拖拽复制状态
+  const [isDraggingWithCtrl, setIsDraggingWithCtrl] = useState(false)
+  const [copiedNodeIds, setCopiedNodeIds] = useState<Set<string>>(new Set())
+  const originalNodePositionsRef = useRef<Map<string, Position>>(new Map())
+
   // 自定义节点变化处理器 - 使用RAF优化性能
   const handleNodesChange = useCallback((changes: any[]) => {
     // 先调用原始的onNodesChange处理器
@@ -505,6 +510,98 @@ const Canvas: React.FC<CanvasProps> = ({
     [setSelectedNodes]
   )
 
+  // 监听Ctrl键按下/释放 - 用于复制拖拽功能
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        setIsDraggingWithCtrl(true)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) {
+        setIsDraggingWithCtrl(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
+
+  // 节点拖拽开始处理 - 检测Ctrl键并复制节点
+  const handleNodeDragStart = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (isDraggingWithCtrl) {
+        // 保存原始节点位置
+        const nodesToCopy = selectedNodeIds.includes(node.id)
+          ? selectedNodeIds
+          : [node.id]
+
+        const originalPositions = new Map<string, Position>()
+        const newCopiedIds = new Set<string>()
+
+        nodesToCopy.forEach(nodeId => {
+          const originalNode = getNodes().find(n => n.id === nodeId)
+          if (originalNode) {
+            originalPositions.set(nodeId, { ...originalNode.position })
+
+            // 创建节点副本
+            const copiedNodeId = addNode({
+              content: originalNode.content,
+              title: originalNode.title ? `${originalNode.title} (副本)` : '',
+              importance: originalNode.importance,
+              confidence: originalNode.confidence,
+              status: originalNode.status,
+              tags: [...(originalNode.tags || [])],
+              position: { ...originalNode.position }, // 初始位置相同
+              connections: [], // 不复制连接
+              version: 1,
+              metadata: {
+                semantic: [...(originalNode.metadata?.semantic || [])],
+                editCount: 0,
+              },
+            })
+
+            if (copiedNodeId) {
+              newCopiedIds.add(copiedNodeId)
+            }
+          }
+        })
+
+        originalNodePositionsRef.current = originalPositions
+        setCopiedNodeIds(newCopiedIds)
+
+        // 将选择切换到复制的节点
+        setTimeout(() => {
+          setSelectedNodes(Array.from(newCopiedIds))
+        }, 0)
+
+        addToast({
+          type: 'success',
+          title: '节点已复制',
+          message: `已复制 ${newCopiedIds.size} 个节点`,
+          duration: 2000
+        })
+      }
+    },
+    [isDraggingWithCtrl, selectedNodeIds, getNodes, addNode, setSelectedNodes, addToast]
+  )
+
+  // 节点拖拽结束处理 - 清理状态
+  const handleNodeDragStop = useCallback(
+    () => {
+      // 清理复制状态
+      originalNodePositionsRef.current.clear()
+      setCopiedNodeIds(new Set())
+    },
+    []
+  )
+
   // 视图变化
   const handleViewportChange = useCallback(
     (newViewport: { x: number; y: number; zoom: number }) => {
@@ -786,6 +883,8 @@ const Canvas: React.FC<CanvasProps> = ({
         onNodeContextMenu={handleNodeContextMenu}
         onEdgeContextMenu={handleEdgeContextMenu}
         onSelectionChange={handleSelectionChange}
+        onNodeDragStart={handleNodeDragStart}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         attributionPosition="bottom-left"
         proOptions={{ hideAttribution: true }}
