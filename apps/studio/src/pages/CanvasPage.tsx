@@ -797,13 +797,14 @@ const CanvasPage: React.FC = () => {
           <CanvasControls />
         </div>
 
-        {/* 同步状态指示器 */}
-        {currentProject && (
+        {/* 同步状态指示器 - 左下角 */}
+        {currentProject && syncStatus !== 'idle' && (
           <motion.div
-            className="absolute top-4 right-20 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg px-3 py-2 text-xs"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1, duration: 0.5 }}
+            className="absolute bottom-4 left-4 z-10 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg px-3 py-2 text-xs"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
           >
             <div className="flex items-center gap-2">
               {syncStatus === 'saving' && (
@@ -824,12 +825,6 @@ const CanvasPage: React.FC = () => {
                 <>
                   <div className="h-2 w-2 rounded-full bg-red-500"></div>
                   <span className="text-red-500">保存失败</span>
-                </>
-              )}
-              {syncStatus === 'idle' && (
-                <>
-                  <div className="h-2 w-2 rounded-full bg-gray-400"></div>
-                  <span className="text-sidebar-text-muted">就绪</span>
                 </>
               )}
             </div>
