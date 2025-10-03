@@ -3,7 +3,7 @@
  * 修复了信息层级混乱、添加了可访问性支持、优化了性能
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { motion } from 'framer-motion'
 import {
@@ -16,7 +16,10 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Edit3,
+  Check,
+  X
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
 import { MarkdownContent } from '@/components/common/MarkdownContent'
@@ -29,6 +32,7 @@ import {
 } from '@/constants/designTokens'
 import type { AINodeData, AINode as AINodeType } from '@/types'
 import { shallow } from 'zustand/shallow'
+import { Input } from '@/components/ui'
 
 export interface AINodeProps extends NodeProps<AINodeData> {}
 
@@ -71,11 +75,15 @@ const resolvePortTheme = (portType: string | undefined, direction: 'input' | 'ou
 
 const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   const { viewMode } = useCanvasStore()
-  const { updateNode } = useNodeStore()
+  const { updateNode, updateNodeWithSync } = useNodeStore()
 
   // 状态管理
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false) // 预览模式下的手动展开
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(() => data.title ?? '')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
 
   const isOverview = viewMode === 'overview'
   const isPreview = viewMode === 'preview'
@@ -88,6 +96,33 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
       setIsManuallyExpanded(false)
     }
   }, [isDetail, isOverview])
+
+  useEffect(() => {
+    if (isOverview && isEditingTitle) {
+      setIsEditingTitle(false)
+    }
+  }, [isOverview, isEditingTitle])
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setTitleDraft(data.title ?? '')
+    }
+  }, [data.title, isEditingTitle])
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      return
+    }
+
+    const frame = requestAnimationFrame(() => {
+      if (titleInputRef.current) {
+        titleInputRef.current.focus()
+        titleInputRef.current.select()
+      }
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [isEditingTitle])
 
   // 监听画布发出的“打开节点编辑器”事件
   useEffect(() => {
@@ -118,6 +153,79 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     },
     disabled: !selected
   })
+
+  const commitTitleChange = useCallback(async () => {
+    if (isSavingTitle) {
+      return
+    }
+
+    const trimmedTitle = titleDraft.trim()
+    const normalizedTitle = trimmedTitle.length > 0 ? trimmedTitle : undefined
+    const currentTitle = (data.title ?? '').trim()
+
+    if ((normalizedTitle ?? '') === currentTitle) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    const metadataUpdates = {
+      ...(data.metadata ?? {}),
+      editCount: (data.metadata?.editCount ?? 0) + 1,
+      lastModified: new Date(),
+    }
+
+    try {
+      setIsSavingTitle(true)
+      await updateNodeWithSync(
+        data.id,
+        { title: normalizedTitle, metadata: metadataUpdates },
+        { silent: true }
+      )
+      setTitleDraft(trimmedTitle)
+      setIsEditingTitle(false)
+    } catch (error) {
+      console.error('节点标题更新失败:', error)
+    } finally {
+      setIsSavingTitle(false)
+    }
+  }, [data.id, data.title, data.metadata, isSavingTitle, titleDraft, updateNodeWithSync])
+
+  const cancelTitleEditing = useCallback(() => {
+    if (isSavingTitle) {
+      return
+    }
+    setTitleDraft(data.title ?? '')
+    setIsEditingTitle(false)
+  }, [data.title, isSavingTitle])
+
+  const handleTitleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      commitTitleChange()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      cancelTitleEditing()
+    }
+  }, [cancelTitleEditing, commitTitleChange])
+
+  const handleStartTitleEditing = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation()
+    if (isSavingTitle || isOverview) {
+      return
+    }
+    setTitleDraft(data.title ?? '')
+    setIsEditingTitle(true)
+  }, [data.title, isOverview, isSavingTitle])
+
+  const handleConfirmTitleClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation()
+    commitTitleChange()
+  }, [commitTitleChange])
+
+  const handleCancelTitleClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation()
+    cancelTitleEditing()
+  }, [cancelTitleEditing])
 
   const { inputPorts, outputPorts } = useNodeStore(
     useCallback((state) => {
@@ -378,19 +486,19 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   // ============= 样式计算 =============
 
   const confidenceInfo = useMemo(() => {
-    // 确保 confidence 是有效数值,否则使用默认值 0.5
-    const validConfidence = (typeof data.confidence === 'number' && !isNaN(data.confidence)) ? data.confidence : 0.5
+    const validConfidence = (typeof data.confidence === 'number' && !isNaN(data.confidence))
+      ? data.confidence
+      : 0.5
     return getConfidenceColor(validConfidence)
   }, [data.confidence])
 
-  // 版本信息 tooltip
   const versionTooltip = useMemo(() => {
     const editCount = data.metadata?.editCount || 0
     const createdDate = new Date(data.createdAt).toLocaleString('zh-CN')
     const updatedDate = new Date(data.updatedAt).toLocaleString('zh-CN')
 
     return `版本 ${data.version} | 编辑 ${editCount} 次\n创建: ${createdDate}\n更新: ${updatedDate}${data.metadata?.autoSaved ? '\n自动保存' : ''}`
-  }, [data.version, data.metadata, data.createdAt, data.updatedAt])
+  }, [data.createdAt, data.metadata, data.updatedAt, data.version])
 
   const showFullDetail = isDetail || isManuallyExpanded
   const displayContent = showFullDetail ? data.content : contentPreview
@@ -506,9 +614,58 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
               </button>
             )}
 
-            <h3 className="text-sm font-medium text-sidebar-text truncate">
-              {nodeTitle}
-            </h3>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <Input
+                  ref={titleInputRef}
+                  value={titleDraft}
+                  onChange={(event) => setTitleDraft(event.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  disabled={isSavingTitle}
+                  placeholder="未命名节点"
+                  className="h-8 text-sm px-2 py-1 flex-1 min-w-0"
+                />
+                <button
+                  onClick={handleConfirmTitleClick}
+                  className="p-1 rounded hover:bg-sidebar-accent/10 text-sidebar-text-muted hover:text-sidebar-text transition-colors"
+                  disabled={isSavingTitle}
+                  aria-label="保存节点标题"
+                >
+                  {isSavingTitle ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleCancelTitleClick}
+                  className="p-1 rounded hover:bg-sidebar-accent/10 text-sidebar-text-muted hover:text-sidebar-text transition-colors"
+                  disabled={isSavingTitle}
+                  aria-label="取消编辑节点标题"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <h3
+                  className="text-sm font-medium text-sidebar-text truncate"
+                  title={nodeTitle}
+                >
+                  {nodeTitle}
+                </h3>
+                {!isOverview && (
+                  <button
+                    onClick={handleStartTitleEditing}
+                    className="p-1 rounded hover:bg-sidebar-accent/10 text-sidebar-text-muted hover:text-sidebar-text transition-colors flex-shrink-0"
+                    aria-label="编辑节点标题"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {!isOverview && statusIcon}
@@ -518,6 +675,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
               {renderStars(data.importance)}
             </div>
           )}
+
         </div>
 
         {/* 内容区域 */}

@@ -144,6 +144,26 @@ export interface ProcessingRecord {
   confidence_after?: number
 }
 
+// 连接类型枚举
+export const CONNECTION_TYPE_VALUES = [
+  'input',
+  'output',
+  'bidirectional',
+  'dependency',
+  'reference',
+  'related',
+  'expand',
+  'fusion',
+  'analysis',
+  'summary',
+  'synthesis',
+  'comparison',
+  'plan',
+  'decision'
+] as const
+
+export type ConnectionType = typeof CONNECTION_TYPE_VALUES[number]
+
 // 连接关系模型
 export interface Connection {
   id: string
@@ -151,6 +171,7 @@ export interface Connection {
   source_node_id: string
   target_node_id: string
   type: ConnectionType
+  bidirectional: boolean // 是否双向连接
   label?: string
   weight: number // 连接强度 0-1
   metadata: ConnectionMetadata
@@ -158,8 +179,6 @@ export interface Connection {
   updated_at: Date
   created_by_user: boolean // 是否为用户手动创建
 }
-
-export type ConnectionType = 'input' | 'output' | 'bidirectional' | 'dependency' | 'reference'
 
 export interface ConnectionMetadata {
   ai_suggested: boolean

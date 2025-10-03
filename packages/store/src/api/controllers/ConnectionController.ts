@@ -1,6 +1,9 @@
 import { Request, Response } from 'express'
 import { BaseController } from '../BaseController.js'
 import { ConnectionRepository } from '../../repositories/ConnectionRepository.js'
+import { CONNECTION_TYPE_VALUES } from '../../models/index.js'
+
+const ALLOWED_CONNECTION_TYPES = new Set(CONNECTION_TYPE_VALUES)
 
 /**
  * 连接管理API控制器
@@ -74,9 +77,17 @@ export class ConnectionController extends BaseController {
 
     // 设置默认值
     connectionData.type = connectionData.type || 'related'
+    if (!ALLOWED_CONNECTION_TYPES.has(connectionData.type)) {
+      connectionData.type = 'related'
+    }
     connectionData.weight = connectionData.weight || 1.0
-    connectionData.bidirectional = connectionData.bidirectional !== undefined
-      ? connectionData.bidirectional : false
+
+    if (connectionData.bidirectional !== undefined) {
+      const rawValue = connectionData.bidirectional
+      connectionData.bidirectional = rawValue === true || rawValue === 'true'
+    } else {
+      connectionData.bidirectional = connectionData.type === 'bidirectional'
+    }
 
     const connection = await this.connectionRepo.create(connectionData)
     this.created(res, connection)
@@ -92,6 +103,23 @@ export class ConnectionController extends BaseController {
       'type', 'weight', 'bidirectional', 'metadata'
     ]
     const updateData = this.sanitizeInput(req.body, allowedFields)
+
+    if (updateData.type === 'bidirectional' && updateData.bidirectional === undefined) {
+      updateData.bidirectional = true
+    }
+
+    if (updateData.bidirectional !== undefined) {
+      const rawValue = updateData.bidirectional
+      updateData.bidirectional = rawValue === true || rawValue === 'true'
+
+      if (updateData.bidirectional && updateData.type === undefined) {
+        updateData.type = 'bidirectional'
+      }
+    }
+
+    if (updateData.type && !ALLOWED_CONNECTION_TYPES.has(updateData.type)) {
+      updateData.type = 'related'
+    }
 
     const connection = await this.connectionRepo.update(id, updateData)
     if (!connection) {

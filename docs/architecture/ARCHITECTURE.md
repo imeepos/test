@@ -68,6 +68,7 @@ graph TB
 - **Redis缓存服务**: 高性能缓存层，提升访问速度
 - **用户认证系统**: JWT Token生成、验证和用户权限管理
 - **数据模型管理**: User、Project、Node、Connection、AITask等核心实体
+- **连接方向支持**: connections 表包含 `bidirectional` 标记并兼容 `related` 类型，确保前后端连线语义一致
 - **数据库迁移**: 版本化的数据库结构管理和升级
 - **Repository模式**: 标准化的数据访问层实现
 - **HTTP API服务器**: 对外提供 RESTful API 接口

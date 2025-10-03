@@ -7,7 +7,9 @@ import type {
   AIGenerateRequest,
   AIGenerateResponse,
   AIModel,
-  WebSocketStatus
+  ProcessingRecord,
+  WebSocketStatus,
+  NodeMetadata
 } from '@/types'
 
 export interface AIState {
@@ -81,6 +83,227 @@ export interface AIState {
 
 const generateRequestId = () => `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
+const DEFAULT_CONFIDENCE = 0.8
+const FALLBACK_TITLE = 'AI生成结果'
+const VALID_AI_MODELS: AIModel[] = ['gpt-3.5-turbo', 'gpt-4', 'claude-3', 'local']
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const normalizeTags = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.trim()).filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+const normalizeConfidence = (value: unknown): number => {
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    const normalized = value > 1 ? value / 100 : value
+    return Math.max(0, Math.min(1, normalized))
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseFloat(value)
+    if (!Number.isNaN(parsed)) {
+      const normalized = parsed > 1 ? parsed / 100 : parsed
+      return Math.max(0, Math.min(1, normalized))
+    }
+  }
+
+  return DEFAULT_CONFIDENCE
+}
+
+const normalizeMetadata = (value: unknown): AIGenerateResponse['metadata'] | undefined => {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const modelValue = value.model
+  const model =
+    typeof modelValue === 'string' && VALID_AI_MODELS.includes(modelValue as AIModel)
+      ? (modelValue as AIModel)
+      : undefined
+
+  const requestId = typeof value.requestId === 'string' ? value.requestId : undefined
+  const processingTime = typeof value.processingTime === 'number' ? value.processingTime : undefined
+  const tokenCount = typeof value.tokenCount === 'number' ? value.tokenCount : undefined
+
+  const metadata: AIGenerateResponse['metadata'] = {}
+
+  if (requestId) metadata.requestId = requestId
+  if (model) metadata.model = model
+  if (processingTime !== undefined) metadata.processingTime = processingTime
+  if (tokenCount !== undefined) metadata.tokenCount = tokenCount
+  if ('error' in value) metadata.error = value.error
+
+  return Object.keys(metadata).length > 0 ? metadata : undefined
+}
+
+const normalizeSuggestions = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  const suggestions = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+  return suggestions.length > 0 ? suggestions : undefined
+}
+
+const normalizeAIGenerateResponse = (input: unknown): AIGenerateResponse => {
+  const sources: Record<string, unknown>[] = []
+
+  if (isRecord(input)) {
+    sources.push(input)
+
+    if (isRecord(input.result)) {
+      sources.push(input.result as Record<string, unknown>)
+    }
+
+    if (isRecord(input.payload)) {
+      sources.push(input.payload as Record<string, unknown>)
+    }
+  }
+
+  const pickString = (...keys: string[]): string | undefined => {
+    for (const key of keys) {
+      for (const source of sources) {
+        const value = source[key]
+        if (typeof value === 'string' && value.trim().length > 0) {
+          return value
+        }
+      }
+    }
+    return undefined
+  }
+
+  const pickArray = (key: string): unknown[] | undefined => {
+    for (const source of sources) {
+      const value = source[key]
+      if (Array.isArray(value) && value.length > 0) {
+        return value
+      }
+    }
+    return undefined
+  }
+
+  const rawContent = (() => {
+    const prioritizedContent = pickString('content', 'expandedContent', 'expanded_content', 'text', 'message', 'output')
+    if (prioritizedContent) {
+      return prioritizedContent
+    }
+
+    const contentArray = pickArray('content')
+    if (contentArray) {
+      return contentArray
+        .filter((item): item is string => typeof item === 'string')
+        .join('\n')
+    }
+
+    const expandedContentArray = pickArray('expandedContent') || pickArray('expanded_content')
+    if (expandedContentArray) {
+      return expandedContentArray
+        .filter((item): item is string => typeof item === 'string')
+        .join('\n')
+    }
+
+    if (typeof input === 'string') {
+      return input
+    }
+
+    return ''
+  })()
+
+  const content = rawContent || ''
+
+  const titleCandidate = pickString('title') || ''
+  const title = titleCandidate.length > 0 ? titleCandidate : (content ? content.slice(0, 50) : FALLBACK_TITLE)
+
+  const reasoning = pickString('reasoning')
+  const semanticType = pickString('semantic_type')
+
+  const importance = (() => {
+    for (const source of sources) {
+      const value = source.importance
+      if (typeof value === 'number' && !Number.isNaN(value)) {
+        return value
+      }
+    }
+    return undefined
+  })()
+
+  const userRating = (() => {
+    for (const source of sources) {
+      const value = source.user_rating
+      if (typeof value === 'number' && !Number.isNaN(value)) {
+        return value
+      }
+    }
+    return undefined
+  })()
+
+  const confidenceSource = (() => {
+    for (const source of sources) {
+      if ('confidence' in source) {
+        return source.confidence
+      }
+    }
+    return undefined
+  })()
+
+  const tagsSource = (() => {
+    const arrayValue = pickArray('tags')
+    if (arrayValue) {
+      return arrayValue
+    }
+
+    const stringValue = pickString('tags')
+    if (stringValue) {
+      return stringValue
+    }
+
+    return undefined
+  })()
+
+  const suggestionsSource = (() => {
+    const arrayValue = pickArray('suggestions')
+    if (arrayValue) {
+      return arrayValue
+    }
+
+    return undefined
+  })()
+
+  const metadataSource = (() => {
+    for (const source of sources) {
+      if (isRecord(source.metadata)) {
+        return source.metadata
+      }
+    }
+    return undefined
+  })()
+
+  return {
+    content,
+    title,
+    confidence: normalizeConfidence(confidenceSource),
+    tags: normalizeTags(tagsSource),
+    reasoning: reasoning ?? undefined,
+    suggestions: normalizeSuggestions(suggestionsSource),
+    importance,
+    semantic_type: semanticType,
+    user_rating: userRating,
+    metadata: normalizeMetadata(metadataSource)
+  }
+}
+
 export const useAIStore = create<AIState>()(
   devtools(
     (set, get) => ({
@@ -144,6 +367,8 @@ export const useAIStore = create<AIState>()(
       },
       
       completeProcessing: (nodeId, result) => {
+        const normalizedResult = normalizeAIGenerateResponse(result)
+
         set((state) => {
           const newProcessingNodes = new Map(state.processingNodes)
           const newRecentResults = new Map(state.recentResults)
@@ -160,7 +385,7 @@ export const useAIStore = create<AIState>()(
             })
           }
 
-          newRecentResults.set(nodeId, result)
+          newRecentResults.set(nodeId, normalizedResult)
 
           // 限制缓存大小
           if (newRecentResults.size > 50) {
@@ -178,15 +403,52 @@ export const useAIStore = create<AIState>()(
 
         // ✅ 后端已更新数据库，前端同步更新nodeStore以立即刷新UI
         console.log('✅ AI生成完成，结果已由后端更新到数据库:', nodeId)
-        console.log('🔄 同步更新前端nodeStore:', result)
+        console.log('🔄 同步更新前端nodeStore:', normalizedResult)
 
-        // 更新nodeStore中的节点
         const nodeStore = useNodeStore.getState()
+        const currentNode = nodeStore.getNode(nodeId)
+
+        if (!currentNode) {
+          console.warn('⚠️ 无法在nodeStore中找到对应节点，跳过前端同步:', nodeId)
+          return
+        }
+
+        const placeholderTags = new Set(['AI生成中', 'AI修改中'])
+        const sanitizedTags = normalizedResult.tags.length > 0
+          ? normalizedResult.tags
+          : currentNode.tags.filter(tag => !placeholderTags.has(tag))
+
+        const aiMetadata = normalizedResult.metadata
+        const existingMetadata = currentNode.metadata || { semantic: [], editCount: 0 }
+
+        const processingRecord: ProcessingRecord = {
+          timestamp: new Date(),
+          operation: 'ai-generate',
+          modelUsed: aiMetadata?.model,
+          tokenCount: typeof aiMetadata?.tokenCount === 'number' ? aiMetadata.tokenCount : undefined,
+          processingTime: typeof aiMetadata?.processingTime === 'number' ? aiMetadata.processingTime : 0,
+          confidenceBefore: currentNode.confidence,
+          confidenceAfter: normalizedResult.confidence,
+        }
+
+        const processingHistory = existingMetadata.processingHistory ?? []
+        const nextProcessingHistory = [...processingHistory.slice(-9), processingRecord]
+
+        const metadataUpdates: NodeMetadata = {
+          ...existingMetadata,
+          editCount: (existingMetadata.editCount ?? 0) + 1,
+          lastModified: new Date(),
+          processingHistory: nextProcessingHistory,
+          error: typeof aiMetadata?.error === 'string' ? aiMetadata.error : undefined,
+        }
+
         nodeStore.updateNode(nodeId, {
-          content: result.content,
-          title: result.title || result.content.slice(0, 50),
-          tags: result.tags || [],
-          confidence: result.confidence !== undefined ? result.confidence : 0.8
+          status: 'completed',
+          content: normalizedResult.content,
+          title: normalizedResult.title ?? currentNode.title,
+          tags: sanitizedTags,
+          confidence: normalizedResult.confidence,
+          metadata: metadataUpdates,
         })
       },
       
@@ -280,15 +542,20 @@ export const useAIStore = create<AIState>()(
           // 尝试多种方式获取nodeId
           const effectiveNodeId = nodeId || taskId || requestId
 
-          // 构造结果对象 - 优先使用result对象，否则从顶层字段提取
-          const processedResult = result || {
-            content: content || '',
-            title: title || '', // title可能为空，后续会智能生成
-            tags: tags || [],
-            confidence: confidence !== undefined ? confidence : 0.8 // 默认80%置信度（0.8）
-          }
+          const rawResult =
+            typeof result === 'string'
+              ? result
+              : {
+                  ...(isRecord(result) ? result : {}),
+                  ...(content !== undefined ? { content } : {}),
+                  ...(title !== undefined ? { title } : {}),
+                  ...(tags !== undefined ? { tags } : {}),
+                  ...(confidence !== undefined ? { confidence } : {}),
+                }
 
-          if (effectiveNodeId && (processedResult.content || processedResult)) {
+          const processedResult = normalizeAIGenerateResponse(rawResult)
+
+          if (effectiveNodeId) {
             console.log('✅ 完成AI生成，nodeId:', effectiveNodeId, 'result:', processedResult)
             get().completeProcessing(effectiveNodeId, processedResult)
           } else {
@@ -434,9 +701,11 @@ export const useAIStore = create<AIState>()(
       cacheResult: (inputs, result) => {
         // 简单的基于输入的缓存key
         const cacheKey = inputs.join('|')
+        const normalizedResult = normalizeAIGenerateResponse(result)
+
         set((state) => {
           const newRecentResults = new Map(state.recentResults)
-          newRecentResults.set(cacheKey, result)
+          newRecentResults.set(cacheKey, normalizedResult)
           return { recentResults: newRecentResults }
         })
       },

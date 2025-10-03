@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Canvas, CanvasControls } from '@/components/canvas'
+import { EditNodeInstructionModal } from '@/components/node'
 import { PromptDialog } from '@/components/ui'
 import { useCanvasStore, useNodeStore, useUIStore, useAIStore } from '@/stores'
 import { useSyncStore } from '@/stores/syncStore'
@@ -64,6 +65,7 @@ const CanvasPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null)
   const [editingNodeContent, setEditingNodeContent] = React.useState('')
+  const [editingNodeTitle, setEditingNodeTitle] = React.useState('')
 
   const [expandDialogState, setExpandDialogState] = React.useState<ExpandDialogState>(() => createInitialExpandDialogState())
   const [isExpandGenerating, setIsExpandGenerating] = React.useState(false)
@@ -683,11 +685,12 @@ const CanvasPage: React.FC = () => {
   React.useEffect(() => {
     const handleEditNode = (event: Event) => {
       const customEvent = event as CustomEvent<{ nodeId: string; currentContent: string; currentTitle: string }>
-      const { nodeId, currentContent } = customEvent.detail
+      const { nodeId, currentContent, currentTitle } = customEvent.detail
       console.log('CanvasPage: 收到编辑节点请求, nodeId:', nodeId)
 
       setEditingNodeId(nodeId)
       setEditingNodeContent(currentContent)
+      setEditingNodeTitle(currentTitle || '')
       setEditDialogOpen(true)
     }
 
@@ -954,13 +957,13 @@ const CanvasPage: React.FC = () => {
         isLoading={isExpandGenerating}
       />
 
-      {/* 编辑节点对话框 */}
-      <PromptDialog
+      {/* 编辑节点指令弹框 */}
+      <EditNodeInstructionModal
         isOpen={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
         onSubmit={handleEditSubmit}
-        title="AI修改节点"
-        placeholder="请输入修改意见...&#10;例如: 添加更多技术细节&#10;例如: 简化表述&#10;例如: 补充安全性考虑"
+        nodeTitle={editingNodeTitle}
+        nodeContent={editingNodeContent}
         isLoading={false}
       />
     </div>

@@ -155,6 +155,8 @@ export class MigrationManager {
         allMigrations = [
           '001_initial_schema.sql',
           '002_add_node_fields.sql',
+          '003_add_bidirectional_to_connections.sql',
+          '004_extend_connection_types.sql',
           // 在这里添加新的迁移文件
         ]
       }
@@ -229,6 +231,8 @@ export class MigrationManager {
         allMigrations = [
           '001_initial_schema.sql',
           '002_add_node_fields.sql',
+          '003_add_bidirectional_to_connections.sql',
+          '004_extend_connection_types.sql',
           // 在这里添加新的迁移文件
         ]
       }

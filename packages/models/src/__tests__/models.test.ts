@@ -230,6 +230,7 @@ describe('@sker/models - Type Definitions', () => {
         source_node_id: 'node-1',
         target_node_id: 'node-2',
         type: 'input',
+        bidirectional: false,
         weight: 0.8,
         metadata: {
           ai_suggested: false,

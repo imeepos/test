@@ -17,6 +17,7 @@ import { Button, Input } from '@/components/ui'
 import { useNodeStore, useUIStore } from '@/stores'
 import { nodeService } from '@/services'
 import type { AINode, ImportanceLevel } from '@/types'
+import { MarkdownContent } from '@/components/common/MarkdownContent'
 
 interface NodeEditorProps {
   nodeId: string
@@ -346,28 +347,6 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     }
   }
 
-  // 简单的Markdown渲染器
-  const renderMarkdown = (text: string): string => {
-    return text
-      // 标题
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-sidebar-text mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-sidebar-text mb-3">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-sidebar-text mb-4">$1</h1>')
-      // 粗体和斜体
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-      // 代码块
-      .replace(/```([\s\S]*?)```/g, '<pre class="bg-sidebar-bg border border-sidebar-border rounded p-3 my-2 overflow-x-auto"><code class="text-sm">$1</code></pre>')
-      .replace(/`(.*?)`/g, '<code class="bg-sidebar-bg px-1 py-0.5 rounded text-sm">$1</code>')
-      // 列表
-      .replace(/^\* (.+)$/gim, '<li class="ml-4 list-disc">$1</li>')
-      .replace(/^\d+\. (.+)$/gim, '<li class="ml-4 list-decimal">$1</li>')
-      // 链接
-      .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-sidebar-accent underline" target="_blank" rel="noopener noreferrer">$1</a>')
-      // 换行
-      .replace(/\n/g, '<br>')
-  }
-
   // 键盘快捷键
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -535,10 +514,12 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   )}
 
                   {editorMode === 'preview' && (
-                    <div
-                      className="w-full px-3 py-2 bg-sidebar-surface text-sidebar-text min-h-[300px] overflow-y-auto"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(content || '请输入内容以查看预览...') }}
-                    />
+                    <div className="w-full px-3 py-2 bg-sidebar-surface min-h-[300px] overflow-y-auto">
+                      <MarkdownContent
+                        content={content || '请输入内容以查看预览...'}
+                        className="text-sidebar-text text-sm"
+                      />
+                    </div>
                   )}
 
                   {editorMode === 'split' && (
@@ -559,10 +540,12 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                         <div className="flex-shrink-0 px-2 py-1 bg-sidebar-surface border-b border-sidebar-border text-xs text-sidebar-text-muted font-medium">
                           预览
                         </div>
-                        <div
-                          className="flex-1 px-3 py-2 bg-sidebar-surface text-sidebar-text overflow-y-auto"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(content || '请输入内容以查看预览...') }}
-                        />
+                        <div className="flex-1 px-3 py-2 bg-sidebar-surface overflow-y-auto">
+                          <MarkdownContent
+                            content={content || '请输入内容以查看预览...'}
+                            className="text-sidebar-text text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}

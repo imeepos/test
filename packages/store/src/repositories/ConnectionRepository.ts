@@ -138,6 +138,7 @@ export class ConnectionRepository extends BaseRepository<Connection> {
     type: string
     label?: string
     weight?: number
+    bidirectional?: boolean
     metadata?: any
     created_by_user?: boolean
   }): Promise<Connection> {
@@ -187,11 +188,15 @@ export class ConnectionRepository extends BaseRepository<Connection> {
       }
 
       // 创建连接
+      const effectiveBidirectional =
+        connectionData.bidirectional ?? (connectionData.type === 'bidirectional')
+
       const defaultData = {
         weight: 0.5,
         metadata: {},
         created_by_user: true,
-        ...connectionData
+        ...connectionData,
+        bidirectional: effectiveBidirectional
       }
 
       return this.create(defaultData as Partial<Connection>)
@@ -217,6 +222,7 @@ export class ConnectionRepository extends BaseRepository<Connection> {
     type: string
     label?: string
     weight?: number
+    bidirectional?: boolean
     metadata?: any
     created_by_user?: boolean
   }>): Promise<Connection[]> {

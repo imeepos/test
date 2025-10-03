@@ -150,6 +150,26 @@ export interface ProcessingRecord {
   confidence_after?: number
 }
 
+// 连接类型枚举
+export const CONNECTION_TYPE_VALUES = [
+  'input',
+  'output',
+  'bidirectional',
+  'dependency',
+  'reference',
+  'related',
+  'expand',
+  'fusion',
+  'analysis',
+  'summary',
+  'synthesis',
+  'comparison',
+  'plan',
+  'decision'
+] as const
+
+export type ConnectionType = typeof CONNECTION_TYPE_VALUES[number]
+
 // 连接关系模型
 export interface Connection {
   id: string
@@ -157,6 +177,7 @@ export interface Connection {
   source_node_id: string
   target_node_id: string
   type: ConnectionType
+  bidirectional: boolean
   label?: string
   weight: number // 连接强度 0-1
   metadata: ConnectionMetadata
@@ -164,8 +185,6 @@ export interface Connection {
   updated_at: Date
   created_by_user: boolean // 是否为用户手动创建
 }
-
-export type ConnectionType = 'input' | 'output' | 'bidirectional' | 'dependency' | 'reference'
 
 export interface ConnectionMetadata {
   ai_suggested: boolean
@@ -415,7 +434,16 @@ export const CONNECTION_TYPE = {
   OUTPUT: 'output' as const,
   BIDIRECTIONAL: 'bidirectional' as const,
   DEPENDENCY: 'dependency' as const,
-  REFERENCE: 'reference' as const
+  REFERENCE: 'reference' as const,
+  RELATED: 'related' as const,
+  EXPAND: 'expand' as const,
+  FUSION: 'fusion' as const,
+  ANALYSIS: 'analysis' as const,
+  SUMMARY: 'summary' as const,
+  SYNTHESIS: 'synthesis' as const,
+  COMPARISON: 'comparison' as const,
+  PLAN: 'plan' as const,
+  DECISION: 'decision' as const
 }
 
 export const AI_TASK_STATUS = {

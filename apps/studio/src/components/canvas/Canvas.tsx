@@ -13,6 +13,7 @@ import {
   EdgeChange,
   Node,
   ReactFlowInstance,
+  MarkerType,
   OnConnect,
   OnNodesChange,
   OnEdgesChange,
@@ -204,6 +205,14 @@ const Canvas: React.FC<CanvasProps> = ({
         strokeDasharray: undefined
       }
       const edgeStyle = edge.style || {}
+      const strokeColor = edgeStyle.stroke || defaultStyle.stroke
+      const markerConfig = {
+        type: MarkerType.ArrowClosed,
+        width: 16,
+        height: 16,
+        color: strokeColor,
+      } as const
+      const isBidirectional = edge.metadata.bidirectional === true
 
       return {
         id: edge.id,
@@ -213,11 +222,13 @@ const Canvas: React.FC<CanvasProps> = ({
         targetHandle: edge.targetHandle,
         type: edgeStyle.type || defaultStyle.type,
         style: {
-          stroke: edgeStyle.stroke || defaultStyle.stroke,
+          stroke: strokeColor,
           strokeWidth: edgeStyle.strokeWidth || defaultStyle.strokeWidth,
           strokeDasharray: edgeStyle.strokeDasharray,
         },
         animated: edgeStyle.animated ?? defaultStyle.animated,
+        markerEnd: markerConfig,
+        markerStart: isBidirectional ? markerConfig : undefined,
       }
     })
   }, [storeEdges])
