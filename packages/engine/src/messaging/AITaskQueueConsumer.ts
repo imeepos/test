@@ -9,6 +9,7 @@ import {
 } from '@sker/models'
 import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models'
 import { AIEngine } from '../core/AIEngine.js'
+import { PromptBuilder } from '../templates/PromptBuilder.js'
 
 export interface AITaskQueueConsumerConfig {
   batchSize?: number
@@ -275,27 +276,37 @@ export class AITaskQueueConsumer extends EventEmitter {
     // 根据任务类型调用不同的AI处理方法
     switch (type) {
       case 'generate':
-        return await this.aiEngine.generateContent({
+        const generatePrompt = parameters?.prompt || PromptBuilder.buildGenerate({
           inputs,
-          context,
           instruction,
+          context
+        })
+        return await this.aiEngine.generateContent({
+          prompt: generatePrompt,
+          context,
           ...parameters
         })
 
       case 'optimize':
-        return await this.aiEngine.optimizeContent({
+        const optimizePrompt = parameters?.prompt || PromptBuilder.buildOptimize({
           content: inputs[0],
           instruction: instruction || '',
+          targetStyle: parameters?.targetStyle
+        })
+        return await this.aiEngine.optimizeContent({
+          prompt: optimizePrompt,
           context,
-          targetStyle: parameters?.targetStyle,
           ...parameters
         })
 
       case 'fusion':
-        return await this.aiEngine.fusionGenerate({
+        const fusionPrompt = parameters?.prompt || PromptBuilder.buildFusion({
           inputs,
           instruction: instruction || '',
-          fusionType: parameters?.fusionType || 'synthesis',
+          fusionType: parameters?.fusionType || 'synthesis'
+        })
+        return await this.aiEngine.fusionGenerate({
+          prompt: fusionPrompt,
           context,
           ...parameters
         })
@@ -306,10 +317,13 @@ export class AITaskQueueConsumer extends EventEmitter {
         })
 
       case 'expand':
-        return await this.aiEngine.expandContent({
-          baseContent: inputs[0],
+        const expandPrompt = parameters?.prompt || PromptBuilder.buildExpand({
+          content: inputs[0],
           instruction: instruction || '',
-          expansionType: parameters?.expansionType || 'detail',
+          expansionType: parameters?.expansionType || 'detail'
+        })
+        return await this.aiEngine.expandContent({
+          prompt: expandPrompt,
           context,
           ...parameters
         })

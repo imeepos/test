@@ -26,6 +26,7 @@ import { AnthropicProvider } from '../providers/AnthropicProvider.js'
 import { ContentGenerator } from './ContentGenerator.js'
 import { SemanticAnalyzer } from './SemanticAnalyzer.js'
 import { PromptTemplate } from './PromptTemplate.js'
+import { PromptBuilder } from '../templates/PromptBuilder.js'
 
 /**
  * AI引擎核心类
@@ -294,9 +295,12 @@ export class AIEngine extends EventEmitter {
           if (request.inputs.length === 0) {
             throw new Error('优化任务需要提供要优化的内容')
           }
-          const optimizeReq: OptimizeRequest = {
+          const optimizePrompt = PromptBuilder.buildOptimize({
             content: request.inputs[0],
-            instruction: request.instruction || '优化内容',
+            instruction: request.instruction || '优化内容'
+          })
+          const optimizeReq: OptimizeRequest = {
+            prompt: optimizePrompt,
             context: request.context,
             model: request.options?.model
           }
@@ -305,11 +309,14 @@ export class AIEngine extends EventEmitter {
           break
 
         case 'fusion':
-          const fusionReq: FusionRequest = {
+          const fusionPrompt = PromptBuilder.buildFusion({
             inputs: request.inputs,
             instruction: request.instruction || '融合内容',
+            fusionType: 'synthesis'
+          })
+          const fusionReq: FusionRequest = {
+            prompt: fusionPrompt,
             context: request.context,
-            fusionType: 'synthesis',
             model: request.options?.model
           }
           const fusionResult = await this.fusionGenerate(fusionReq)
@@ -320,11 +327,14 @@ export class AIEngine extends EventEmitter {
           if (request.inputs.length === 0) {
             throw new Error('扩展任务需要提供基础内容')
           }
-          const expandReq: ExpandRequest = {
-            baseContent: request.inputs[0],
+          const expandPrompt = PromptBuilder.buildExpand({
+            content: request.inputs[0],
             instruction: request.instruction || '扩展内容',
+            expansionType: 'detail'
+          })
+          const expandReq: ExpandRequest = {
+            prompt: expandPrompt,
             context: request.context,
-            expansionType: 'detail',
             model: request.options?.model
           }
           const expandResult = await this.expandContent(expandReq)
@@ -732,8 +742,8 @@ export class AIEngine extends EventEmitter {
   /**
    * 语义分析（别名方法）
    */
-  async analyzeSemantics(content: string, options?: SemanticOptions): Promise<SemanticAnalysis> {
-    return this.analyzeContent(content, options)
+  async analyzeSemantics(content: string, options?: SemanticOptions, prompt?: string): Promise<SemanticAnalysis> {
+    return this.semanticAnalyzer.analyze(content, options || {}, prompt)
   }
 
   /**

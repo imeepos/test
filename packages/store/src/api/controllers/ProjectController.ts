@@ -18,12 +18,23 @@ export class ProjectController extends BaseController {
    * GET /api/v1/projects
    */
   getProjects = this.asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, offset } = this.parseQueryOptions(req)
-    const userId = req.query.userId as string
-    const status = req.query.status as string
+    const { page, limit, offset, sort, order } = this.parseQueryOptions(req)
     const search = req.query.search as string
 
-    let filter: any = {}
+    // 解析 filters 参数（支持 filters[key]=value 格式）
+    const filters: any = {}
+    for (const [key, value] of Object.entries(req.query)) {
+      if (key.startsWith('filters[') && key.endsWith(']')) {
+        const filterKey = key.slice(8, -1) // 提取 filters[key] 中的 key
+        filters[filterKey] = value
+      }
+    }
+
+    // 支持 orderBy 和 orderDirection 参数（与 Gateway 兼容）
+    const orderBy = (req.query.orderBy as string) || sort || 'updated_at'
+    const orderDirection = (req.query.orderDirection as string)?.toUpperCase() || order || 'DESC'
+
+    let filter: any = { ...filters }
 
     if (search) {
       filter.$or = [
@@ -32,16 +43,13 @@ export class ProjectController extends BaseController {
       ]
     }
 
-    if (status) {
-      filter.status = status
-    }
-
-    let projects
-    if (userId) {
-      projects = await this.projectRepo.findByUser(userId, { limit, offset })
-    } else {
-      projects = await this.projectRepo.findMany({ ...filter, limit, offset })
-    }
+    const projects = await this.projectRepo.findMany({
+      ...filter,
+      limit,
+      offset,
+      orderBy,
+      orderDirection
+    })
 
     const total = projects.length
     const pagination = this.createPagination(page, limit, total)

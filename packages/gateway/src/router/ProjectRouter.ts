@@ -396,8 +396,19 @@ export class ProjectRouter extends BaseRouter {
     try {
       if (!this.checkStoreService(req, res)) return
 
+      // 安全修复：强制使用 JWT token 中的用户ID，忽略前端传递的参数
+      const user_id = req.user?.id
+      if (!user_id) {
+        res.error({
+          code: 'UNAUTHORIZED',
+          message: '未授权：缺少用户认证信息',
+          timestamp: new Date(),
+          requestId: req.requestId
+        })
+        return
+      }
+
       const {
-        user_id = req.user?.id,
         status,
         archived,
         search,
@@ -416,8 +427,8 @@ export class ProjectRouter extends BaseRouter {
         filters: {}
       }
 
-      // 添加过滤条件
-      if (user_id) options.filters.user_id = user_id
+      // 添加过滤条件 - 始终过滤当前用户的项目
+      options.filters.user_id = user_id
       if (status) options.filters.status = status
       if (archived !== undefined) {
         options.filters.is_archived = archived === 'true'

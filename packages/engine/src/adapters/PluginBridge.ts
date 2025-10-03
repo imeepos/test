@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import type { AIEngine } from '../core/AIEngine.js'
+import { PromptBuilder } from '../templates/PromptBuilder.js'
 import type { ConnectionManager } from '../core/ConnectionManager.js'
 
 /**
@@ -291,12 +292,16 @@ export class PluginBridge extends EventEmitter {
    * 处理AI优化请求
    */
   private async handleAIOptimize(pluginId: string, request: any): Promise<any> {
-    const result = await this.aiEngine.optimizeContent({
+    const prompt = request.prompt || PromptBuilder.buildOptimize({
       content: request.content,
       instruction: request.instruction,
-      context: request.context,
       targetStyle: request.targetStyle,
-      targetLength: request.targetLength,
+      targetLength: request.targetLength
+    })
+
+    const result = await this.aiEngine.optimizeContent({
+      prompt,
+      context: request.context,
       model: request.model
     })
 

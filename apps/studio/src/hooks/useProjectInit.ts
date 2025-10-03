@@ -7,12 +7,14 @@ import { useEffect, useState } from 'react'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useNodeStore } from '@/stores/nodeStore'
 import { useSyncStore } from '@/stores/syncStore'
+import { useAuthStore } from '@/stores/authStore'
 import { validateAPIConfig, logAPIConfig } from '@/config/api'
 
 /**
  * 项目初始化Hook
  */
 export function useProjectInit() {
+  const isAuthenticated = useAuthStore((state) => state.status === 'authenticated')
   const currentProject = useCanvasStore((state) => state.currentProject)
   const loadProjects = useCanvasStore((state) => state.loadProjects)
   const isLoadingProject = useCanvasStore((state) => state.isLoadingProject)
@@ -23,9 +25,16 @@ export function useProjectInit() {
   const [isInitialized, setIsInitialized] = useState(false)
 
   /**
-   * 应用启动时的初始化逻辑
+   * 应用启动时的初始化逻辑 - 只在认证后执行
    */
   useEffect(() => {
+    // 如果未认证，跳过初始化
+    if (!isAuthenticated) {
+      console.log('⏸️  未登录，跳过项目初始化')
+      setIsInitialized(false)
+      return
+    }
+
     let isMounted = true
 
     const initializeApp = async () => {
@@ -88,7 +97,7 @@ export function useProjectInit() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // 只在首次挂载时执行
+  }, [isAuthenticated]) // 依赖认证状态
 
   /**
    * 监听当前项目变化,保存项目ID
@@ -152,8 +161,8 @@ export function useProjectInit() {
   }, [])
 
   return {
-    isReady: isInitialized,
-    isLoading: !isInitialized || isLoadingProject,
+    isReady: isAuthenticated ? isInitialized : true, // 未登录时视为"就绪"（不需要等待）
+    isLoading: isAuthenticated ? (!isInitialized || isLoadingProject) : false, // 未登录时不显示加载中
     error: projectError,
     currentProject,
   }

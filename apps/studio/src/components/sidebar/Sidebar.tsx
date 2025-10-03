@@ -6,7 +6,6 @@ import { useUIStore, useAuthStore } from '@/stores'
 import { useToast } from '@/components/ui/Toast'
 import { useShortcutHelp } from '@/hooks/useShortcutHelp'
 import { SearchBox } from './SearchBox'
-import { CanvasStats } from './CanvasStats'
 import { ZoomIndicator } from './ZoomIndicator'
 import { ShortcutHelp } from '@/components/help/ShortcutHelp'
 
@@ -143,9 +142,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
           {/* 缩放指示器 */}
           <ZoomIndicator />
-
-          {/* 画布统计 */}
-          <CanvasStats />
 
           {/* 快捷键帮助 */}
           <Button

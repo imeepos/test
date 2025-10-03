@@ -11,11 +11,74 @@ export class NodeRepository extends BaseRepository<Node> {
   }
 
   /**
-   * 根据项目ID查找节点
+   * 根据项目ID查找节点（默认排除已删除节点）
    */
   async findByProject(projectId: string, options: QueryOptions = {}): Promise<Node[]> {
-    const filters = { project_id: projectId, ...options.filters }
-    return this.findMany({ ...options, filters })
+    try {
+      const { orderBy = 'updated_at', orderDirection = 'DESC', limit, offset, filters = {} } = options
+
+      console.log('🔍 findByProject - projectId:', projectId)
+      console.log('🔍 findByProject - options:', JSON.stringify(options, null, 2))
+
+      // 构建WHERE子句，默认排除deleted状态
+      const conditions: string[] = ['project_id = $1']
+      const values: any[] = [projectId]
+      let paramIndex = 2
+
+      // 添加status过滤（如果用户没有指定status，则排除deleted）
+      if (filters.status !== undefined) {
+        if (Array.isArray(filters.status)) {
+          const placeholders = filters.status.map(() => `$${paramIndex++}`).join(', ')
+          conditions.push(`status IN (${placeholders})`)
+          values.push(...filters.status)
+        } else if (typeof filters.status === 'object' && filters.status.operator) {
+          // 支持 operator 格式: { operator: '<>', value: 'deleted' }
+          conditions.push(`status ${filters.status.operator} $${paramIndex++}`)
+          values.push(filters.status.value)
+        } else {
+          conditions.push(`status = $${paramIndex++}`)
+          values.push(filters.status)
+        }
+      } else {
+        conditions.push(`status <> 'deleted'`)
+      }
+
+      // 添加其他filters
+      for (const [key, value] of Object.entries(filters)) {
+        if (key === 'status' || key === 'project_id') continue
+        if (value !== undefined && value !== null) {
+          conditions.push(`${key} = $${paramIndex++}`)
+          values.push(value)
+        }
+      }
+
+      const whereClause = `WHERE ${conditions.join(' AND ')}`
+      const orderClause = this.buildOrderClause(orderBy, orderDirection)
+      const limitClause = this.buildLimitClause(limit, offset)
+
+      const query = `
+        SELECT * FROM ${this.tableName}
+        ${whereClause}
+        ${orderClause}
+        ${limitClause}
+      `.trim()
+
+      // 调试SQL
+      console.error('🔍 SQL Query:', query)
+      console.error('🔍 SQL Values:', values)
+
+      const result = await this.pool.query(query, values)
+
+      console.error('🔍 Result count:', result.rows.length)
+
+      return result.rows
+    } catch (error) {
+      throw new DatabaseError(
+        `根据项目ID查找节点失败: ${error instanceof Error ? error.message : error}`,
+        'FIND_BY_PROJECT_ERROR',
+        { projectId, options }
+      )
+    }
   }
 
   /**

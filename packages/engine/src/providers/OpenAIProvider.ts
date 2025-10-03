@@ -52,7 +52,7 @@ export class OpenAIProvider implements AIProvider {
 
     try {
       // 构建消息
-      const messages = this.buildMessages(request.prompt, request.context)
+      const messages = this.buildMessages(request.prompt, request.context, request.systemPrompt)
 
       // 调用OpenAI API
       const completion = await this.client.chat.completions.create({
@@ -90,10 +90,11 @@ export class OpenAIProvider implements AIProvider {
    * 优化内容
    */
   async optimize(request: OptimizeRequest): Promise<OptimizeResult> {
+    // 直接使用传入的 prompt
     const generateRequest: GenerateRequest = {
-      prompt: this.buildOptimizePrompt(request),
-      inputs: [request.content],
+      prompt: request.prompt,
       context: request.context,
+      systemPrompt: request.systemPrompt,
       model: request.model,
       temperature: 0.3 // 使用较低温度确保优化一致性
     }
@@ -117,12 +118,12 @@ export class OpenAIProvider implements AIProvider {
   /**
    * 语义分析
    */
-  async analyze(content: string, options: SemanticOptions): Promise<SemanticAnalysis> {
-    const prompt = this.buildAnalysisPrompt(content, options)
+  async analyze(content: string, options: SemanticOptions, prompt?: string): Promise<SemanticAnalysis> {
+    // 如果没有提供 prompt，使用简单的默认提示
+    const analysisPrompt = prompt || `请分析以下内容：\n\n${content}`
 
     const request: GenerateRequest = {
-      prompt,
-      inputs: [content],
+      prompt: analysisPrompt,
       temperature: 0.2 // 使用低温度确保分析一致性
     }
 
@@ -191,100 +192,33 @@ export class OpenAIProvider implements AIProvider {
   /**
    * 构建消息数组
    */
-  private buildMessages(prompt: string, context?: string): OpenAI.Chat.ChatCompletionMessageParam[] {
+  private buildMessages(
+    prompt: string,
+    context?: string,
+    systemPrompt?: string
+  ): OpenAI.Chat.ChatCompletionMessageParam[] {
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = []
 
-    // 系统消息
-    messages.push({
-      role: 'system',
-      content: '你是一个专业的AI助手，专门负责内容生成、优化和分析。请始终提供高质量、准确且有用的回复。'
-    })
-
-    // 上下文消息
-    if (context) {
+    // 系统消息（可选）
+    if (systemPrompt) {
       messages.push({
-        role: 'user',
-        content: `上下文信息：${context}`
+        role: 'system',
+        content: systemPrompt
       })
     }
 
-    // 主要提示
+    // 构建用户消息
+    let userMessage = prompt
+    if (context) {
+      userMessage = `${context}\n\n${prompt}`
+    }
+
     messages.push({
       role: 'user',
-      content: prompt
+      content: userMessage
     })
 
     return messages
-  }
-
-  /**
-   * 构建优化提示
-   */
-  private buildOptimizePrompt(request: OptimizeRequest): string {
-    let prompt = `请优化以下内容，使其更加清晰、准确和有效：\n\n`
-    prompt += `原内容：\n${request.content}\n\n`
-    prompt += `优化要求：${request.instruction}\n\n`
-
-    if (request.targetStyle) {
-      prompt += `目标风格：${request.targetStyle}\n`
-    }
-
-    if (request.targetLength) {
-      const lengthMap = {
-        shorter: '更简洁',
-        longer: '更详细',
-        same: '保持相同长度'
-      }
-      prompt += `长度要求：${lengthMap[request.targetLength]}\n`
-    }
-
-    prompt += `\n请按以下格式返回结果：\n`
-    prompt += `优化后内容：\n[这里是优化后的内容]\n\n`
-    prompt += `主要改进：\n[列出主要改进点]`
-
-    return prompt
-  }
-
-  /**
-   * 构建分析提示
-   */
-  private buildAnalysisPrompt(content: string, options: SemanticOptions): string {
-    let prompt = `请对以下内容进行详细的语义分析：\n\n"${content}"\n\n`
-
-    prompt += '请以JSON格式返回分析结果：\n'
-    prompt += '{\n'
-    prompt += '  "semanticType": "内容类型",\n'
-    prompt += '  "importanceLevel": 5,\n'
-    prompt += '  "keyTerms": ["关键词1", "关键词2"],\n'
-    prompt += '  "sentiment": "positive|neutral|negative",\n'
-    prompt += '  "sentimentScore": 0.5,\n'
-    prompt += '  "complexity": "low|medium|high",\n'
-    prompt += '  "complexityScore": 5,\n'
-    prompt += '  "readability": 7,\n'
-    prompt += '  "topics": [{"name": "主题", "relevance": 0.8, "confidence": 0.9}],\n'
-    prompt += '  "entities": [{"text": "实体", "type": "类型", "confidence": 0.95}],\n'
-    prompt += '  "tags": ["标签1", "标签2"],\n'
-    prompt += '  "confidence": 0.85\n'
-    prompt += '}\n\n'
-
-    prompt += '分析要求：\n'
-    if (options.extractTags !== false) {
-      prompt += '- 提取关键标签和术语\n'
-    }
-    if (options.assessImportance !== false) {
-      prompt += '- 评估内容重要性（1-10）\n'
-    }
-    if (options.analyzeSentiment) {
-      prompt += '- 分析情感倾向和强度\n'
-    }
-    if (options.evaluateComplexity) {
-      prompt += '- 评估内容复杂度\n'
-    }
-    if (options.detectTopics) {
-      prompt += '- 识别主要话题\n'
-    }
-
-    return prompt
   }
 
   /**

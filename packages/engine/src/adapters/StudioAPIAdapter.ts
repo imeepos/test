@@ -8,6 +8,7 @@ import type {
   SemanticAnalysisRequest,
   SemanticAnalysisResult
 } from '../types/index.js'
+import { PromptBuilder } from '../templates/PromptBuilder.js'
 
 /**
  * 前端 Studio 接口类型定义（对应前端类型）
@@ -85,16 +86,20 @@ export class StudioAPIAdapter {
    */
   async generateContent(request: StudioAIGenerateRequest): Promise<StudioAIGenerateResponse> {
     try {
+      // 构建 prompt
+      const prompt = PromptBuilder.buildGenerate({
+        inputs: request.inputs,
+        instruction: request.instruction || this.getDefaultInstruction(request.type),
+        context: request.context
+      })
+
       // 将 Studio 请求转换为 Engine 请求
       const engineRequest: GenerateRequest = {
-        inputs: request.inputs,
+        prompt,
         context: request.context,
-        instruction: request.instruction || this.getDefaultInstruction(request.type),
-        options: {
-          temperature: request.options?.temperature || 0.7,
-          maxTokens: request.options?.maxTokens || 2000,
-          model: this.mapStudioModelToEngine(request.options?.model || 'gpt-3.5-turbo')
-        }
+        temperature: request.options?.temperature || 0.7,
+        maxTokens: request.options?.maxTokens || 2000,
+        model: this.mapStudioModelToEngine(request.options?.model || 'gpt-3.5-turbo')
       }
 
       // 调用 Engine 生成内容

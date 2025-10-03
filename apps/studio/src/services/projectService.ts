@@ -79,9 +79,9 @@ export interface CanvasState {
 class ProjectService {
   /**
    * 获取项目列表
+   * 注意：user_id 从 JWT token 中获取，不需要传递
    */
   async getProjects(params?: {
-    userId?: string
     status?: string
     search?: string
     page?: number
@@ -89,7 +89,6 @@ class ProjectService {
   }): Promise<Project[]> {
     const queryParams = new URLSearchParams()
 
-    if (params?.userId) queryParams.append('user_id', params.userId)
     if (params?.status) queryParams.append('status', params.status)
     if (params?.search) queryParams.append('search', params.search)
     if (params?.page) queryParams.append('page', params.page.toString())
@@ -199,10 +198,12 @@ class ProjectService {
 
   /**
    * 获取最近访问的项目
+   * 注意：user_id 从 JWT token 中获取，不需要传递
    */
-  async getRecentProjects(userId: string, limit: number = 10): Promise<Project[]> {
-    const url = `${API_ENDPOINTS.projects.recent(userId)}?limit=${limit}`
-    return apiClient.get<Project[]>(url)
+  async getRecentProjects(limit: number = 10): Promise<Project[]> {
+    const url = `${API_ENDPOINTS.projects.list}?limit=${limit}&sortBy=last_accessed_at&sortDirection=DESC`
+    const response = await apiClient.get<{ items: Project[] }>(url)
+    return Array.isArray(response?.items) ? response.items : []
   }
 
   /**

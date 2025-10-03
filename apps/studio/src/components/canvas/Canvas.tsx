@@ -18,6 +18,7 @@ import {
   OnConnectStart,
   OnConnectEnd,
   useReactFlow,
+  SelectionMode,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -209,6 +210,20 @@ const Canvas: React.FC<CanvasProps> = ({
   React.useEffect(() => {
     setRfNodes(nodes)
   }, [nodes, setRfNodes])
+
+  // 在节点加载完成后自动调整视图以包含所有节点
+  React.useEffect(() => {
+    if (reactFlowInstance && nodes.length > 0) {
+      // 使用 requestAnimationFrame 确保在 DOM 更新后执行
+      requestAnimationFrame(() => {
+        reactFlowInstance.fitView({
+          padding: 0.1,
+          includeHiddenNodes: false,
+          duration: 400, // 添加过渡动画
+        })
+      })
+    }
+  }, [reactFlowInstance, nodes.length])
 
   // 同步连接状态
   React.useEffect(() => {
@@ -780,6 +795,10 @@ const Canvas: React.FC<CanvasProps> = ({
           includeHiddenNodes: false,
         }}
         onContextMenu={handleContextMenu}
+        // 框选功能配置
+        selectionOnDrag
+        panOnDrag={[1, 2]} // 鼠标中键和右键拖动画布
+        selectionMode={SelectionMode.Partial} // Partial: 节点部分在选区内即可选中
         // 性能优化配置
         {...performanceProps}
       >

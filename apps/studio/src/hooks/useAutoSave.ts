@@ -16,8 +16,6 @@ export interface AutoSaveConfig {
   interval?: number
   /** 是否启用自动保存 */
   enabled?: boolean
-  /** 防抖延迟(毫秒) */
-  debounceDelay?: number
 }
 
 /**
@@ -26,7 +24,6 @@ export interface AutoSaveConfig {
 const DEFAULT_CONFIG: Required<AutoSaveConfig> = {
   interval: 30000, // 30秒
   enabled: true,
-  debounceDelay: 3000, // 3秒防抖
 }
 
 /**
@@ -36,11 +33,9 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   const { currentProject, saveCanvasState } = useCanvasStore()
-  const { lastSavedAt } = useSyncStore()
   const { startSaving, savingComplete, savingFailed } = useSyncStore()
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const isSavingRef = useRef(false)
 
   /**
@@ -65,21 +60,6 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
       isSavingRef.current = false
     }
   }, [currentProject, finalConfig.enabled, saveCanvasState, startSaving, savingComplete, savingFailed])
-
-  /**
-   * 带防抖的保存
-   */
-  const debouncedSave = useCallback(() => {
-    // 清除现有的防抖计时器
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
-    }
-
-    // 设置新的防抖计时器
-    debounceTimerRef.current = setTimeout(() => {
-      performSave()
-    }, finalConfig.debounceDelay)
-  }, [finalConfig.debounceDelay, performSave])
 
   /**
    * 设置定时自动保存
@@ -107,29 +87,12 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
   }, [currentProject, finalConfig.enabled, finalConfig.interval, performSave])
 
   /**
-   * 监听数据变更触发防抖保存
-   */
-  useEffect(() => {
-    if (!currentProject || !finalConfig.enabled) {
-      return
-    }
-
-    // 当lastSavedAt变化时,说明有数据更新,触发防抖保存
-    if (lastSavedAt) {
-      debouncedSave()
-    }
-  }, [lastSavedAt, currentProject, finalConfig.enabled, debouncedSave])
-
-  /**
    * 清理函数
    */
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearInterval(saveTimerRef.current)
-      }
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
       }
     }
   }, [])

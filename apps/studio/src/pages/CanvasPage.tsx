@@ -41,11 +41,10 @@ const CanvasPage: React.FC = () => {
   const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null)
   const [editingNodeContent, setEditingNodeContent] = React.useState('')
 
-  // 启用自动保存(30秒间隔，3秒防抖)
+  // 启用自动保存(30秒间隔)
   useAutoSave({
     enabled: !!currentProject,
     interval: 30000,
-    debounceDelay: 3000,
   })
 
   // 同步当前项目ID到NodeStore并加载节点

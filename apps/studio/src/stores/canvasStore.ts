@@ -45,8 +45,8 @@ export interface CanvasStoreState {
   resetZoom: () => void
   fitView: () => void
 
-  // 项目管理Actions
-  loadProjects: (userId?: string) => Promise<void>
+  // 项目管理Actions (user_id 从 JWT token 中获取)
+  loadProjects: () => Promise<void>
   loadProject: (projectId: string) => Promise<void>
   createProject: (name: string, description?: string) => Promise<Project>
   saveCurrentProject: () => Promise<void>
@@ -173,7 +173,7 @@ export const useCanvasStore = create<CanvasStoreState>()(
           ),
 
         // 项目管理Actions实现
-        loadProjects: async (userId) => {
+        loadProjects: async () => {
           // 防止重复加载：如果正在加载中，直接返回
           if (get().isLoadingProject) {
             return
@@ -182,7 +182,8 @@ export const useCanvasStore = create<CanvasStoreState>()(
           set({ isLoadingProject: true, projectError: null })
 
           try {
-            const projects = await projectService.getProjects({ userId })
+            // user_id 从 JWT token 中自动获取，无需传递
+            const projects = await projectService.getProjects()
             // 确保 projects 是数组，防止 map 报错
             const projectList = Array.isArray(projects) ? projects : []
             set({ projects: projectList, isLoadingProject: false })

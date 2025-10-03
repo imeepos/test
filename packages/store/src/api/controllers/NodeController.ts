@@ -19,10 +19,14 @@ export class NodeController extends BaseController {
    */
   getNodes = this.asyncHandler(async (req: Request, res: Response) => {
     const { page, limit, offset } = this.parseQueryOptions(req)
-    const projectId = req.query.projectId as string
-    const userId = req.query.userId as string
+    // 支持两种参数名称格式
+    const projectId = (req.query.projectId || req.query.project_id) as string
+    const userId = (req.query.userId || req.query.user_id) as string
     const status = req.query.status as string
     const search = req.query.search as string
+
+    console.log('🎯 NodeController.getNodes - projectId:', projectId)
+    console.log('🎯 NodeController.getNodes - query:', req.query)
 
     let filter: any = {}
 
@@ -35,16 +39,23 @@ export class NodeController extends BaseController {
 
     if (status) {
       filter.status = status
+    } else {
+      // 默认排除已删除的节点 - 使用 NOT LIKE 操作符
+      filter.status = { operator: '<>', value: 'deleted' }
     }
+
+    console.log('🎯 NodeController.getNodes - filter:', JSON.stringify(filter))
 
     let nodes
     if (projectId) {
-      nodes = await this.nodeRepo.findByProject(projectId, { limit, offset })
+      nodes = await this.nodeRepo.findByProject(projectId, { limit, offset, filters: filter })
     } else if (userId) {
-      nodes = await this.nodeRepo.findByUser(userId, { limit, offset })
+      nodes = await this.nodeRepo.findByUser(userId, { limit, offset, filters: filter })
     } else {
-      nodes = await this.nodeRepo.findMany({ ...filter, limit, offset })
+      nodes = await this.nodeRepo.findMany({ filters: filter, limit, offset })
     }
+
+    console.log('🎯 NodeController.getNodes - returned nodes count:', nodes.length)
 
     const total = nodes.length
     const pagination = this.createPagination(page, limit, total)

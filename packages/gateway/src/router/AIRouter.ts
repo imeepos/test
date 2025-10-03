@@ -10,6 +10,7 @@ import {
   UnifiedAITaskMessage,
   TaskMetadata
 } from '@sker/models'
+import { PromptBuilder } from '@sker/engine'
 
 // 类型别名以兼容现有代码
 type AITaskType = UnifiedAITaskType
@@ -412,11 +413,16 @@ export class AIRouter extends BaseRouter {
     try {
       if (!this.checkAIEngine(req, res)) return
 
-      const { content, instruction, model, userId, projectId } = req.body
+      const { content, instruction, model, userId, projectId, prompt } = req.body
+
+      // 构建 prompt（如果未提供）
+      const optimizePrompt = prompt || PromptBuilder.buildOptimize({
+        content,
+        instruction: instruction || '请优化这段内容，使其更清晰、准确和有条理'
+      })
 
       const result = await this.aiEngine!.optimizeContent({
-        content,
-        instruction: instruction || '请优化这段内容，使其更清晰、准确和有条理',
+        prompt: optimizePrompt,
         model: model || 'gpt-4',
         userId: userId || req.user?.id,
         projectId,
@@ -442,7 +448,7 @@ export class AIRouter extends BaseRouter {
     try {
       if (!this.checkAIEngine(req, res)) return
 
-      const { inputs, instruction, model, userId, projectId } = req.body
+      const { inputs, instruction, model, userId, projectId, prompt } = req.body
 
       if (!inputs || !Array.isArray(inputs) || inputs.length < 2) {
         res.error(ResponseMapper.toAPIError(
@@ -452,10 +458,15 @@ export class AIRouter extends BaseRouter {
         return
       }
 
-      const result = await this.aiEngine!.fuseContent({
+      // 构建 prompt（如果未提供）
+      const fusionPrompt = prompt || PromptBuilder.buildFusion({
         inputs,
         instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
-        fusionType: 'synthesis',
+        fusionType: 'synthesis'
+      })
+
+      const result = await this.aiEngine!.fuseContent({
+        prompt: fusionPrompt,
         model: model || 'gpt-4',
         userId: userId || req.user?.id,
         projectId

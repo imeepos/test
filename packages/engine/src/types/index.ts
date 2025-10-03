@@ -83,17 +83,24 @@ export interface ProcessingMetadata {
 
 // 内容生成相关
 export interface GenerateRequest {
-  prompt?: string
-  inputs: string[]
-  context?: string
-  instruction?: string
-  style?: string
-  length?: 'short' | 'medium' | 'long'
+  prompt: string           // 必填：完整的提示词
+  context?: string         // 可选：上下文信息
+  systemPrompt?: string    // 可选：系统提示词（用于 Provider）
   model?: string
   temperature?: number
   maxTokens?: number
   userId?: string
   projectId?: string
+
+  // 向后兼容字段（已弃用，将在下一版本移除）
+  /** @deprecated 使用 prompt 字段代替 */
+  inputs?: string[]
+  /** @deprecated 使用 prompt 字段代替 */
+  instruction?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  style?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  length?: 'short' | 'medium' | 'long'
   options?: TaskOptions
 }
 
@@ -109,15 +116,23 @@ export interface GenerateResult {
 }
 
 export interface OptimizeRequest {
-  content: string
-  instruction: string
-  context?: string
-  targetStyle?: string
-  targetLength?: 'shorter' | 'longer' | 'same'
+  prompt: string           // 必填：完整的优化提示词（包含原内容和优化要求）
+  context?: string         // 可选：上下文信息
+  systemPrompt?: string    // 可选：系统提示词
   model?: string
   userId?: string
   projectId?: string
   metadata?: any
+
+  // 向后兼容字段（已弃用，将在下一版本移除）
+  /** @deprecated 使用 prompt 字段代替 */
+  content?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  instruction?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  targetStyle?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  targetLength?: 'shorter' | 'longer' | 'same'
 }
 
 export interface OptimizeResult {
@@ -132,14 +147,21 @@ export interface OptimizeResult {
 }
 
 export interface FusionRequest {
-  inputs: string[]
-  instruction: string
-  context?: string
-  fusionType: 'synthesis' | 'comparison' | 'integration' | 'summary'
+  prompt: string           // 必填：完整的融合提示词（包含所有输入内容）
+  context?: string         // 可选：上下文信息
+  systemPrompt?: string    // 可选：系统提示词
   model?: string
   userId?: string
   projectId?: string
   metadata?: any
+
+  // 向后兼容字段（已弃用，将在下一版本移除）
+  /** @deprecated 使用 prompt 字段代替 */
+  inputs?: string[]
+  /** @deprecated 使用 prompt 字段代替 */
+  instruction?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  fusionType?: 'synthesis' | 'comparison' | 'integration' | 'summary'
 }
 
 export interface FusionResult {
@@ -152,12 +174,20 @@ export interface FusionResult {
 }
 
 export interface ExpandRequest {
-  baseContent: string
-  instruction: string
-  context?: string
-  expansionType: 'detail' | 'examples' | 'analysis' | 'implications'
-  targetLength?: number
+  prompt: string           // 必填：完整的扩展提示词（包含基础内容和扩展要求）
+  context?: string         // 可选：上下文信息
+  systemPrompt?: string    // 可选：系统提示词
   model?: string
+
+  // 向后兼容字段（已弃用，将在下一版本移除）
+  /** @deprecated 使用 prompt 字段代替 */
+  baseContent?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  instruction?: string
+  /** @deprecated 使用 prompt 字段代替 */
+  expansionType?: 'detail' | 'examples' | 'analysis' | 'implications'
+  /** @deprecated 使用 prompt 字段代替 */
+  targetLength?: number
 }
 
 export interface ExpandResult {
@@ -288,7 +318,7 @@ export interface AIProvider {
   name: string
   generate(request: GenerateRequest): Promise<GenerateResult>
   optimize(request: OptimizeRequest): Promise<OptimizeResult>
-  analyze(content: string, options: SemanticOptions): Promise<SemanticAnalysis>
+  analyze(content: string, options: SemanticOptions, prompt?: string): Promise<SemanticAnalysis>
   countTokens(text: string): Promise<number>
   validateRequest(request: any): boolean
   getAvailableModels(): string[]

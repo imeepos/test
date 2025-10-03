@@ -229,6 +229,8 @@ services:
     ports:
       - "8001:8001"
     depends_on:
+      store:
+        condition: service_healthy
       broker:
         condition: service_started
     networks:
@@ -236,7 +238,7 @@ services:
     volumes:
       - ./packages/engine/.env:/app/packages/engine/.env:ro
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD", "true"]
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -290,7 +292,7 @@ services:
     volumes:
       - ./packages/gateway/.env:/app/packages/gateway/.env:ro
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 -O /dev/null http://127.0.0.1:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s

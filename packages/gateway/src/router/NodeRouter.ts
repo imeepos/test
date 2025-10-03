@@ -477,8 +477,10 @@ export class NodeRouter extends BaseRouter {
       if (status) {
         options.filters.status = status
       } else {
-        // 默认排除已删除的节点
-        options.filters.status = ['active', 'draft', 'archived']
+        // 默认排除已删除的节点，使用正确的状态值
+        // 数据库支持的状态: idle, processing, completed, error, deleted, active, draft, archived
+        // 这里排除 deleted 状态，包含其他所有活跃状态
+        options.filters.status = { operator: '<>', value: 'deleted' }
       }
       if (importance_min) options.filters.importance_min = parseInt(String(importance_min))
       if (importance_max) options.filters.importance_max = parseInt(String(importance_max))
@@ -603,7 +605,7 @@ export class NodeRouter extends BaseRouter {
   private async optimizeNode(req: ApiRequest, res: ApiResponse): Promise<void> {
     try {
       const { id } = req.params
-      const { instruction, model } = req.body
+      const { instruction, model, prompt } = req.body
 
       if (!this.checkStoreService(req, res) || !this.checkAIEngine(req, res)) return
 
@@ -619,10 +621,12 @@ export class NodeRouter extends BaseRouter {
         return
       }
 
+      // 构建优化 prompt（如果未提供）
+      const optimizePrompt = prompt || `请优化以下内容：\n\n${node.content}\n\n优化要求：${instruction || '使其更清晰、准确和有条理'}`
+
       // 使用AI引擎优化节点内容
       const result = await this.aiEngine!.optimizeContent({
-        content: node.content,
-        instruction: instruction || '请优化这个节点的内容，使其更清晰、准确和有条理',
+        prompt: optimizePrompt,
         model: model || 'gpt-4',
         userId: req.user?.id,
         projectId: node.project_id,

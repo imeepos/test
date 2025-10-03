@@ -15,6 +15,7 @@ import {
   type UnifiedAIResultMessage,
   type UnifiedTaskStatus
 } from '@sker/models'
+import { PromptBuilder } from '../templates/PromptBuilder.js'
 
 /**
  * AI 任务队列处理器 - 处理来自消息队列的 AI 任务
@@ -336,46 +337,71 @@ export class AITaskQueueProcessor extends EventEmitter {
     // 使用统一的任务类型处理
     switch (taskData.type) {
       case 'generate':
-        return await this.aiEngine.generateContent({
+        // 构建 prompt（如果没有提供）
+        const generatePrompt = taskData.parameters?.prompt || PromptBuilder.buildGenerate({
           inputs: taskData.inputs,
-          context: taskData.context,
           instruction: taskData.instruction,
+          context: taskData.context
+        })
+
+        return await this.aiEngine.generateContent({
+          prompt: generatePrompt,
+          context: taskData.context,
           model: taskData.metadata?.model
         })
 
       case 'optimize':
-        return await this.aiEngine.optimizeContent({
+        // 构建优化 prompt
+        const optimizePrompt = taskData.parameters?.prompt || PromptBuilder.buildOptimize({
           content: taskData.inputs[0],
-          instruction: taskData.instruction || '',
+          instruction: taskData.instruction || ''
+        })
+
+        return await this.aiEngine.optimizeContent({
+          prompt: optimizePrompt,
           context: taskData.context,
           model: taskData.metadata?.model
         })
 
       case 'analyze':
+        // 构建分析 prompt
+        const analyzePrompt = taskData.parameters?.prompt || PromptBuilder.buildAnalyze(taskData.inputs[0])
+
         return await this.aiEngine.analyzeSemantics(
           taskData.inputs[0],
           {
             extractTags: true,
             assessImportance: true,
             calculateConfidence: true
-          }
+          },
+          analyzePrompt
         )
 
       case 'fusion':
-        return await this.aiEngine.fuseContent({
+        // 构建融合 prompt
+        const fusionPrompt = taskData.parameters?.prompt || PromptBuilder.buildFusion({
           inputs: taskData.inputs,
           instruction: taskData.instruction || '',
+          fusionType: 'synthesis'
+        })
+
+        return await this.aiEngine.fuseContent({
+          prompt: fusionPrompt,
           context: taskData.context,
-          fusionType: 'synthesis',
           model: taskData.metadata?.model
         })
 
       case 'expand':
-        return await this.aiEngine.enhanceNode({
-          baseContent: taskData.inputs[0],
+        // 构建扩展 prompt
+        const expandPrompt = taskData.parameters?.prompt || PromptBuilder.buildExpand({
+          content: taskData.inputs[0],
           instruction: taskData.instruction || '',
+          expansionType: 'detail'
+        })
+
+        return await this.aiEngine.enhanceNode({
+          prompt: expandPrompt,
           context: taskData.context,
-          expansionType: 'detail',
           model: taskData.metadata?.model
         })
 

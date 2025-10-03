@@ -54,13 +54,19 @@ export class AnthropicProvider implements AIProvider {
       const messages = this.buildMessages(request.prompt, request.context)
 
       // 调用Anthropic API
-      const completion = await this.client.messages.create({
+      const apiRequest: any = {
         model,
         messages,
         temperature: request.temperature || 0.7,
-        max_tokens: this.getMaxTokens(model),
-        system: this.getSystemPrompt()
-      })
+        max_tokens: this.getMaxTokens(model)
+      }
+
+      // 如果提供了 systemPrompt，添加到请求中
+      if (request.systemPrompt) {
+        apiRequest.system = request.systemPrompt
+      }
+
+      const completion = await this.client.messages.create(apiRequest)
 
       const content = completion.content[0]?.type === 'text'
         ? completion.content[0].text
@@ -91,10 +97,11 @@ export class AnthropicProvider implements AIProvider {
    * 优化内容
    */
   async optimize(request: OptimizeRequest): Promise<OptimizeResult> {
+    // 直接使用传入的 prompt
     const generateRequest: GenerateRequest = {
-      prompt: this.buildOptimizePrompt(request),
-      inputs: [request.content],
+      prompt: request.prompt,
       context: request.context,
+      systemPrompt: request.systemPrompt,
       model: request.model,
       temperature: 0.3
     }
@@ -118,12 +125,12 @@ export class AnthropicProvider implements AIProvider {
   /**
    * 语义分析
    */
-  async analyze(content: string, options: SemanticOptions): Promise<SemanticAnalysis> {
-    const prompt = this.buildAnalysisPrompt(content, options)
+  async analyze(content: string, options: SemanticOptions, prompt?: string): Promise<SemanticAnalysis> {
+    // 如果没有提供 prompt，使用简单的默认提示
+    const analysisPrompt = prompt || `请分析以下内容：\n\n${content}`
 
     const request: GenerateRequest = {
-      prompt,
-      inputs: [content],
+      prompt: analysisPrompt,
       temperature: 0.2
     }
 
@@ -189,13 +196,6 @@ export class AnthropicProvider implements AIProvider {
   }
 
   /**
-   * 获取系统提示
-   */
-  private getSystemPrompt(): string {
-    return '你是Claude，一个专业的AI助手。专门负责内容生成、优化和分析。请始终提供高质量、准确且有用的回复。'
-  }
-
-  /**
    * 构建消息数组
    */
   private buildMessages(prompt: string, context?: string): Anthropic.MessageParam[] {
@@ -203,7 +203,7 @@ export class AnthropicProvider implements AIProvider {
 
     let finalPrompt = prompt
     if (context) {
-      finalPrompt = `上下文信息：${context}\n\n${prompt}`
+      finalPrompt = `${context}\n\n${prompt}`
     }
 
     messages.push({
@@ -212,76 +212,6 @@ export class AnthropicProvider implements AIProvider {
     })
 
     return messages
-  }
-
-  /**
-   * 构建优化提示
-   */
-  private buildOptimizePrompt(request: OptimizeRequest): string {
-    let prompt = `请优化以下内容，使其更加清晰、准确和有效：\n\n`
-    prompt += `原内容：\n${request.content}\n\n`
-    prompt += `优化要求：${request.instruction}\n\n`
-
-    if (request.targetStyle) {
-      prompt += `目标风格：${request.targetStyle}\n`
-    }
-
-    if (request.targetLength) {
-      const lengthMap = {
-        shorter: '更简洁',
-        longer: '更详细',
-        same: '保持相同长度'
-      }
-      prompt += `长度要求：${lengthMap[request.targetLength]}\n`
-    }
-
-    prompt += `\n请按以下格式返回结果：\n`
-    prompt += `优化后内容：\n[这里是优化后的内容]\n\n`
-    prompt += `主要改进：\n[列出主要改进点]`
-
-    return prompt
-  }
-
-  /**
-   * 构建分析提示
-   */
-  private buildAnalysisPrompt(content: string, options: SemanticOptions): string {
-    let prompt = `请对以下内容进行详细的语义分析：\n\n"${content}"\n\n`
-
-    prompt += '请以JSON格式返回分析结果：\n'
-    prompt += '{\n'
-    prompt += '  "semanticType": "内容类型",\n'
-    prompt += '  "importanceLevel": 5,\n'
-    prompt += '  "keyTerms": ["关键词1", "关键词2"],\n'
-    prompt += '  "sentiment": "positive|neutral|negative",\n'
-    prompt += '  "sentimentScore": 0.5,\n'
-    prompt += '  "complexity": "low|medium|high",\n'
-    prompt += '  "complexityScore": 5,\n'
-    prompt += '  "readability": 7,\n'
-    prompt += '  "topics": [{"name": "主题", "relevance": 0.8, "confidence": 0.9}],\n'
-    prompt += '  "entities": [{"text": "实体", "type": "类型", "confidence": 0.95}],\n'
-    prompt += '  "tags": ["标签1", "标签2"],\n'
-    prompt += '  "confidence": 0.85\n'
-    prompt += '}\n\n'
-
-    prompt += '分析要求：\n'
-    if (options.extractTags !== false) {
-      prompt += '- 提取关键标签和术语\n'
-    }
-    if (options.assessImportance !== false) {
-      prompt += '- 评估内容重要性（1-10）\n'
-    }
-    if (options.analyzeSentiment) {
-      prompt += '- 分析情感倾向和强度\n'
-    }
-    if (options.evaluateComplexity) {
-      prompt += '- 评估内容复杂度\n'
-    }
-    if (options.detectTopics) {
-      prompt += '- 识别主要话题\n'
-    }
-
-    return prompt
   }
 
   /**

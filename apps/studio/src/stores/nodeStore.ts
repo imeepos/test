@@ -62,6 +62,7 @@ export interface NodeState {
   
   // 批量操作
   deleteNodes: (ids: string[]) => void
+  deleteErrorNodes: () => Promise<void>
   duplicateNode: (id: string) => string | undefined
   moveNode: (id: string, position: Position) => void
   
@@ -296,7 +297,27 @@ export const useNodeStore = create<NodeState>()(
             })
           })
         },
-        
+
+        deleteErrorNodes: async () => {
+          const { nodes, deleteNodeWithSync } = get()
+          const errorNodes = Array.from(nodes.values()).filter(
+            node => node.status === 'error'
+          )
+
+          if (errorNodes.length === 0) {
+            return
+          }
+
+          // 批量删除失败节点
+          for (const node of errorNodes) {
+            try {
+              await deleteNodeWithSync(node.id, true)
+            } catch (error) {
+              console.error(`删除失败节点 ${node.id} 时出错:`, error)
+            }
+          }
+        },
+
         duplicateNode: (id) => {
           const node = get().nodes.get(id)
           if (!node) return undefined

@@ -6,6 +6,11 @@ export { SemanticAnalyzer } from './core/SemanticAnalyzer.js'
 export { PromptTemplate } from './core/PromptTemplate.js'
 export { BatchProcessor } from './core/BatchProcessor.js'
 
+// 提示词模板工具
+export { PromptBuilder } from './templates/PromptBuilder.js'
+export { DEFAULT_PROMPTS } from './templates/DefaultPrompts.js'
+export type { PromptTemplateOptions } from './templates/DefaultPrompts.js'
+
 export { OpenAIProvider } from './providers/OpenAIProvider.js'
 
 export { TokenCounter } from './utils/TokenCounter.js'

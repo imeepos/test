@@ -61,7 +61,7 @@ export class StudioAPIRouter {
    * 设置中间件
    */
   private setupMiddleware(): void {
-    // 请求日志
+    // 请求日志中间件
     this.router.use((req: StudioAPIRequest, res: Response, next: NextFunction) => {
       const startTime = Date.now()
       const requestId = this.generateRequestId()
@@ -70,20 +70,17 @@ export class StudioAPIRouter {
       req.requestId = requestId
       req.startTime = startTime
 
-      console.log(`[${requestId}] ${req.method} ${req.path} - 开始处理`)
-
-      // 响应完成时记录处理时间
-      res.on('finish', () => {
-        const processingTime = Date.now() - startTime
-        console.log(`[${requestId}] ${req.method} ${req.path} - 完成 (${processingTime}ms)`)
-      })
-
       next()
     })
 
-    // 错误处理中间件
+    // 错误处理中间件（必须在所有路由之后）
     this.router.use((err: Error, req: StudioAPIRequest, res: Response, next: NextFunction) => {
-      console.error(`[${req.requestId}] 错误:`, err)
+      console.error(`[${req.requestId || 'unknown'}] 错误:`, err)
+
+      // 检查响应是否已发送
+      if (res.headersSent) {
+        return next(err)
+      }
 
       const errorResponse: APIResponse = {
         success: false,
@@ -95,7 +92,7 @@ export class StudioAPIRouter {
         metadata: {
           requestId: req.requestId,
           timestamp: new Date(),
-          processingTime: Date.now() - req.startTime
+          processingTime: Date.now() - (req.startTime || Date.now())
         }
       }
 
@@ -166,9 +163,21 @@ export class StudioAPIRouter {
         }
       }
 
-      res.json(response)
+      res.status(200).json(response)
     } catch (error) {
-      throw new Error(`健康检查失败: ${error}`)
+      const errorResponse: APIResponse = {
+        success: false,
+        error: {
+          code: 'HEALTH_CHECK_FAILED',
+          message: `健康检查失败: ${error}`
+        },
+        metadata: {
+          requestId: req.requestId,
+          timestamp: new Date(),
+          processingTime: Date.now() - req.startTime
+        }
+      }
+      res.status(503).json(errorResponse)
     }
   }
 

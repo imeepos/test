@@ -82,9 +82,10 @@ FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS runtime
 
 WORKDIR /app
 
-# 安装 pnpm
+# 安装 pnpm 和 wget (用于健康检查)
 ARG PNPM_VERSION
-RUN npm install -g pnpm@${PNPM_VERSION}
+RUN apk add --no-cache wget && \
+    npm install -g pnpm@${PNPM_VERSION}
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs && \
