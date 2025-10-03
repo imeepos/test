@@ -20,11 +20,20 @@ interface WebSocketConfig {
 type MessageHandler = (message: WebSocketMessage) => void
 type StatusHandler = (status: WebSocketStatus) => void
 
+interface PendingMessage {
+  resolve: (value: any) => void
+  reject: (reason?: any) => void
+  timeout: NodeJS.Timeout
+  lastActivityAt: number
+  type: string
+  stage: 'sending' | 'waiting_response'
+}
+
 class WebSocketService {
   private socket: Socket | null = null
   private config: WebSocketConfig
   private messageQueue: WebSocketMessage[] = []
-  private pendingMessages: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map()
+  private pendingMessages: Map<string, PendingMessage> = new Map()
   private messageHandlers: Map<string, MessageHandler> = new Map()
   private statusHandlers: Set<StatusHandler> = new Set()
   private reconnectAttempts: number = 0
@@ -39,6 +48,84 @@ class WebSocketService {
       heartbeatInterval: config.heartbeatInterval,
       reconnectInterval: config.reconnectInterval
     })
+  }
+
+  private createPendingMessage(
+    requestId: string,
+    type: string,
+    resolve: (value: any) => void,
+    reject: (reason?: any) => void,
+    stage: PendingMessage['stage']
+  ): PendingMessage {
+    const pending: PendingMessage = {
+      resolve,
+      reject,
+      timeout: setTimeout(() => this.handlePendingTimeout(requestId), this.config.messageTimeout),
+      lastActivityAt: Date.now(),
+      type,
+      stage
+    }
+
+    this.pendingMessages.set(requestId, pending)
+    return pending
+  }
+
+  private handlePendingTimeout(requestId: string): void {
+    const pending = this.pendingMessages.get(requestId)
+    if (!pending) {
+      return
+    }
+
+    this.pendingMessages.delete(requestId)
+    const elapsed = Date.now() - pending.lastActivityAt
+    const errorMessage = pending.stage === 'sending' ? '消息等待发送超时' : '消息响应超时'
+
+    console.error('⏰ WebSocket消息超时:', {
+      requestId,
+      type: pending.type,
+      stage: pending.stage,
+      elapsed
+    })
+
+    pending.reject(new Error(errorMessage))
+  }
+
+  private refreshPendingTimeout(
+    requestId: string,
+    stage: PendingMessage['stage'],
+    source?: string,
+    timeoutMs?: number
+  ): void {
+    const pending = this.pendingMessages.get(requestId)
+    if (!pending) {
+      return
+    }
+
+    clearTimeout(pending.timeout)
+    pending.lastActivityAt = Date.now()
+    pending.stage = stage
+    const nextTimeout = timeoutMs ?? this.config.messageTimeout
+    pending.timeout = setTimeout(() => this.handlePendingTimeout(requestId), nextTimeout)
+
+    if (import.meta.env.DEV) {
+      console.log('⏱️ 刷新消息超时计时器:', {
+        requestId,
+        stage,
+        source,
+        timeout: nextTimeout
+      })
+    }
+  }
+
+  private disposePendingMessage(requestId: string): PendingMessage | undefined {
+    const pending = this.pendingMessages.get(requestId)
+    if (!pending) {
+      return undefined
+    }
+
+    clearTimeout(pending.timeout)
+    this.pendingMessages.delete(requestId)
+    return pending
   }
 
   /**
@@ -256,23 +343,12 @@ class WebSocketService {
 
       // 返回一个 Promise，将在重连后处理
       return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          this.pendingMessages.delete(requestId)
-          reject(new Error('消息等待发送超时'))
-        }, this.config.messageTimeout)
-
-        this.pendingMessages.set(requestId, { resolve, reject, timeout })
+        this.createPendingMessage(requestId, type, resolve, reject, 'sending')
       })
     }
 
     return new Promise((resolve, reject) => {
-      // 设置超时
-      const timeout = setTimeout(() => {
-        this.pendingMessages.delete(requestId)
-        reject(new Error('消息响应超时'))
-      }, this.config.messageTimeout)
-
-      this.pendingMessages.set(requestId, { resolve, reject, timeout })
+      this.createPendingMessage(requestId, type, resolve, reject, 'waiting_response')
 
       try {
         console.log(`📤 发送WebSocket消息:`, {
@@ -316,10 +392,11 @@ class WebSocketService {
           result: typeof result,
           listeners: socket.listeners(type).length
         })
+
+        this.refreshPendingTimeout(requestId, 'waiting_response', 'emit')
       } catch (error) {
         console.error(`❌ 发送消息失败:`, error)
-        this.pendingMessages.delete(requestId)
-        clearTimeout(timeout)
+        this.disposePendingMessage(requestId)
         reject(error)
       }
     })
@@ -414,6 +491,12 @@ class WebSocketService {
       // 尝试获取requestId/taskId，优先使用requestId
       const requestId = data.requestId || data.taskId
 
+      if (requestId && (eventName.endsWith('_PROGRESS') || data.status === 'progress' || data.status === 'processing')) {
+        // 进度消息视为心跳，刷新超时计时器
+        const extendedTimeout = Math.max(this.config.messageTimeout * 3, 120000)
+        this.refreshPendingTimeout(requestId, 'waiting_response', eventName, extendedTimeout)
+      }
+
       // 处理响应消息 - 匹配pending请求
       if (requestId && (eventName.endsWith('_RESPONSE') || eventName.endsWith('_ERROR') || eventName === 'ai_task_result')) {
         console.log(`🔍 匹配请求ID:`, {
@@ -423,10 +506,9 @@ class WebSocketService {
           pendingKeys: Array.from(this.pendingMessages.keys())
         })
 
-        if (this.pendingMessages.has(requestId)) {
-          const pendingMessage = this.pendingMessages.get(requestId)!
-          clearTimeout(pendingMessage.timeout)
-          this.pendingMessages.delete(requestId)
+        const pendingMessage = this.disposePendingMessage(requestId)
+
+        if (pendingMessage) {
 
           // 根据事件类型和状态判断成功或失败
           const isError = eventName.endsWith('_ERROR') ||
@@ -529,20 +611,13 @@ class WebSocketService {
           // 直接发送，使用已有的 Promise handler
           this.socket.emit(message.type, message.payload)
           console.log(`✅ 队列消息已发送: ${message.type}`)
+          this.refreshPendingTimeout(message.id, 'waiting_response', 'queue_emit_existing')
         } else {
           // 为旧消息创建新的处理器
-          const timeout = setTimeout(() => {
-            this.pendingMessages.delete(message.id)
-          }, this.config.messageTimeout)
-
-          this.pendingMessages.set(message.id, {
-            resolve: () => {}, // 旧消息的resolve会被忽略
-            reject: () => {},  // 旧消息的reject会被忽略
-            timeout
-          })
-
+          this.createPendingMessage(message.id, message.type, () => {}, () => {}, 'waiting_response')
           this.socket.emit(message.type, message.payload)
           console.log(`✅ 队列消息已发送(旧): ${message.type}`)
+          this.refreshPendingTimeout(message.id, 'waiting_response', 'queue_emit_new')
         }
       } catch (error) {
         console.error('队列消息发送失败:', error)

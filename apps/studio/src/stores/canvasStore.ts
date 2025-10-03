@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { Viewport, ViewMode, CanvasStats, CanvasControls } from '@/types'
+import type { Viewport, ViewMode, CanvasStats, CanvasControls, CanvasInteractionMode } from '@/types'
 import { projectService } from '@/services/projectService'
 import type { Project, CanvasState as ProjectCanvasState } from '@/services/projectService'
 
@@ -9,6 +9,7 @@ export interface CanvasStoreState {
   viewport: Viewport
   viewMode: ViewMode
   isFullscreen: boolean
+  interactionMode: CanvasInteractionMode
 
   // 搜索和筛选
   searchQuery: string
@@ -38,6 +39,7 @@ export interface CanvasStoreState {
   removeSelectedNode: (id: string) => void
   clearSelection: () => void
   selectAll: (getAllNodeIds: () => string[]) => void
+  setInteractionMode: (mode: CanvasInteractionMode) => void
 
   // 画布操作
   zoomIn: () => void
@@ -60,8 +62,9 @@ export const useCanvasStore = create<CanvasStoreState>()(
       (set, get) => ({
         // 初始状态
         viewport: { x: 0, y: 0, zoom: 1 },
-        viewMode: 'preview',
+        viewMode: 'overview',
         isFullscreen: false,
+        interactionMode: 'pan',
         searchQuery: '',
         filteredNodeIds: [],
         stats: {
@@ -130,6 +133,9 @@ export const useCanvasStore = create<CanvasStoreState>()(
           const allNodeIds = getAllNodeIds()
           set({ selectedNodeIds: allNodeIds }, false, 'canvas/selectAll')
         },
+
+        setInteractionMode: (interactionMode) =>
+          set({ interactionMode }, false, 'canvas/setInteractionMode'),
         
         // 画布操作
         zoomIn: () =>
@@ -203,11 +209,15 @@ export const useCanvasStore = create<CanvasStoreState>()(
             const project = await projectService.getProject(projectId)
 
             // 更新画布状态
-            const canvasData = project.canvas_data
+            const canvasData = project.canvas_data ?? {
+              viewport: { x: 0, y: 0, zoom: 1 },
+              displayMode: 'overview' as const,
+              filters: {},
+            }
             set({
               currentProject: project,
               viewport: canvasData.viewport,
-              viewMode: canvasData.displayMode,
+              viewMode: canvasData.displayMode ?? 'overview',
               isLoadingProject: false,
             })
 
@@ -295,7 +305,7 @@ export const useCanvasStore = create<CanvasStoreState>()(
           set({
             currentProject: null,
             viewport: { x: 0, y: 0, zoom: 1 },
-            viewMode: 'preview',
+            viewMode: 'overview',
             selectedNodeIds: [],
           })
         },

@@ -73,154 +73,190 @@ export const ProjectSelector: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-canvas-bg flex items-center justify-center z-50">
-      <div className="bg-sidebar-surface rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col border border-sidebar-border">
-        {/* 头部 */}
-        <div className="px-6 py-4 border-b border-sidebar-border">
-          <h2 className="text-2xl font-bold text-sidebar-text">选择或创建项目</h2>
-          <p className="text-sm text-sidebar-text-muted mt-1">从现有项目中选择,或创建新的AI协作画布项目</p>
-        </div>
+    <div className="min-h-screen bg-canvas-bg text-sidebar-text">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 md:px-8">
+        {/* 顶部信息区域 */}
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-sidebar-text-muted">Workspace</p>
+            <h1 className="text-3xl font-bold">项目中心</h1>
+            <p className="mt-2 text-sm text-sidebar-text-muted">
+              管理您的协作画布项目，快速创建、继续或切换工作进度
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setIsCreating((prev) => !prev)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-600"
+            >
+              <Plus className="h-5 w-5" />
+              {isCreating ? '关闭创建面板' : '新建项目'}
+            </button>
+            {projects.length > 0 && (
+              <div className="rounded-lg border border-sidebar-border bg-sidebar-surface/60 px-4 py-2 text-sm text-sidebar-text-muted">
+                共 {projects.length} 个项目
+              </div>
+            )}
+          </div>
+        </header>
 
-        {/* 内容区 */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* 错误提示 */}
-          {projectError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">❌ {projectError}</p>
+        {/* 错误提示 */}
+        {projectError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            ❌ {projectError}
+          </div>
+        )}
+
+        {/* 创建面板 */}
+        {!isLoadingProject && isCreating && (
+          <section className="rounded-2xl border border-sidebar-border bg-sidebar-surface/80 p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">创建新项目</h2>
+                <p className="mt-1 text-sm text-sidebar-text-muted">为团队协作准备一个新的画布空间</p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsCreating(false)
+                  setNewProjectName('')
+                  setNewProjectDescription('')
+                }}
+                className="text-sm text-sidebar-text-muted transition-colors hover:text-sidebar-text"
+              >
+                取消
+              </button>
             </div>
-          )}
 
-          {/* 加载状态 */}
-          {isLoadingProject && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-3 text-gray-600">加载中...</span>
-            </div>
-          )}
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label htmlFor="project-name" className="mb-2 block text-sm font-medium">
+                  项目名称 *
+                </label>
+                <input
+                  id="project-name"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newProjectName.trim()) {
+                      handleCreateProject()
+                    }
+                  }}
+                  placeholder="输入项目名称"
+                  className="w-full rounded-lg border border-sidebar-border bg-canvas-bg px-4 py-2 text-sidebar-text shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  autoFocus
+                />
+              </div>
 
-          {/* 项目列表 */}
-          {!isLoadingProject && !isCreating && (
-            <>
-              {projects.length === 0 ? (
-                <div className="text-center py-12">
-                  <FolderOpen className="w-16 h-16 text-sidebar-text-muted mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium text-sidebar-text mb-2">还没有项目</h3>
-                  <p className="text-sidebar-text-muted mb-6">创建您的第一个AI协作画布项目</p>
-                  <button
-                    onClick={() => setIsCreating(true)}
-                    className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors inline-flex items-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    创建项目
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* 创建新项目卡片 */}
-                  <button
-                    onClick={() => setIsCreating(true)}
-                    className="border-2 border-dashed border-sidebar-border rounded-lg p-6 hover:border-primary-500 hover:bg-primary-500/10 transition-colors flex flex-col items-center justify-center min-h-[160px] group"
-                  >
-                    <Plus className="w-12 h-12 text-sidebar-text-muted group-hover:text-primary-500 mb-2" />
-                    <span className="text-sm font-medium text-sidebar-text-muted group-hover:text-sidebar-text">
-                      创建新项目
-                    </span>
-                  </button>
-
-                  {/* 现有项目卡片 */}
-                  {projects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => handleOpenProject(project.id)}
-                      className="border border-sidebar-border rounded-lg p-6 hover:border-primary-500 hover:shadow-md transition-all text-left bg-canvas-bg/50"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <FolderOpen className="w-6 h-6 text-primary-500" />
-                        <span className="text-xs px-2 py-1 bg-green-500/20 text-green-600 rounded-full">
-                          {project.status}
-                        </span>
-                      </div>
-
-                      <h3 className="font-semibold text-sidebar-text mb-2 truncate">{project.name}</h3>
-
-                      {project.description && (
-                        <p className="text-sm text-sidebar-text-muted line-clamp-2 mb-3">{project.description}</p>
-                      )}
-
-                      <div className="flex items-center text-xs text-sidebar-text-muted mt-auto">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {new Date(project.last_accessed_at).toLocaleDateString('zh-CN')}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* 创建项目表单 */}
-          {!isLoadingProject && isCreating && (
-            <div className="max-w-2xl mx-auto">
-              <h3 className="text-lg font-semibold text-sidebar-text mb-4">创建新项目</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="project-name" className="block text-sm font-medium text-sidebar-text mb-1">
-                    项目名称 *
-                  </label>
-                  <input
-                    id="project-name"
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newProjectName.trim()) {
-                        handleCreateProject()
-                      }
-                    }}
-                    placeholder="输入项目名称"
-                    className="w-full px-4 py-2 bg-canvas-bg border border-sidebar-border text-sidebar-text rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="project-desc" className="block text-sm font-medium text-sidebar-text mb-1">
-                    项目描述(可选)
-                  </label>
-                  <textarea
-                    id="project-desc"
-                    value={newProjectDescription}
-                    onChange={(e) => setNewProjectDescription(e.target.value)}
-                    placeholder="简要描述项目内容..."
-                    rows={3}
-                    className="w-full px-4 py-2 bg-canvas-bg border border-sidebar-border text-sidebar-text rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    onClick={handleCreateProject}
-                    disabled={!newProjectName.trim()}
-                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
-                  >
-                    创建项目
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsCreating(false)
-                      setNewProjectName('')
-                      setNewProjectDescription('')
-                    }}
-                    className="px-4 py-2 border border-sidebar-border text-sidebar-text rounded-lg hover:bg-canvas-bg transition-colors"
-                  >
-                    取消
-                  </button>
-                </div>
+              <div className="md:col-span-2">
+                <label htmlFor="project-desc" className="mb-2 block text-sm font-medium">
+                  项目描述 (可选)
+                </label>
+                <textarea
+                  id="project-desc"
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  placeholder="简要描述项目内容..."
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-sidebar-border bg-canvas-bg px-4 py-2 text-sidebar-text shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={handleCreateProject}
+                disabled={!newProjectName.trim()}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-gray-500"
+              >
+                创建项目
+              </button>
+              <button
+                onClick={() => {
+                  setIsCreating(false)
+                  setNewProjectName('')
+                  setNewProjectDescription('')
+                }}
+                className="inline-flex items-center justify-center rounded-lg border border-sidebar-border px-4 py-2 text-sm font-medium text-sidebar-text transition-colors hover:bg-canvas-bg"
+              >
+                返回列表
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* 加载状态 */}
+        {isLoadingProject && (
+          <div className="flex min-h-[40vh] w-full items-center justify-center rounded-2xl border border-dashed border-sidebar-border/80 bg-sidebar-surface/40">
+            <div className="flex items-center gap-3 text-sidebar-text-muted">
+              <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+              <span>正在加载项目...</span>
+            </div>
+          </div>
+        )}
+
+        {/* 项目列表 */}
+        {!isLoadingProject && !isCreating && (
+          <section className="flex flex-col gap-6">
+            {projects.length === 0 ? (
+              <div className="flex min-h-[40vh] flex-col items-center justify-center rounded-2xl border border-dashed border-sidebar-border/70 bg-sidebar-surface/40 text-center">
+                <FolderOpen className="mb-4 h-14 w-14 text-sidebar-text-muted" />
+                <h3 className="text-lg font-semibold">还没有项目</h3>
+                <p className="mt-2 max-w-md text-sm text-sidebar-text-muted">
+                  创建您的第一个协作画布项目，开始构建工作流与AI智能助手
+                </p>
+                <button
+                  onClick={() => setIsCreating(true)}
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                >
+                  <Plus className="h-5 w-5" />
+                  创建项目
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {projects.map((project) => (
+                  <button
+                    key={project.id}
+                    onClick={() => handleOpenProject(project.id)}
+                    className="group flex h-full flex-col rounded-2xl border border-transparent bg-sidebar-surface/80 p-6 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary-500 hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">
+                          <FolderOpen className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-sidebar-text line-clamp-1">{project.name}</h3>
+                          <span className="text-xs text-sidebar-text-muted">最近访问：{new Date(project.last_accessed_at).toLocaleDateString('zh-CN')}</span>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs text-green-500">
+                        {project.status}
+                      </span>
+                    </div>
+
+                    {project.description && (
+                      <p className="mt-4 flex-1 text-sm text-sidebar-text-muted line-clamp-3">
+                        {project.description}
+                      </p>
+                    )}
+
+                    <div className="mt-5 flex items-center justify-between text-xs text-sidebar-text-muted">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {new Date(project.updated_at || project.last_accessed_at).toLocaleString('zh-CN')}
+                      </span>
+                      <span className="text-primary-500 transition-colors group-hover:text-primary-400">
+                        点击打开
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   )

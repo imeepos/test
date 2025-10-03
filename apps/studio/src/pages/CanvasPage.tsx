@@ -2,7 +2,6 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Canvas, CanvasControls } from '@/components/canvas'
-import { Sidebar } from '@/components/sidebar'
 import { PromptDialog } from '@/components/ui'
 import { useCanvasStore, useNodeStore, useUIStore, useAIStore } from '@/stores'
 import { useSyncStore } from '@/stores/syncStore'
@@ -10,6 +9,21 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { nodeService } from '@/services'
 import type { Position } from '@/types'
+import logo from '@/assets/logo.svg'
+
+interface ExpandDialogState {
+  isOpen: boolean
+  sourceNodeId: string | null
+  position: Position | null
+  sourceTitle: string
+}
+
+const createInitialExpandDialogState = (): ExpandDialogState => ({
+  isOpen: false,
+  sourceNodeId: null,
+  position: null,
+  sourceTitle: '',
+})
 
 const CanvasPage: React.FC = () => {
   const navigate = useNavigate()
@@ -17,10 +31,20 @@ const CanvasPage: React.FC = () => {
   // 从 URL 加载项目
   const { projectIdFromUrl, hasProjectInUrl } = useProjectFromUrl()
 
-  const { sidebarCollapsed, sidebarWidth, addToast } = useUIStore()
-  const { addNode, getNode, getNodes, updateNode, updateNodeWithSync, createNodeWithSync, setCurrentProject, syncFromBackend } = useNodeStore()
+  const { addToast } = useUIStore()
+  const {
+    addNode,
+    getNode,
+    getNodes,
+    updateNode,
+    updateNodeWithSync,
+    createNodeWithSync,
+    connectNodesWithSync,
+    setCurrentProject,
+    syncFromBackend,
+  } = useNodeStore()
   const { updateStats, selectedNodeIds, selectAll, currentProject } = useCanvasStore()
-  const { startProcessing, connectionStatus } = useAIStore()
+  const { startProcessing } = useAIStore()
   const { status: syncStatus, lastSavedAt } = useSyncStore()
 
   // 如果 URL 中没有 projectId，重定向到项目选择页
@@ -40,6 +64,14 @@ const CanvasPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [editingNodeId, setEditingNodeId] = React.useState<string | null>(null)
   const [editingNodeContent, setEditingNodeContent] = React.useState('')
+
+  const [expandDialogState, setExpandDialogState] = React.useState<ExpandDialogState>(() => createInitialExpandDialogState())
+  const [isExpandGenerating, setIsExpandGenerating] = React.useState(false)
+
+  const closeExpandDialog = React.useCallback(() => {
+    setExpandDialogState(createInitialExpandDialogState())
+    setIsExpandGenerating(false)
+  }, [])
 
   // 启用自动保存(30秒间隔)
   useAutoSave({
@@ -80,6 +112,38 @@ const CanvasPage: React.FC = () => {
       setPromptDialogOpen(true)
     },
     [currentProject?.id, addToast]
+  )
+
+  const handleNodeCreate = React.useCallback(
+    async (position: Position) => {
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '创建失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        return
+      }
+
+      try {
+        await createNodeWithSync({
+          project_id: currentProject.id,
+          content: '请输入内容...',
+          title: '新节点',
+          importance: 3,
+          position,
+          tags: [],
+          metadata: {
+            semantic: [],
+            editCount: 0,
+          },
+        })
+      } catch (error) {
+        console.error('CanvasPage: 右键创建节点失败:', error)
+      }
+    },
+    [currentProject?.id, createNodeWithSync, addToast]
   )
 
   // 处理提示词提交 - AI生成节点
@@ -186,7 +250,7 @@ const CanvasPage: React.FC = () => {
 
   // 处理拖拽扩展
   const handleDragExpand = React.useCallback(
-    async (sourceNodeId: string, position: Position) => {
+    (sourceNodeId: string, position: Position) => {
       if (!currentProject?.id) {
         addToast({
           type: 'error',
@@ -197,41 +261,84 @@ const CanvasPage: React.FC = () => {
         return
       }
 
-      try {
-        // 获取源节点
-        const sourceNode = getNode(sourceNodeId)
-        if (!sourceNode) {
-          addToast({
-            type: 'error',
-            title: '扩展失败',
-            message: '找不到源节点',
-          })
-          return
-        }
+      const sourceNode = getNode(sourceNodeId)
+      if (!sourceNode) {
+        addToast({
+          type: 'error',
+          title: '扩展失败',
+          message: '找不到源节点',
+        })
+        return
+      }
 
-        // 开始AI处理
-        startProcessing(sourceNodeId, {
+      setExpandDialogState({
+        isOpen: true,
+        sourceNodeId,
+        position,
+        sourceTitle: sourceNode.title || '未命名节点',
+      })
+    },
+    [currentProject?.id, addToast, getNode]
+  )
+
+  const handleExpandPromptSubmit = React.useCallback(
+    async (prompt: string) => {
+      if (!expandDialogState.sourceNodeId || !expandDialogState.position) {
+        closeExpandDialog()
+        return
+      }
+
+      if (!currentProject?.id) {
+        addToast({
+          type: 'error',
+          title: '扩展失败',
+          message: '请先选择或创建项目',
+          duration: 3000,
+        })
+        closeExpandDialog()
+        return
+      }
+
+      const sourceNode = getNode(expandDialogState.sourceNodeId)
+      if (!sourceNode) {
+        addToast({
+          type: 'error',
+          title: '扩展失败',
+          message: '找不到源节点',
+          duration: 3000,
+        })
+        closeExpandDialog()
+        return
+      }
+
+      setIsExpandGenerating(true)
+
+      try {
+        startProcessing(sourceNode.id, {
           inputs: [sourceNode.content],
           type: 'expand',
-          context: `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`,
+          context: prompt,
+          instruction: prompt,
         })
 
-        // 使用nodeService创建扩展节点(本地AI生成)
-        const newNode = await nodeService.dragExpandGenerate(sourceNode, position)
+        const newNode = await nodeService.dragExpandGenerate(sourceNode, expandDialogState.position, {
+          prompt,
+        })
 
-        // 使用后端同步方法保存
-        await createNodeWithSync({
+        const createdNode = await createNodeWithSync({
           project_id: currentProject.id,
           content: newNode.content,
           title: newNode.title,
           importance: newNode.importance,
           position: newNode.position,
           tags: newNode.tags,
-          parent_id: sourceNodeId,
+          parent_id: sourceNode.id,
           metadata: newNode.metadata,
         })
 
-        // 成功时不显示toast，静默创建
+        await connectNodesWithSync(sourceNode.id, createdNode.id, {
+          type: 'expand',
+        })
 
         console.log('拖拽扩展创建节点成功')
       } catch (error) {
@@ -242,9 +349,11 @@ const CanvasPage: React.FC = () => {
           message: error instanceof Error ? error.message : '请稍后重试',
           duration: 3000,
         })
+      } finally {
+        closeExpandDialog()
       }
     },
-    [currentProject?.id, getNode, createNodeWithSync, addToast, startProcessing, connectionStatus]
+    [addToast, closeExpandDialog, connectNodesWithSync, createNodeWithSync, currentProject?.id, expandDialogState, getNode, startProcessing]
   )
 
   // 处理多输入融合
@@ -327,15 +436,6 @@ const CanvasPage: React.FC = () => {
     },
     [currentProject?.id, getNode, createNodeWithSync, addToast, startProcessing]
   )
-
-  // 计算主内容区域的样式
-  const mainContentStyle = React.useMemo(() => {
-    const sidebarWidthValue = sidebarCollapsed ? 48 : sidebarWidth
-    return {
-      marginLeft: `${sidebarWidthValue}px`,
-      width: `calc(100% - ${sidebarWidthValue}px)`,
-    }
-  }, [sidebarCollapsed, sidebarWidth])
 
   // 键盘快捷键处理
   React.useEffect(() => {
@@ -639,6 +739,7 @@ const CanvasPage: React.FC = () => {
           content: `${editingNodeContent}\n\n修改意见: ${instruction}`,
           useAI: true,
           context: [`当前内容: ${editingNodeContent}`, `修改意见: ${instruction}`],
+          nodeId: editingNodeId, // ✅ 将实际节点ID传给后端，便于结果回写
         })
 
         // 更新节点并同步到数据库
@@ -723,6 +824,7 @@ const CanvasPage: React.FC = () => {
           content: prompt,
           useAI: true,
           context: [prompt],
+          nodeId: nodeId, // ✅ 确保重试请求携带原节点ID
         })
 
         // 更新节点并同步到数据库
@@ -769,26 +871,27 @@ const CanvasPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-canvas-bg overflow-hidden">
-      {/* 侧边栏 */}
-      <div className="fixed left-0 top-0 bottom-0 z-20">
-        <Sidebar />
-      </div>
-
       {/* 主内容区域 */}
       <motion.main
-        className="relative h-full"
-        style={mainContentStyle}
-        animate={{ 
-          marginLeft: sidebarCollapsed ? 48 : sidebarWidth,
-          width: `calc(100% - ${sidebarCollapsed ? 48 : sidebarWidth}px)`,
-        }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="relative h-full w-full"
       >
+        <motion.div
+          className="fixed top-4 left-4 z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+            <img src={logo} alt="SKER Studio" className="h-8 w-8 object-contain" />
+          </div>
+        </motion.div>
+
         {/* 画布容器 */}
         <div className="relative h-full">
           <Canvas
             onCanvasDoubleClick={handleCanvasDoubleClick}
             onNodeDoubleClick={handleNodeDoubleClick}
+            onNodeCreate={handleNodeCreate}
             onDragExpand={handleDragExpand}
             onFusionCreate={handleFusionCreate}
           />
@@ -840,6 +943,15 @@ const CanvasPage: React.FC = () => {
         title="创建新节点"
         placeholder="在此输入你的想法...&#10;例如: 分析电商平台的技术架构"
         isLoading={isCreatingNode}
+      />
+
+      <PromptDialog
+        isOpen={expandDialogState.isOpen}
+        onClose={closeExpandDialog}
+        onSubmit={handleExpandPromptSubmit}
+        title={`AI扩展 - ${expandDialogState.sourceTitle || '未命名节点'}`}
+        placeholder={`请输入针对节点「${expandDialogState.sourceTitle || '未命名节点'}」的扩展提示，例如：继续拓展具体执行步骤`}
+        isLoading={isExpandGenerating}
       />
 
       {/* 编辑节点对话框 */}

@@ -344,10 +344,16 @@ class NodeService {
    * 拖拽扩展生成（异步版本）
    * 立即创建processing状态的节点，后台异步生成内容
    */
-  async dragExpandGenerate(sourceNode: AINode, targetPosition: Position): Promise<AINode> {
+  async dragExpandGenerate(
+    sourceNode: AINode,
+    targetPosition: Position,
+    options: { prompt?: string } = {}
+  ): Promise<AINode> {
     const context = [sourceNode.content]
     const nodeId = this.generateNodeId()
     const now = new Date()
+
+    const userPrompt = options.prompt?.trim()
 
     // 立即创建processing状态的节点
     const processingNode: AINode = {
@@ -370,12 +376,16 @@ class NodeService {
     }
 
     // 后台异步发送AI请求（不等待结果）
+    const defaultContext = `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`
+    const defaultInstruction = '请基于提供的内容，生成相关的扩展内容或下一步思考'
+
     const aiRequest: AIGenerateRequest & { nodeId: string } = {
       inputs: context,
-      context: `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`,
+      context: userPrompt || defaultContext,
       type: 'expand',
-      instruction: '请基于提供的内容，生成相关的扩展内容或下一步思考',
-      nodeId: nodeId // 传递节点ID，以便接收到结果时能找到对应节点
+      instruction: userPrompt || defaultInstruction,
+      nodeId: nodeId,
+      options: userPrompt ? { prompt: userPrompt } : undefined,
     }
 
     // 异步发送AI请求，不阻塞返回

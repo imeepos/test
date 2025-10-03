@@ -9,6 +9,7 @@ import {
   Grid,
   RotateCcw,
   MousePointer2,
+  Hand,
   Trash2,
   Search,
   X,
@@ -43,6 +44,8 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
     fitView,
     addSelectedNode,
     clearSelection,
+    interactionMode,
+    setInteractionMode,
   } = useCanvasStore()
 
   const {
@@ -86,6 +89,20 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
       title: '视图模式已切换',
       message: `当前为${viewModeLabels[nextViewMode]}`,
       duration: 1800
+    })
+  }
+
+  const handleInteractionModeToggle = () => {
+    const nextMode = interactionMode === 'pan' ? 'select' : 'pan'
+    setInteractionMode(nextMode)
+
+    addToast({
+      type: 'info',
+      title: nextMode === 'pan' ? '拖动画布模式' : '框选模式',
+      message: nextMode === 'pan'
+        ? '左键拖动调整视图，按住 Shift 继续框选'
+        : '左键拖动进行框选，右键或中键仍可拖动画布',
+      duration: 2000,
     })
   }
 
@@ -348,8 +365,22 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           onClick={handleSearchToggle}
           className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-hover rounded text-sidebar-text-muted hover:text-sidebar-text transition-colors"
           title="搜索节点 (Ctrl+F)"
+          type="button"
         >
           <Search className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* 交互模式切换 */}
+      <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+        <button
+          onClick={handleInteractionModeToggle}
+          className={`h-8 w-8 flex items-center justify-center rounded transition-colors ${interactionMode === 'pan' ? 'text-primary-400 hover:text-primary-300 hover:bg-primary-400/10' : 'text-sidebar-text-muted hover:text-sidebar-text hover:bg-sidebar-hover'}`}
+          title={interactionMode === 'pan' ? '拖动画布模式 (Shift 可临时框选)' : '框选模式 (右键/中键拖动视图)'}
+          aria-pressed={interactionMode === 'pan'}
+          type="button"
+        >
+          {interactionMode === 'pan' ? <Hand className="h-5 w-5" /> : <MousePointer2 className="h-5 w-5" />}
         </button>
       </div>
 

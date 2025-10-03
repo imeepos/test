@@ -8,12 +8,38 @@ import type { CreateNodeParams, UpdateNodeParams } from '@/services/nodeApiServi
 import { useUIStore } from './uiStore'
 import { useSyncStore } from './syncStore'
 
+// 连接元信息
+export interface ConnectionMetadata {
+  remoteId?: string
+  type?: string
+  weight?: number
+  bidirectional?: boolean
+  status: 'pending' | 'synced' | 'error'
+  error?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+// 连接配置选项
+export interface ConnectionOptions {
+  style?: EdgeStyle
+  type?: string
+  weight?: number
+  bidirectional?: boolean
+  metadata?: Partial<ConnectionMetadata>
+  sourceHandle?: string
+  targetHandle?: string
+}
+
 // 扩展的边数据结构
 export interface StoreEdge {
   id: string
   source: string
   target: string
+  sourceHandle?: string
+  targetHandle?: string
   style?: EdgeStyle
+  metadata: ConnectionMetadata
 }
 
 export interface NodeState {
@@ -50,9 +76,12 @@ export interface NodeState {
   deleteNodeWithSync: (id: string, permanent?: boolean) => Promise<void>
   
   // 连接管理
-  connectNodes: (sourceId: string, targetId: string, style?: EdgeStyle) => void
+  connectNodes: (sourceId: string, targetId: string, options?: ConnectionOptions) => string | null
+  connectNodesWithSync: (sourceId: string, targetId: string, options?: ConnectionOptions) => Promise<void>
   disconnectNodes: (sourceId: string, targetId: string) => void
+  disconnectNodesWithSync: (sourceId: string, targetId: string) => Promise<void>
   getConnections: (nodeId: string) => string[]
+  setEdgeMetadata: (edgeId: string, metadata: Partial<ConnectionMetadata>) => void
   
   // 连线样式管理
   updateEdgeStyle: (edgeId: string, style: EdgeStyle) => void
@@ -226,49 +255,160 @@ export const useNodeStore = create<NodeState>()(
         },
         
         // 连接管理
-        connectNodes: (sourceId, targetId, style) => {
-          if (sourceId === targetId) return
-          
+        connectNodes: (sourceId, targetId, options = {}) => {
+          if (sourceId === targetId) return null
+
+          const {
+            style,
+            type = 'related',
+            weight = 1,
+            bidirectional = false,
+            metadata: incomingMetadata = {},
+            sourceHandle,
+            targetHandle,
+          } = options
+
+          let createdEdgeId: string | null = null
+
           set((state) => {
-            const edgeExists = state.edges.some(
-              edge => edge.source === sourceId && edge.target === targetId
+            const existingEdge = state.edges.find(
+              (edge) => edge.source === sourceId && edge.target === targetId
             )
-            
-            if (!edgeExists) {
-              const edgeId = `edge-${sourceId}-${targetId}`
-              const defaultStyle = EdgeStylePresets.solid
-              state.edges.push({
-                id: edgeId,
-                source: sourceId,
-                target: targetId,
-                style: style || defaultStyle,
-              })
-              
-              // 更新节点连接信息
+
+            const defaultStyle = EdgeStylePresets.solid
+
+            if (existingEdge) {
+              if (style) {
+                existingEdge.style = { ...existingEdge.style, ...style }
+              }
+
+              existingEdge.metadata = {
+                ...existingEdge.metadata,
+                type: incomingMetadata.type ?? existingEdge.metadata.type ?? type,
+                weight: incomingMetadata.weight ?? existingEdge.metadata.weight ?? weight,
+                bidirectional: incomingMetadata.bidirectional ?? existingEdge.metadata.bidirectional ?? bidirectional,
+                status: incomingMetadata.status ?? existingEdge.metadata.status ?? 'synced',
+                remoteId: incomingMetadata.remoteId ?? existingEdge.metadata.remoteId,
+                error: incomingMetadata.error ?? existingEdge.metadata.error,
+                createdAt: incomingMetadata.createdAt ?? existingEdge.metadata.createdAt,
+                updatedAt: incomingMetadata.updatedAt ?? existingEdge.metadata.updatedAt,
+              }
+
+              existingEdge.sourceHandle = sourceHandle || existingEdge.sourceHandle || `output-${existingEdge.id}`
+              existingEdge.targetHandle = targetHandle || existingEdge.targetHandle || `input-${existingEdge.id}`
+
               const sourceNode = state.nodes.get(sourceId)
               const targetNode = state.nodes.get(targetId)
-              
+
               if (sourceNode) {
+                const connection = sourceNode.connections.find((conn) => conn.id === existingEdge.id)
+                if (connection) {
+                  connection.style = style || existingEdge.style
+                  connection.metadata = {
+                    ...connection.metadata,
+                    remoteId: existingEdge.metadata.remoteId,
+                    status: existingEdge.metadata.status,
+                    type: existingEdge.metadata.type,
+                    weight: existingEdge.metadata.weight,
+                    bidirectional: existingEdge.metadata.bidirectional,
+                  }
+                }
+              }
+
+              if (targetNode) {
+                const connection = targetNode.connections.find((conn) => conn.id === existingEdge.id)
+                if (connection) {
+                  connection.style = style || existingEdge.style
+                  connection.metadata = {
+                    ...connection.metadata,
+                    remoteId: existingEdge.metadata.remoteId,
+                    status: existingEdge.metadata.status,
+                    type: existingEdge.metadata.type,
+                    weight: existingEdge.metadata.weight,
+                    bidirectional: existingEdge.metadata.bidirectional,
+                  }
+                }
+              }
+
+              createdEdgeId = existingEdge.id
+              return
+            }
+
+            const edgeId = `edge-${sourceId}-${targetId}-${Date.now()}`
+            const edgeStyle = style || defaultStyle
+            const resolvedSourceHandle = sourceHandle || `output-${edgeId}`
+            const resolvedTargetHandle = targetHandle || `input-${edgeId}`
+
+            const metadata = {
+              remoteId: incomingMetadata.remoteId,
+              type: incomingMetadata.type ?? type,
+              weight: incomingMetadata.weight ?? weight,
+              bidirectional: incomingMetadata.bidirectional ?? bidirectional,
+              status: incomingMetadata.status ?? 'pending',
+              error: incomingMetadata.error,
+              createdAt: incomingMetadata.createdAt ?? new Date().toISOString(),
+              updatedAt: incomingMetadata.updatedAt ?? new Date().toISOString(),
+            }
+
+            state.edges.push({
+              id: edgeId,
+              source: sourceId,
+              target: targetId,
+              sourceHandle: resolvedSourceHandle,
+              targetHandle: resolvedTargetHandle,
+              style: edgeStyle,
+              metadata,
+            })
+
+            const connectionMetadata = {
+              remoteId: metadata.remoteId,
+              status: metadata.status,
+              type: metadata.type,
+              weight: metadata.weight,
+              bidirectional: metadata.bidirectional,
+            }
+
+            const sourceNode = state.nodes.get(sourceId)
+            const targetNode = state.nodes.get(targetId)
+
+            if (sourceNode) {
+              const existing = sourceNode.connections.find((conn) => conn.id === edgeId)
+              if (existing) {
+                existing.style = edgeStyle
+                existing.metadata = { ...existing.metadata, ...connectionMetadata }
+              } else {
                 sourceNode.connections.push({
                   id: edgeId,
                   sourceId,
                   targetId,
                   type: 'output',
-                  style: style || defaultStyle,
+                  style: edgeStyle,
+                  metadata: connectionMetadata,
                 })
               }
-              
-              if (targetNode) {
+            }
+
+            if (targetNode) {
+              const existing = targetNode.connections.find((conn) => conn.id === edgeId)
+              if (existing) {
+                existing.style = edgeStyle
+                existing.metadata = { ...existing.metadata, ...connectionMetadata }
+              } else {
                 targetNode.connections.push({
                   id: edgeId,
                   sourceId,
                   targetId,
                   type: 'input',
-                  style: style || defaultStyle,
+                  style: edgeStyle,
+                  metadata: connectionMetadata,
                 })
               }
             }
+
+            createdEdgeId = edgeId
           })
+
+          return createdEdgeId
         },
         
         disconnectNodes: (sourceId, targetId) => {
@@ -293,6 +433,211 @@ export const useNodeStore = create<NodeState>()(
               )
             }
           })
+        },
+
+        setEdgeMetadata: (edgeId, metadata) => {
+          set((state) => {
+            const edge = state.edges.find((e) => e.id === edgeId)
+            if (!edge) {
+              return
+            }
+
+            edge.metadata = {
+              ...edge.metadata,
+              ...metadata,
+              status: metadata.status ?? edge.metadata.status,
+            }
+
+            const updateConnectionMetadata = (node?: AINode) => {
+              if (!node) return
+              const connection = node.connections.find((conn) => conn.id === edgeId)
+              if (!connection) return
+              connection.metadata = {
+                ...(connection.metadata ?? {}),
+                ...metadata,
+                status: metadata.status ?? connection.metadata?.status ?? edge.metadata.status,
+              }
+            }
+
+            updateConnectionMetadata(state.nodes.get(edge.source))
+            updateConnectionMetadata(state.nodes.get(edge.target))
+          })
+        },
+
+        connectNodesWithSync: async (sourceId, targetId, options = {}) => {
+          const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          const projectId = get().currentProjectId
+          const edgeId = get().connectNodes(sourceId, targetId, {
+            ...options,
+            metadata: {
+              status: 'pending',
+              ...(options.metadata ?? {}),
+            },
+          })
+
+          if (!edgeId) {
+            return
+          }
+
+          if (!projectId) {
+            get().setEdgeMetadata(edgeId, {
+              status: 'error',
+              error: '缺少当前项目ID，无法同步连接',
+            })
+            addToast({
+              type: 'error',
+              title: '连接同步失败',
+              message: '请先选择或加载项目后再创建连线',
+            })
+            return
+          }
+
+          startSaving()
+
+          try {
+            const payload = {
+              project_id: projectId,
+              source_node_id: sourceId,
+              target_node_id: targetId,
+              type: options.type ?? 'related',
+              weight: options.weight ?? 1,
+              bidirectional: options.bidirectional ?? false,
+              style: options.style,
+              metadata: {
+                ...(options.metadata ?? {}),
+                status: undefined,
+              },
+            }
+
+            const connection = await nodeAPIService.createConnection(payload)
+
+            get().setEdgeMetadata(edgeId, {
+              remoteId: connection.id,
+              status: 'synced',
+              type: connection.type ?? payload.type,
+              weight: connection.weight ?? payload.weight,
+              bidirectional: connection.bidirectional ?? payload.bidirectional,
+              error: undefined,
+              createdAt: connection.created_at ? new Date(connection.created_at).toISOString() : undefined,
+              updatedAt: connection.updated_at ? new Date(connection.updated_at).toISOString() : new Date().toISOString(),
+            })
+
+            savingComplete()
+            addToast({
+              type: 'success',
+              title: '连线已同步',
+              message: '连接创建成功并已同步到后端',
+              duration: 2500,
+            })
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '创建连接失败'
+
+            get().disconnectNodes(sourceId, targetId)
+            savingFailed(errorMessage)
+            addToast({
+              type: 'error',
+              title: '连线创建失败',
+              message: errorMessage,
+            })
+            throw error
+          }
+        },
+
+        disconnectNodesWithSync: async (sourceId, targetId) => {
+          const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          const edge = get().edges.find((e) => e.source === sourceId && e.target === targetId)
+          if (!edge) {
+            return
+          }
+
+          const clonedEdge: StoreEdge = {
+            ...edge,
+            metadata: { ...edge.metadata },
+          }
+
+          const sourceConnectionsSnapshot = get()
+            .getNode(sourceId)?.connections
+            ?.map((conn) => ({
+              ...conn,
+              metadata: { ...(conn.metadata ?? {}) },
+            })) ?? []
+
+          const targetConnectionsSnapshot = get()
+            .getNode(targetId)?.connections
+            ?.map((conn) => ({
+              ...conn,
+              metadata: { ...(conn.metadata ?? {}) },
+            })) ?? []
+
+          get().disconnectNodes(sourceId, targetId)
+
+          if (!clonedEdge.metadata.remoteId) {
+            addToast({
+              type: 'info',
+              title: '本地连线已删除',
+              message: '该连线尚未同步到后端，仅本地删除',
+              duration: 2000,
+            })
+            return
+          }
+
+          startSaving()
+
+          try {
+            await nodeAPIService.deleteConnection(clonedEdge.metadata.remoteId)
+            savingComplete()
+            addToast({
+              type: 'success',
+              title: '连线已删除',
+              message: '后端连接删除成功',
+              duration: 2000,
+            })
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '删除连接失败'
+
+            set((state) => {
+              state.edges.push(clonedEdge)
+
+              const restoreConnection = (node?: AINode, template?: typeof sourceConnectionsSnapshot) => {
+                if (!node) return
+                const exists = node.connections.some((conn) => conn.id === clonedEdge.id)
+                if (exists) return
+
+                const templateConn = template?.find((conn) => conn.id === clonedEdge.id)
+
+                node.connections.push({
+                  id: clonedEdge.id,
+                  sourceId: clonedEdge.source,
+                  targetId: clonedEdge.target,
+                  type: node.id === clonedEdge.source ? 'output' : 'input',
+                  style: clonedEdge.style,
+                  metadata: {
+                    remoteId: clonedEdge.metadata.remoteId,
+                    status: clonedEdge.metadata.status,
+                    type: clonedEdge.metadata.type,
+                    weight: clonedEdge.metadata.weight,
+                    bidirectional: clonedEdge.metadata.bidirectional,
+                    ...(templateConn?.metadata ?? {}),
+                  },
+                })
+              }
+
+              restoreConnection(state.nodes.get(clonedEdge.source), sourceConnectionsSnapshot)
+              restoreConnection(state.nodes.get(clonedEdge.target), targetConnectionsSnapshot)
+            })
+
+            savingFailed(errorMessage)
+            addToast({
+              type: 'error',
+              title: '删除失败',
+              message: errorMessage,
+            })
+            throw error
+          }
         },
         
         getConnections: (nodeId) => {
@@ -519,16 +864,87 @@ export const useNodeStore = create<NodeState>()(
 
               // 加载后端节点
               nodes.forEach((node) => {
-                state.nodes.set(node.id, node)
+                state.nodes.set(node.id, {
+                  ...node,
+                  connections: Array.isArray(node.connections) ? node.connections : [],
+                })
               })
 
-              // 重建边数据
-              state.edges = connections.map((conn) => ({
-                id: `edge-${conn.source_node_id}-${conn.target_node_id}`,
-                source: conn.source_node_id,
-                target: conn.target_node_id,
-                style: conn.style || EdgeStylePresets.solid,
-              }))
+              // 先清空节点的连接信息，避免重复累积
+              state.nodes.forEach((node) => {
+                node.connections = []
+              })
+
+              // 重建边数据并同步节点连接
+              state.edges = connections.map((conn) => {
+                const edgeId = conn.id || `edge-${conn.source_node_id}-${conn.target_node_id}`
+                const edgeStyle = conn.style || EdgeStylePresets.solid
+                const metadata = {
+                  remoteId: conn.id,
+                  type: conn.type,
+                  weight: typeof conn.weight === 'number' ? conn.weight : 1,
+                  bidirectional: Boolean(conn.bidirectional),
+                  status: 'synced' as const,
+                  createdAt: conn.created_at ? new Date(conn.created_at).toISOString() : undefined,
+                  updatedAt: conn.updated_at ? new Date(conn.updated_at).toISOString() : undefined,
+                  error: undefined,
+                }
+
+                const sourceNode = state.nodes.get(conn.source_node_id)
+                const targetNode = state.nodes.get(conn.target_node_id)
+
+                const connectionMetadata = {
+                  remoteId: metadata.remoteId,
+                  status: metadata.status,
+                  type: metadata.type,
+                  weight: metadata.weight,
+                  bidirectional: metadata.bidirectional,
+                }
+
+                if (sourceNode) {
+                  const existing = sourceNode.connections.find((item) => item.id === edgeId)
+                  if (existing) {
+                    existing.style = edgeStyle
+                    existing.metadata = { ...existing.metadata, ...connectionMetadata }
+                  } else {
+                    sourceNode.connections.push({
+                      id: edgeId,
+                      sourceId: conn.source_node_id,
+                      targetId: conn.target_node_id,
+                      type: 'output',
+                      style: edgeStyle,
+                      metadata: connectionMetadata,
+                    })
+                  }
+                }
+
+                if (targetNode) {
+                  const existing = targetNode.connections.find((item) => item.id === edgeId)
+                  if (existing) {
+                    existing.style = edgeStyle
+                    existing.metadata = { ...existing.metadata, ...connectionMetadata }
+                  } else {
+                    targetNode.connections.push({
+                      id: edgeId,
+                      sourceId: conn.source_node_id,
+                      targetId: conn.target_node_id,
+                      type: 'input',
+                      style: edgeStyle,
+                      metadata: connectionMetadata,
+                    })
+                  }
+                }
+
+                return {
+                  id: edgeId,
+                  source: conn.source_node_id,
+                  target: conn.target_node_id,
+                  sourceHandle: `output-${edgeId}`,
+                  targetHandle: `input-${edgeId}`,
+                  style: edgeStyle,
+                  metadata,
+                }
+              })
             })
 
             if (!silent) {
@@ -716,11 +1132,32 @@ export const useNodeStore = create<NodeState>()(
             })
           }
           
+          const edges = Array.isArray(persistedState?.edges)
+            ? persistedState.edges.map((edge: any) => ({
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                sourceHandle: edge.sourceHandle ?? edge.source_handle ?? (edge.id ? `output-${edge.id}` : undefined),
+                targetHandle: edge.targetHandle ?? edge.target_handle ?? (edge.id ? `input-${edge.id}` : undefined),
+                style: edge.style,
+                metadata: {
+                  remoteId: edge.metadata?.remoteId ?? edge.metadata?.remote_id,
+                  type: edge.metadata?.type,
+                  weight: typeof edge.metadata?.weight === 'number' ? edge.metadata.weight : 1,
+                  bidirectional: Boolean(edge.metadata?.bidirectional),
+                  status: edge.metadata?.status ?? 'synced',
+                  error: edge.metadata?.error,
+                  createdAt: edge.metadata?.createdAt ?? edge.metadata?.created_at,
+                  updatedAt: edge.metadata?.updatedAt ?? edge.metadata?.updated_at,
+                },
+              }))
+            : []
+
           return {
             ...currentState,
             ...persistedState,
             nodes, // 使用恢复的Map
-            edges: persistedState?.edges || [],
+            edges,
             history: persistedState?.history || [],
           }
         },

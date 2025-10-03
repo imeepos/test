@@ -10,6 +10,7 @@ import {
 import type { UnifiedAITaskMessage, UnifiedAIResultMessage } from '@sker/models'
 import { AIEngine } from '../core/AIEngine.js'
 import { PromptBuilder } from '../templates/PromptBuilder.js'
+import type { ExpandRequest, FusionRequest } from '../types/index.js'
 
 export interface AITaskQueueConsumerConfig {
   batchSize?: number
@@ -301,34 +302,49 @@ export class AITaskQueueConsumer extends EventEmitter {
           ...parameters
         })
 
-      case 'fusion':
+      case 'fusion': {
         const fusionPrompt = parameters?.prompt || PromptBuilder.buildFusion({
           inputs,
           instruction: instruction || '',
           fusionType: parameters?.fusionType || 'synthesis'
         })
-        return await this.aiEngine.fusionGenerate({
-          prompt: fusionPrompt,
+
+        const fusionRequest: FusionRequest = {
+          ...parameters,
           context,
-          ...parameters
-        })
+          inputs,
+          instruction: parameters?.instruction ?? instruction,
+          fusionType: parameters?.fusionType ?? 'synthesis',
+          prompt: fusionPrompt
+        }
+
+        return await this.aiEngine.fusionGenerate(fusionRequest)
+      }
 
       case 'analyze':
         return await this.aiEngine.analyzeContent(inputs[0], {
           ...parameters
         })
 
-      case 'expand':
+      case 'expand': {
+        const baseContent = parameters?.baseContent ?? inputs?.[0] ?? ''
         const expandPrompt = parameters?.prompt || PromptBuilder.buildExpand({
-          content: inputs[0],
+          content: baseContent,
           instruction: instruction || '',
           expansionType: parameters?.expansionType || 'detail'
         })
-        return await this.aiEngine.expandContent({
+
+        const expandRequest: ExpandRequest = {
+          ...parameters,
           prompt: expandPrompt,
           context,
-          ...parameters
-        })
+          baseContent,
+          instruction: parameters?.instruction ?? instruction,
+          expansionType: parameters?.expansionType ?? 'detail'
+        }
+
+        return await this.aiEngine.expandContent(expandRequest)
+      }
 
       default:
         throw new Error(`不支持的AI任务类型: ${type}`)

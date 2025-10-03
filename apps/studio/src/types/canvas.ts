@@ -10,6 +10,9 @@ export interface Viewport {
 // 画布显示模式
 export type ViewMode = 'preview' | 'detail' | 'overview'
 
+// 画布交互模式
+export type CanvasInteractionMode = 'pan' | 'select'
+
 // 画布控制状态
 export interface CanvasControls {
   zoomLevel: number

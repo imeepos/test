@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sker-logo-gradient" x1="4" y1="28" x2="28" y2="4" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="24" height="24" rx="8" fill="url(#sker-logo-gradient)"/>
+  <path d="M20.5 10.5C18.4 10.5 16.7 11.6 15.6 13C14.5 14.4 13.1 15.5 11 15.5C9.4 15.5 8.2 14.7 7.5 13.4C7.3 13 7 13 7 13.4C7 17 9.6 20 13.2 20C15.3 20 17 18.9 18.1 17.5C19.2 16.1 20.6 15 22.7 15C24.3 15 25.5 15.8 26.2 17.1C26.4 17.5 26.7 17.5 26.7 17.1C26.7 13.5 24.1 10.5 20.5 10.5Z" fill="white" fill-opacity="0.9"/>
+</svg>

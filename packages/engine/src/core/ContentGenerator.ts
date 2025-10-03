@@ -176,9 +176,13 @@ export class ContentGenerator {
 
     // 简单的源映射（平均分配权重）
     const sourceMapping: Record<string, number> = {}
-    request.inputs.forEach((_, index) => {
-      sourceMapping[`source_${index}`] = 1.0 / request.inputs.length
-    })
+    const sourceInputs = request.inputs ?? []
+    if (sourceInputs.length > 0) {
+      const weight = 1.0 / sourceInputs.length
+      sourceInputs.forEach((_, index) => {
+        sourceMapping[`source_${index}`] = weight
+      })
+    }
 
     return {
       content: fusedContent, // 统一的内容字段
@@ -218,9 +222,18 @@ export class ContentGenerator {
     }
 
     // 计算扩展比例
-    const originalLength = request.baseContent.length
+    const originalLength = request.baseContent?.length ?? 0
     const expandedLength = expandedContent.length
-    const expansionRatio = expandedLength / originalLength
+
+    if (originalLength === 0 && expandedLength > 0) {
+      console.warn('⚠️ ExpandRequest 缺少 baseContent，使用扩展内容长度估算 expansionRatio')
+    }
+
+    const expansionRatio = originalLength > 0
+      ? expandedLength / originalLength
+      : expandedLength > 0
+        ? 1
+        : 0
 
     return {
       expandedContent,

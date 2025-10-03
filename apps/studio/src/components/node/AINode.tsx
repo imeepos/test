@@ -19,17 +19,55 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useCanvasStore, useNodeStore } from '@/stores'
+import { MarkdownContent } from '@/components/common/MarkdownContent'
 import { NodeEditor } from './NodeEditor'
 import { createAriaProps, useKeyboardNavigation } from '@/hooks/useAccessibility'
 import {
-  getImportanceColor,
   getConfidenceColor,
   STATUS_COLORS,
   ANIMATION_DURATION
 } from '@/constants/designTokens'
 import type { AINodeData, AINode as AINodeType } from '@/types'
+import { shallow } from 'zustand/shallow'
 
 export interface AINodeProps extends NodeProps<AINodeData> {}
+
+interface PortTheme {
+  color: string
+  border: string
+  label: string
+}
+
+interface PortSlot {
+  key: string
+  type: string
+  bidirectional?: boolean
+}
+
+const PORT_STYLE_PRESETS: Record<string, PortTheme> = {
+  default: { color: '#6366f1', border: '#4338ca', label: '数据' },
+  input: { color: '#6366f1', border: '#4338ca', label: '输入' },
+  output: { color: '#22c55e', border: '#15803d', label: '输出' },
+  related: { color: '#14b8a6', border: '#0f766e', label: '关联' },
+  fusion: { color: '#f59e0b', border: '#d97706', label: '融合' },
+  synthesis: { color: '#fb7185', border: '#f43f5e', label: '综合' },
+  summary: { color: '#a855f7', border: '#7c3aed', label: '总结' },
+  comparison: { color: '#f97316', border: '#ea580c', label: '对比' },
+  analysis: { color: '#38bdf8', border: '#0284c7', label: '分析' },
+  plan: { color: '#34d399', border: '#059669', label: '计划' },
+  decision: { color: '#f472b6', border: '#db2777', label: '决策' },
+}
+
+const resolvePortTheme = (portType: string | undefined, direction: 'input' | 'output'): PortTheme => {
+  const normalized = (portType || '').toLowerCase()
+  if (normalized && PORT_STYLE_PRESETS[normalized]) {
+    return PORT_STYLE_PRESETS[normalized]
+  }
+  if (PORT_STYLE_PRESETS[direction]) {
+    return PORT_STYLE_PRESETS[direction]
+  }
+  return PORT_STYLE_PRESETS.default
+}
 
 const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   const { viewMode } = useCanvasStore()
@@ -51,6 +89,21 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     }
   }, [isDetail, isOverview])
 
+  // 监听画布发出的“打开节点编辑器”事件
+  useEffect(() => {
+    const handleOpenNodeEditor = (event: Event) => {
+      const customEvent = event as CustomEvent<{ nodeId: string }>
+      if (customEvent.detail?.nodeId === data.id) {
+        setIsEditorOpen(true)
+      }
+    }
+
+    window.addEventListener('open-node-editor', handleOpenNodeEditor)
+    return () => {
+      window.removeEventListener('open-node-editor', handleOpenNodeEditor)
+    }
+  }, [data.id])
+
   // 键盘导航支持
   useKeyboardNavigation({
     onEnter: () => {
@@ -66,7 +119,121 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     disabled: !selected
   })
 
+  const { inputPorts, outputPorts } = useNodeStore(
+    useCallback((state) => {
+      const node = state.nodes.get(data.id)
+      if (!node) {
+        return {
+          inputPorts: [] as PortSlot[],
+          outputPorts: [] as PortSlot[],
+        }
+      }
+
+      const connections = Array.isArray(node.connections) ? node.connections : []
+
+      const inputs = connections
+        .filter((conn) => conn.type === 'input')
+        .map((conn, index) => ({
+          key: conn.id || `${node.id}-input-${index}`,
+          type: conn.metadata?.type ?? conn.type ?? 'input',
+          bidirectional: conn.metadata?.bidirectional ?? false,
+        }))
+
+      const outputs = connections
+        .filter((conn) => conn.type !== 'input')
+        .map((conn, index) => ({
+          key: conn.id || `${node.id}-output-${index}`,
+          type: conn.metadata?.type ?? conn.type ?? 'output',
+          bidirectional: conn.metadata?.bidirectional ?? false,
+        }))
+
+      return {
+        inputPorts: inputs,
+        outputPorts: outputs,
+      }
+    }, [data.id]),
+    shallow
+  )
+
+  const fallbackInputPorts = useMemo<PortSlot[]>(() => {
+    const semanticPrimary = data.metadata?.semantic?.[0]?.toLowerCase()
+    return [
+      {
+        key: `${data.id}-input-fallback`,
+        type: semanticPrimary ?? 'input',
+      },
+    ]
+  }, [data.id, data.metadata?.semantic])
+
+  const fallbackOutputPorts = useMemo<PortSlot[]>(() => {
+    const semanticPrimary = data.metadata?.semantic?.[0]?.toLowerCase()
+    return [
+      {
+        key: `${data.id}-output-fallback`,
+        type: semanticPrimary ?? 'output',
+      },
+    ]
+  }, [data.id, data.metadata?.semantic])
+
+  type PortVisual = {
+    id: string
+    label: string
+    color: string
+    border: string
+    top: string
+    shadow?: string
+  }
+
+  const inputPortVisuals = useMemo<PortVisual[]>(() => {
+    const ports = (inputPorts.length > 0 ? inputPorts : fallbackInputPorts)
+    const total = ports.length || 1
+
+    return ports.map((port, index) => {
+      const theme = resolvePortTheme(port.type, 'input')
+      const labelBase = theme.label || '输入'
+      const label = ports.length > 1 ? `${labelBase} ${index + 1}` : labelBase
+      const top = `${((index + 1) / (total + 1)) * 100}%`
+
+      return {
+        id: port.key,
+        label: port.bidirectional ? `${label} ↔` : label,
+        color: theme.color,
+        border: port.bidirectional ? '#f97316' : theme.border,
+        top,
+        shadow: port.bidirectional ? '0 0 0 2px rgba(249, 115, 22, 0.25)' : undefined,
+      }
+    })
+  }, [fallbackInputPorts, inputPorts])
+
+  const outputPortVisuals = useMemo<PortVisual[]>(() => {
+    const ports = (outputPorts.length > 0 ? outputPorts : fallbackOutputPorts)
+    const total = ports.length || 1
+
+    return ports.map((port, index) => {
+      const theme = resolvePortTheme(port.type, 'output')
+      const labelBase = theme.label || '输出'
+      const label = ports.length > 1 ? `${labelBase} ${index + 1}` : labelBase
+      const top = `${((index + 1) / (total + 1)) * 100}%`
+
+      return {
+        id: port.key,
+        label: port.bidirectional ? `${label} ↔` : label,
+        color: theme.color,
+        border: port.bidirectional ? '#f97316' : theme.border,
+        top,
+        shadow: port.bidirectional ? '0 0 0 2px rgba(249, 115, 22, 0.25)' : undefined,
+      }
+    })
+  }, [fallbackOutputPorts, outputPorts])
+
+  const baseHandleClassName = 'w-3 h-3 !border-2 transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent shadow-md'
+  const showPortLabels = !isOverview
+
   // ============= 渲染辅助函数 =============
+
+  const statusColors = useMemo(() => {
+    return STATUS_COLORS[data.status] ?? STATUS_COLORS.idle
+  }, [data.status])
 
   /**
    * 获取状态图标
@@ -74,15 +241,30 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   const statusIcon = useMemo(() => {
     switch (data.status) {
       case 'processing':
-        return <Loader2 className="h-4 w-4 animate-spin" aria-label="处理中" />
+        return (
+          <Loader2
+            className={`h-4 w-4 animate-spin ${statusColors.icon}`}
+            aria-label="处理中"
+          />
+        )
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-400" aria-label="已完成" />
+        return (
+          <CheckCircle
+            className={`h-4 w-4 ${statusColors.icon}`}
+            aria-label="已完成"
+          />
+        )
       case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-400" aria-label="错误" />
+        return (
+          <AlertCircle
+            className={`h-4 w-4 ${statusColors.icon}`}
+            aria-label="错误"
+          />
+        )
       default:
         return null
     }
-  }, [data.status])
+  }, [data.status, statusColors.icon])
 
   /**
    * 渲染重要性星级
@@ -170,14 +352,30 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     window.dispatchEvent(retryEvent)
   }, [data.id])
 
+  const handleContentWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    const container = event.currentTarget
+    const { scrollHeight, clientHeight, scrollTop } = container
+
+    const isScrollable = scrollHeight > clientHeight + 1
+
+    if (!isScrollable) {
+      return
+    }
+
+    const atTop = scrollTop <= 0
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 1
+    const isScrollingUp = event.deltaY < 0
+    const isScrollingDown = event.deltaY > 0
+
+    if ((isScrollingUp && atTop) || (isScrollingDown && atBottom)) {
+      return
+    }
+
+    event.stopPropagation()
+  }, [])
+
 
   // ============= 样式计算 =============
-
-  const importanceColors = useMemo(() => {
-    // 确保 importance 是有效值,否则使用默认值 3
-    const validImportance = (data.importance >= 1 && data.importance <= 5) ? data.importance : 3
-    return getImportanceColor(validImportance as 1 | 2 | 3 | 4 | 5)
-  }, [data.importance])
 
   const confidenceInfo = useMemo(() => {
     // 确保 confidence 是有效数值,否则使用默认值 0.5
@@ -198,9 +396,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
   const displayContent = showFullDetail ? data.content : contentPreview
   const cardSizeClasses = isOverview ? 'min-w-[160px] max-w-[220px]' : 'min-w-[220px] max-w-[320px]'
   const nodeTitle = data.title || '未命名节点'
-  const contentClassNames = showFullDetail
-    ? 'text-sm text-sidebar-text leading-relaxed whitespace-pre-wrap break-words'
-    : 'text-sm text-sidebar-text leading-relaxed break-words'
+  const previewContentClassNames = 'text-sm text-sidebar-text leading-relaxed break-words'
   const showUserRating = typeof data.user_rating === 'number' && data.user_rating > 0
 
   // ARIA 属性
@@ -212,23 +408,72 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   return (
     <>
-      {/* 输入连接点 - 仅选中时显示 */}
-      {selected && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="w-3 h-3 !border-2"
-          style={{ background: '#6366f1' }}
-          aria-label="节点输入连接点"
-        />
-      )}
+      {inputPortVisuals.map((port) => (
+        <React.Fragment key={`input-${port.id}`}>
+          <Handle
+            id={`input-${port.id}`}
+            type="target"
+            position={Position.Left}
+            className={baseHandleClassName}
+            style={{
+              top: port.top,
+              background: port.color,
+              borderColor: port.border,
+              boxShadow: port.shadow,
+              transform: 'translateY(-50%)',
+              opacity: selected ? 1 : 0.9,
+            }}
+            aria-label={`输入端口 ${port.label}`}
+          />
+          {showPortLabels && (
+            <div
+              className="absolute -left-28 flex items-center justify-end pointer-events-none select-none"
+              style={{ top: port.top, transform: 'translateY(-50%)' }}
+            >
+              <span className="text-[10px] font-medium uppercase tracking-wide text-sidebar-text-muted bg-sidebar-surface/80 px-2 py-0.5 rounded-md border border-sidebar-border/60">
+                {port.label}
+              </span>
+            </div>
+          )}
+        </React.Fragment>
+      ))}
+
+      {outputPortVisuals.map((port) => (
+        <React.Fragment key={`output-${port.id}`}>
+          <Handle
+            id={`output-${port.id}`}
+            type="source"
+            position={Position.Right}
+            className={baseHandleClassName}
+            style={{
+              top: port.top,
+              background: port.color,
+              borderColor: port.border,
+              boxShadow: port.shadow,
+              transform: 'translateY(-50%)',
+              opacity: selected ? 1 : 0.9,
+            }}
+            aria-label={`输出端口 ${port.label}`}
+          />
+          {showPortLabels && (
+            <div
+              className="absolute -right-28 flex items-center pointer-events-none select-none"
+              style={{ top: port.top, transform: 'translateY(-50%)' }}
+            >
+              <span className="text-[10px] font-medium uppercase tracking-wide text-sidebar-text-muted bg-sidebar-surface/80 px-2 py-0.5 rounded-md border border-sidebar-border/60">
+                {port.label}
+              </span>
+            </div>
+          )}
+        </React.Fragment>
+      ))}
 
       {/* 节点主体 */}
       <motion.div
         {...nodeAriaProps}
         className={`
-          group relative ${cardSizeClasses} rounded-lg border-2 bg-canvas-node cursor-pointer
-          ${importanceColors.border} ${importanceColors.bg}
+          group relative ${cardSizeClasses} rounded-lg border-2 cursor-pointer
+          ${statusColors.border} ${statusColors.bg} ${statusColors.text}
           ${selected ? 'ring-2 ring-sidebar-accent shadow-xl' : 'shadow-lg'}
           transition-shadow duration-200
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent focus-visible:ring-offset-2
@@ -325,13 +570,18 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
               </div>
             )}
 
-            <div className="px-4 py-3">
-              <p
-                id={`node-content-${data.id}`}
-                className={contentClassNames}
-              >
-                {displayContent || '暂无内容'}
-              </p>
+            <div
+              id={`node-content-${data.id}`}
+              className={`px-4 py-3 ${showFullDetail ? 'max-h-72 overflow-y-auto pr-1' : ''}`}
+              onWheel={handleContentWheel}
+            >
+              {showFullDetail ? (
+                <MarkdownContent content={displayContent} />
+              ) : (
+                <p className={previewContentClassNames}>
+                  {displayContent || '暂无内容'}
+                </p>
+              )}
             </div>
 
             {showFullDetail && data.metadata?.lastEditReason && (
@@ -427,17 +677,6 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
           </motion.button>
         )}
       </motion.div>
-
-      {/* 输出连接点 - 仅选中时显示 */}
-      {selected && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="w-3 h-3 !border-2"
-          style={{ background: '#6366f1' }}
-          aria-label="节点输出连接点"
-        />
-      )}
 
       {/* 节点编辑器 */}
       <NodeEditor

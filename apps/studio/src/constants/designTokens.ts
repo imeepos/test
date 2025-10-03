@@ -79,23 +79,31 @@ export const CONFIDENCE_COLORS = {
  */
 export const STATUS_COLORS = {
   idle: {
-    icon: 'text-gray-400',
-    bg: 'bg-gray-500/10',
+    icon: 'text-status-idle',
+    border: 'border-status-idle',
+    bg: 'bg-canvas-node',
+    text: 'text-white',
     name: '待处理'
   },
   processing: {
-    icon: 'text-blue-400',
-    bg: 'bg-blue-500/10',
+    icon: 'text-status-processing',
+    border: 'border-status-processing',
+    bg: 'bg-canvas-node',
+    text: 'text-white',
     name: '处理中'
   },
   completed: {
-    icon: 'text-green-400',
-    bg: 'bg-green-500/10',
+    icon: 'text-status-completed',
+    border: 'border-status-completed',
+    bg: 'bg-canvas-node',
+    text: 'text-white',
     name: '已完成'
   },
   error: {
-    icon: 'text-red-400',
-    bg: 'bg-red-500/10',
+    icon: 'text-status-error',
+    border: 'border-status-error',
+    bg: 'bg-canvas-node',
+    text: 'text-white',
     name: '错误'
   }
 } as const

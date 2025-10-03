@@ -1,2 +1,3 @@
 export { default as ErrorBoundary, ErrorFallback, withErrorBoundary, useErrorHandler } from './ErrorBoundary'
 export { default as GlobalErrorHandler, AsyncErrorBoundary, AIErrorBoundary } from './GlobalErrorHandler'
+export { MarkdownContent } from './MarkdownContent'

@@ -43,6 +43,14 @@ export interface Connection {
   targetId: string
   type: ConnectionType
   style?: EdgeStyle
+  metadata?: {
+    remoteId?: string
+    status?: 'pending' | 'synced' | 'error'
+    type?: string
+    weight?: number
+    bidirectional?: boolean
+    error?: string
+  }
 }
 
 // 连接类型

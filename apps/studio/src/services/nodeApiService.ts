@@ -70,7 +70,11 @@ export interface ConnectionData {
   project_id: string
   type?: string
   style?: any
-  created_at: Date
+  weight?: number
+  bidirectional?: boolean
+  metadata?: Record<string, any>
+  created_at?: string | Date
+  updated_at?: string | Date
 }
 
 /**
@@ -196,6 +200,9 @@ class NodeAPIService {
     target_node_id: string
     type?: string
     style?: any
+    weight?: number
+    bidirectional?: boolean
+    metadata?: Record<string, any>
   }): Promise<ConnectionData> {
     return apiClient.post<ConnectionData>(API_ENDPOINTS.connections.create, params)
   }

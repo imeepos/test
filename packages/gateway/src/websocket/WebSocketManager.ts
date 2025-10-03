@@ -65,6 +65,15 @@ export class WebSocketManager extends EventEmitter {
     this.io.on('connection', (socket) => {
       console.log(`WebSocket connection attempt: ${socket.id}`)
 
+      const recordActivity = () => this.updateConnectionActivity(socket.id)
+
+      // 监听底层Engine.IO数据包，确保心跳包也能刷新活动时间
+      socket.conn.on('packet', (packet: any) => {
+        if (packet?.type === 'ping' || packet?.type === 'pong') {
+          recordActivity()
+        }
+      })
+
       // 设置认证超时
       const authTimeout = setTimeout(() => {
         if (!this.connections.has(socket.id)) {
@@ -92,6 +101,7 @@ export class WebSocketManager extends EventEmitter {
 
       // 监听所有事件用于调试（生产环境应移除或减少日志）
       socket.onAny((eventName, ...args) => {
+        recordActivity()
         // 过滤掉 Socket.IO 内部事件，减少日志噪音
         if (!['ping', 'pong'].includes(eventName)) {
           console.log(`📨 WebSocket收到事件: ${eventName}`, args)
@@ -197,6 +207,9 @@ export class WebSocketManager extends EventEmitter {
         }
         this.userConnections.get(userId)!.add(socket.id)
       }
+
+      // 认证成功后立即刷新活动时间，避免被清理任务误判超时
+      this.updateConnectionActivity(socket.id)
 
       // 发送认证成功消息
       socket.emit('authenticated', {

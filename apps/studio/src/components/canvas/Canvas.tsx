@@ -10,6 +10,7 @@ import {
   addEdge,
   Connection,
   Edge,
+  EdgeChange,
   Node,
   ReactFlowInstance,
   OnConnect,
@@ -23,6 +24,7 @@ import {
 import 'reactflow/dist/style.css'
 
 import { useCanvasStore, useNodeStore, useUIStore } from '@/stores'
+import { useSyncStore } from '@/stores/syncStore'
 import type { StoreEdge } from '@/stores/nodeStore'
 import { AINode as AINodeComponent } from '../node/AINode'
 import { ContextMenu } from './ContextMenu'
@@ -30,6 +32,7 @@ import { ShortcutHandler } from '../interactions/ShortcutHandler'
 import { getOptimizedReactFlowProps } from './PerformanceOptimizer'
 import { nodeService } from '@/services'
 import type { Position, AINodeData, AINode } from '@/types'
+import { DragCreateMenu } from './DragCreateMenu'
 
 // 自定义节点类型 - 在组件外部定义，避免每次渲染都重新创建
 const nodeTypes = {
@@ -44,6 +47,20 @@ export interface CanvasProps {
   onFusionCreate?: (selectedNodeIds: string[], fusionType: 'summary' | 'synthesis' | 'comparison', position: Position) => void
 }
 
+interface DragCreateMenuState {
+  isOpen: boolean
+  sourceNodeId: string | null
+  canvasPosition: Position | null
+  screenPosition: { x: number; y: number } | null
+}
+
+const createInitialDragMenuState = (): DragCreateMenuState => ({
+  isOpen: false,
+  sourceNodeId: null,
+  canvasPosition: null,
+  screenPosition: null,
+})
+
 const Canvas: React.FC<CanvasProps> = ({
   onNodeDoubleClick,
   onCanvasDoubleClick,
@@ -55,7 +72,7 @@ const Canvas: React.FC<CanvasProps> = ({
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null)
   const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null)
   const [connectStartPosition, setConnectStartPosition] = useState<{ x: number; y: number } | null>(null)
-  
+
   // 双击检测状态
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const clickCountRef = useRef<number>(0)
@@ -73,10 +90,14 @@ const Canvas: React.FC<CanvasProps> = ({
     targetType: 'canvas'
   })
 
+  const [dragCreateMenu, setDragCreateMenu] = useState<DragCreateMenuState>(() => createInitialDragMenuState())
+  const dragMenuRef = React.useRef<HTMLDivElement | null>(null)
+
   // 状态管理
   const {
     viewport,
     setViewport,
+    interactionMode,
     selectedNodeIds,
     setSelectedNodes,
   } = useCanvasStore()
@@ -85,10 +106,14 @@ const Canvas: React.FC<CanvasProps> = ({
   const nodesMap = useNodeStore(state => state.nodes)
   const storeEdges = useNodeStore(state => state.edges)
   const getNodes = useNodeStore(state => state.getNodes)
+  const getNode = useNodeStore(state => state.getNode)
   const connectNodes = useNodeStore(state => state.connectNodes)
-  const disconnectNodes = useNodeStore(state => state.disconnectNodes)
+  const connectNodesWithSync = useNodeStore(state => state.connectNodesWithSync)
+  const disconnectNodesWithSync = useNodeStore(state => state.disconnectNodesWithSync)
+  const templates = useNodeStore(state => state.templates)
   const addNode = useNodeStore(state => state.addNode)
   const updateNode = useNodeStore(state => state.updateNode)
+  const updateNodeWithSync = useNodeStore(state => state.updateNodeWithSync)
   
   // 直接从Map获取节点数组
   const storeNodes = React.useMemo(() => {
@@ -101,7 +126,7 @@ const Canvas: React.FC<CanvasProps> = ({
   
   // 强制订阅store变化
   const [forceRender, setForceRender] = React.useState(0)
-  
+
   // 监听store的真实状态变化
   React.useEffect(() => {
     const unsubscribe = useNodeStore.subscribe((state) => {
@@ -112,6 +137,37 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [])
 
   const { preferences, addToast } = useUIStore()
+
+  const closeDragCreateMenu = useCallback(() => {
+    setDragCreateMenu(createInitialDragMenuState())
+  }, [])
+
+  React.useEffect(() => {
+    if (!dragCreateMenu.isOpen) {
+      return
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (dragMenuRef.current && target && !dragMenuRef.current.contains(target)) {
+        closeDragCreateMenu()
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeDragCreateMenu()
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [closeDragCreateMenu, dragCreateMenu.isOpen])
 
   // 转换节点数据格式
   const nodes = React.useMemo(() => {
@@ -153,6 +209,8 @@ const Canvas: React.FC<CanvasProps> = ({
         id: edge.id,
         source: edge.source,
         target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
         type: edgeStyle.type || defaultStyle.type,
         style: {
           stroke: edgeStyle.stroke || defaultStyle.stroke,
@@ -172,18 +230,43 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // React Flow状态
   const [rfNodes, setRfNodes, originalOnNodesChange] = useNodesState(nodes)
-  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges)
+  const [rfEdges, setRfEdges, originalOnEdgesChange] = useEdgesState(edges)
 
   // 防抖定时器引用和RAF引用
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rafRef = useRef<number | null>(null)
+  const movedNodeIdsRef = useRef<Set<string>>(new Set())
+  const pendingPositionChangesRef = useRef<Map<string, Position>>(new Map())
 
   // Ctrl+拖拽复制状态
   const [isDraggingWithCtrl, setIsDraggingWithCtrl] = useState(false)
   const [copiedNodeIds, setCopiedNodeIds] = useState<Set<string>>(new Set())
   const originalNodePositionsRef = useRef<Map<string, Position>>(new Map())
+  const startSaving = useSyncStore(state => state.startSaving)
+  const savingComplete = useSyncStore(state => state.savingComplete)
 
   // 自定义节点变化处理器 - 使用RAF优化性能
+  const flushPendingPositionChanges = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+      debounceTimeoutRef.current = null
+    }
+
+    if (pendingPositionChangesRef.current.size === 0) {
+      return
+    }
+
+    pendingPositionChangesRef.current.forEach((position, nodeId) => {
+      updateNode(nodeId, { position })
+      movedNodeIdsRef.current.add(nodeId)
+    })
+    pendingPositionChangesRef.current.clear()
+  }, [updateNode])
+
   const handleNodesChange = useCallback((changes: any[]) => {
     // 先调用原始的onNodesChange处理器
     originalOnNodesChange(changes)
@@ -192,24 +275,45 @@ const Canvas: React.FC<CanvasProps> = ({
     const positionChanges = changes.filter(change => change.type === 'position' && change.position)
 
     if (positionChanges.length > 0) {
-      // 取消之前的RAF和防抖
+      positionChanges.forEach(change => {
+        const position = change.position as Position
+        pendingPositionChangesRef.current.set(
+          change.id,
+          { x: position.x, y: position.y }
+        )
+      })
+
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
       }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
+        debounceTimeoutRef.current = null
       }
 
-      // 使用RAF + 防抖优化拖拽性能
       rafRef.current = requestAnimationFrame(() => {
         debounceTimeoutRef.current = setTimeout(() => {
-          positionChanges.forEach(change => {
-            updateNode(change.id, { position: change.position })
-          })
+          flushPendingPositionChanges()
         }, 150) // 150ms防抖延迟（从300ms优化）
       })
     }
-  }, [originalOnNodesChange, updateNode])
+  }, [originalOnNodesChange, flushPendingPositionChanges])
+
+  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
+    changes.forEach((change) => {
+      if (change.type === 'remove') {
+        const edgeToRemove = storeEdges.find((edge) => edge.id === change.id)
+        if (edgeToRemove) {
+          void disconnectNodesWithSync(edgeToRemove.source, edgeToRemove.target).catch((error) => {
+            console.error('同步删除连线失败:', error)
+          })
+        }
+      }
+    })
+
+    originalOnEdgesChange(changes)
+  }, [disconnectNodesWithSync, originalOnEdgesChange, storeEdges])
 
   // 同步节点状态
   React.useEffect(() => {
@@ -263,13 +367,15 @@ const Canvas: React.FC<CanvasProps> = ({
   const onConnect: OnConnect = useCallback(
     (params: Connection | Edge) => {
       if (params.source && params.target) {
-        connectNodes(params.source, params.target)
+        void connectNodesWithSync(params.source, params.target).catch((error) => {
+          console.error('同步连接失败:', error)
+        })
       }
       // 清理连接状态
       setConnectingNodeId(null)
       setConnectStartPosition(null)
     },
-    [connectNodes]
+    [connectNodesWithSync]
   )
 
   // 连接结束处理 - 拖拽扩展功能
@@ -291,19 +397,24 @@ const Canvas: React.FC<CanvasProps> = ({
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect()
         const clientX = 'clientX' in event ? event.clientX : event.touches[0].clientX
         const clientY = 'clientY' in event ? event.clientY : event.touches[0].clientY
-        
-        const position = reactFlowInstance.project({
+
+        const canvasPosition = reactFlowInstance.project({
           x: clientX - reactFlowBounds.left,
           y: clientY - reactFlowBounds.top,
         })
 
-        
-        // 调用拖拽扩展处理器
         if (onDragExpand) {
-          onDragExpand(connectingNodeId, position)
+          onDragExpand(connectingNodeId, canvasPosition)
         } else {
-          // 使用默认处理器
-          defaultHandleDragExpand(connectingNodeId, position)
+          setDragCreateMenu({
+            isOpen: true,
+            sourceNodeId: connectingNodeId,
+            canvasPosition,
+            screenPosition: {
+              x: clientX - reactFlowBounds.left,
+              y: clientY - reactFlowBounds.top,
+            },
+          })
         }
       }
       
@@ -316,16 +427,15 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // 默认拖拽扩展处理
   const defaultHandleDragExpand = useCallback(
-    async (sourceNodeId: string, position: Position) => {
+    async (sourceNodeId: string, position: Position): Promise<boolean> => {
       try {
-        // 获取源节点数据
         const sourceNode = getNodes().find(node => node.id === sourceNodeId)
-        if (!sourceNode) return
+        if (!sourceNode) {
+          return false
+        }
 
-        // 使用nodeService创建扩展节点
         const newNode = await nodeService.dragExpandGenerate(sourceNode, position)
-        
-        // 添加新节点到store
+
         const newNodeId = addNode({
           content: newNode.content,
           title: newNode.title,
@@ -339,14 +449,12 @@ const Canvas: React.FC<CanvasProps> = ({
           metadata: newNode.metadata,
         })
 
-        // 创建连接
         if (newNodeId) {
           connectNodes(sourceNodeId, newNodeId)
         }
 
+        return true
       } catch (error) {
-        
-        // 失败时创建简单的空节点，用户可以手动编辑
         const newNodeId = addNode({
           content: '请输入内容...',
           title: '扩展节点',
@@ -365,13 +473,165 @@ const Canvas: React.FC<CanvasProps> = ({
 
         if (newNodeId) {
           connectNodes(sourceNodeId, newNodeId)
-          
-          // 显示提示信息
         }
+
+        addToast({
+          type: 'warning',
+          title: 'AI扩展未成功',
+          message: '已创建空节点，请手动完善内容',
+          duration: 3000,
+        })
+        console.error('AI扩展失败:', error)
+        return false
       }
     },
-    [getNodes, addNode, connectNodes]
+    [addNode, addToast, connectNodes, getNodes]
   )
+
+  const handleCreateBlankNode = useCallback(() => {
+    const sourceNodeId = dragCreateMenu.sourceNodeId
+    const canvasPosition = dragCreateMenu.canvasPosition
+
+    if (!sourceNodeId || !canvasPosition) {
+      closeDragCreateMenu()
+      return
+    }
+
+    const newNodeId = addNode({
+      content: '',
+      title: '空节点',
+      importance: 3,
+      confidence: 0.5,
+      status: 'idle',
+      tags: [],
+      position: canvasPosition,
+      connections: [],
+      version: 1,
+      metadata: {
+        semantic: [],
+        editCount: 0,
+      },
+    })
+
+    if (newNodeId) {
+      connectNodes(sourceNodeId, newNodeId, {
+        metadata: { status: 'pending' },
+      })
+    }
+
+    addToast({
+      type: 'info',
+      title: '已创建空节点',
+      message: '请补充节点内容',
+      duration: 2500,
+    })
+
+    closeDragCreateMenu()
+  }, [
+    addNode,
+    addToast,
+    closeDragCreateMenu,
+    connectNodes,
+    dragCreateMenu.canvasPosition,
+    dragCreateMenu.sourceNodeId,
+  ])
+
+  const handleCreateTemplateNode = useCallback((templateName: string) => {
+    const template = templates.find((item) => item.name === templateName)
+    if (!template) {
+      addToast({
+        type: 'error',
+        title: '模板不存在',
+        message: '请选择有效的模板',
+      })
+      return
+    }
+
+    const sourceNodeId = dragCreateMenu.sourceNodeId
+    const canvasPosition = dragCreateMenu.canvasPosition
+
+    if (!sourceNodeId || !canvasPosition) {
+      closeDragCreateMenu()
+      return
+    }
+
+    const newNodeId = addNode({
+      content: template.content,
+      title: template.name,
+      importance: template.importance,
+      confidence: 0.7,
+      status: 'idle',
+      tags: template.tags,
+      position: canvasPosition,
+      connections: [],
+      version: 1,
+      metadata: {
+        semantic: [],
+        editCount: 0,
+      },
+    })
+
+    if (newNodeId) {
+      connectNodes(sourceNodeId, newNodeId, {
+        metadata: {
+          status: 'pending',
+          type: template.name,
+        },
+      })
+    }
+
+    addToast({
+      type: 'success',
+      title: '模板节点已创建',
+      message: `已使用模板「${template.name}」`,
+      duration: 2500,
+    })
+
+    closeDragCreateMenu()
+  }, [
+    addNode,
+    addToast,
+    closeDragCreateMenu,
+    connectNodes,
+    dragCreateMenu.canvasPosition,
+    dragCreateMenu.sourceNodeId,
+    templates,
+  ])
+
+  const handleCreateAiExpand = useCallback(async () => {
+    const sourceNodeId = dragCreateMenu.sourceNodeId
+    const canvasPosition = dragCreateMenu.canvasPosition
+
+    if (!sourceNodeId || !canvasPosition) {
+      closeDragCreateMenu()
+      return
+    }
+
+    addToast({
+      type: 'info',
+      title: 'AI扩展中',
+      message: '正在基于当前节点生成延展内容...',
+      duration: 2000,
+    })
+
+    const success = await defaultHandleDragExpand(sourceNodeId, canvasPosition)
+    closeDragCreateMenu()
+
+    if (success) {
+      addToast({
+        type: 'success',
+        title: 'AI扩展完成',
+        message: '新节点已生成并连接',
+        duration: 2500,
+      })
+    }
+  }, [
+    addToast,
+    closeDragCreateMenu,
+    defaultHandleDragExpand,
+    dragCreateMenu.canvasPosition,
+    dragCreateMenu.sourceNodeId,
+  ])
 
   // 画布双击事件
   const handleCanvasDoubleClick = useCallback(
@@ -594,12 +854,49 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // 节点拖拽结束处理 - 清理状态
   const handleNodeDragStop = useCallback(
-    () => {
+    (_event: React.MouseEvent | React.TouchEvent, _node: Node) => {
       // 清理复制状态
+      flushPendingPositionChanges()
+
       originalNodePositionsRef.current.clear()
       setCopiedNodeIds(new Set())
+
+      if (movedNodeIdsRef.current.size === 0) {
+        return
+      }
+
+      const movedNodeIds = Array.from(movedNodeIdsRef.current)
+      movedNodeIdsRef.current.clear()
+
+      const nodesToPersist = movedNodeIds.filter(nodeId => !!getNode(nodeId))
+      if (nodesToPersist.length === 0) {
+        return
+      }
+
+      void (async () => {
+        startSaving()
+        let hasError = false
+
+        for (const nodeId of nodesToPersist) {
+          const latestNode = getNode(nodeId)
+          if (!latestNode) {
+            continue
+          }
+
+          try {
+            await updateNodeWithSync(nodeId, { position: latestNode.position }, { silent: true })
+          } catch (error) {
+            hasError = true
+            console.error('❌ 节点位置保存失败:', nodeId, error)
+          }
+        }
+
+        if (!hasError) {
+          savingComplete()
+        }
+      })()
     },
-    []
+    [getNode, updateNodeWithSync, startSaving, savingComplete, flushPendingPositionChanges]
   )
 
   // 视图变化
@@ -662,10 +959,27 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [])
 
   // 右键菜单操作处理器
+  const projectToCanvasPosition = useCallback(
+    (screenPosition: Position): Position => {
+      if (!reactFlowInstance || !reactFlowWrapper.current) {
+        return screenPosition
+      }
+
+      const bounds = reactFlowWrapper.current.getBoundingClientRect()
+      return reactFlowInstance.project({
+        x: screenPosition.x - bounds.left,
+        y: screenPosition.y - bounds.top,
+      })
+    },
+    [reactFlowInstance]
+  )
+
   const handleCreateNodeFromMenu = useCallback(
-    (position: Position) => {
+    (screenPosition: Position) => {
+      const canvasPosition = projectToCanvasPosition(screenPosition)
+
       if (onNodeCreate) {
-        onNodeCreate(position)
+        onNodeCreate(canvasPosition)
       } else {
         // 默认创建节点逻辑
         addNode({
@@ -675,7 +989,7 @@ const Canvas: React.FC<CanvasProps> = ({
           confidence: 0.5,
           status: 'idle',
           tags: [],
-          position,
+          position: canvasPosition,
           connections: [],
           version: 1,
           metadata: {
@@ -683,7 +997,7 @@ const Canvas: React.FC<CanvasProps> = ({
             editCount: 0,
           },
         })
-        
+
         addToast({
           type: 'success',
           title: '节点已创建',
@@ -691,23 +1005,16 @@ const Canvas: React.FC<CanvasProps> = ({
         })
       }
     },
-    [onNodeCreate, addNode, addToast]
+    [onNodeCreate, addNode, addToast, projectToCanvasPosition]
   )
 
   const handleEditNodeFromMenu = useCallback(
     (nodeId: string) => {
-      if (onNodeDoubleClick) {
-        onNodeDoubleClick(nodeId)
-      } else {
-        // 默认编辑逻辑 - 可以触发节点编辑器
-        addToast({
-          type: 'info',
-          title: '编辑节点',
-          message: '双击节点可以快速编辑'
-        })
-      }
+      setSelectedNodes([nodeId])
+      window.dispatchEvent(new CustomEvent('open-node-editor', { detail: { nodeId } }))
+      onNodeDoubleClick?.(nodeId)
     },
-    [onNodeDoubleClick, addToast]
+    [setSelectedNodes, onNodeDoubleClick]
   )
 
   const handleOptimizeNodeFromMenu = useCallback(
@@ -853,6 +1160,8 @@ const Canvas: React.FC<CanvasProps> = ({
   // 清理定时器和RAF
   React.useEffect(() => {
     return () => {
+      pendingPositionChangesRef.current.clear()
+
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
       }
@@ -867,13 +1176,13 @@ const Canvas: React.FC<CanvasProps> = ({
 
 
   return (
-    <div ref={reactFlowWrapper} className="h-full w-full">
+    <div ref={reactFlowWrapper} className="relative h-full w-full">
       
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
         onNodesChange={handleNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
@@ -894,9 +1203,9 @@ const Canvas: React.FC<CanvasProps> = ({
           includeHiddenNodes: false,
         }}
         onContextMenu={handleContextMenu}
-        // 框选功能配置
-        selectionOnDrag
-        panOnDrag={[1, 2]} // 鼠标中键和右键拖动画布
+        // 框选 / 拖拽模式配置
+        selectionOnDrag={interactionMode === 'select'}
+        panOnDrag={interactionMode === 'pan' ? [0, 1, 2] : [1, 2]}
         selectionMode={SelectionMode.Partial} // Partial: 节点部分在选区内即可选中
         // 性能优化配置
         {...performanceProps}
@@ -927,6 +1236,18 @@ const Canvas: React.FC<CanvasProps> = ({
           />
         )}
       </ReactFlow>
+
+      {dragCreateMenu.isOpen && dragCreateMenu.screenPosition && (
+        <DragCreateMenu
+          ref={dragMenuRef}
+          position={dragCreateMenu.screenPosition}
+          onClose={closeDragCreateMenu}
+          onCreateAi={handleCreateAiExpand}
+          onCreateBlank={handleCreateBlankNode}
+          onCreateTemplate={handleCreateTemplateNode}
+          templates={templates}
+        />
+      )}
 
       {/* 右键菜单 */}
       <ContextMenu
