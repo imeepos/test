@@ -235,6 +235,12 @@ services:
       - sker-network
     volumes:
       - ./packages/engine/.env:/app/packages/engine/.env:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
     restart: unless-stopped
 
   gateway:
@@ -283,6 +289,12 @@ services:
       - sker-network
     volumes:
       - ./packages/gateway/.env:/app/packages/gateway/.env:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
     restart: unless-stopped
 
   # Frontend Applications

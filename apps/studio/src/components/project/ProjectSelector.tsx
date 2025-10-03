@@ -4,11 +4,14 @@
  */
 
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useNodeStore } from '@/stores/nodeStore'
 import { Plus, FolderOpen, Clock, Loader2 } from 'lucide-react'
 
 export const ProjectSelector: React.FC = () => {
+  const navigate = useNavigate()
+
   // 使用 selector 避免不必要的重新渲染
   const projects = useCanvasStore((state) => state.projects)
   const currentProject = useCanvasStore((state) => state.currentProject)
@@ -27,12 +30,21 @@ export const ProjectSelector: React.FC = () => {
   // 项目列表已经在 useProjectInit 中加载
   // 这里重复加载会导致死循环
 
+  // 当项目加载完成后，自动导航到 canvas 并传递 projectId
+  useEffect(() => {
+    if (currentProject && !isLoadingProject) {
+      console.log('项目已选择，导航到 /canvas:', currentProject.id)
+      navigate(`/canvas?projectId=${currentProject.id}`, { replace: true })
+    }
+  }, [currentProject, isLoadingProject, navigate])
+
   // 打开项目
   const handleOpenProject = async (projectId: string) => {
     try {
       await loadProject(projectId)
       setCurrentProject(projectId)
       await syncFromBackend(projectId)
+      // 导航由 useEffect 处理
     } catch (error) {
       console.error('打开项目失败:', error)
     }
@@ -53,15 +65,11 @@ export const ProjectSelector: React.FC = () => {
       setNewProjectName('')
       setNewProjectDescription('')
       setIsCreating(false)
+      // 导航由 useEffect 处理
     } catch (error) {
       console.error('创建项目失败:', error)
       alert('创建项目失败')
     }
-  }
-
-  // 如果已经有当前项目,不显示选择器
-  if (currentProject) {
-    return null
   }
 
   return (

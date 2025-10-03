@@ -173,7 +173,8 @@ export class AITaskQueueConsumer extends EventEmitter {
    * 处理AI任务
    */
   private async processAITask(taskMessage: UnifiedAITaskMessage, originalMessage: any): Promise<void> {
-    const { taskId } = taskMessage
+    const { taskId, nodeId } = taskMessage
+    const startTime = Date.now()
 
     // 防止重复处理
     if (this.processingTasks.has(taskId)) {
@@ -187,10 +188,14 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务开始事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'processing',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: false,
+        processingTime: 0,
+        timestamp: new Date(),
         progress: 0,
         message: '开始处理AI任务'
       })
@@ -202,12 +207,12 @@ export class AITaskQueueConsumer extends EventEmitter {
       const savedResult = await this.saveTaskResult(taskMessage, aiResult)
 
       // ✅ 如果有 nodeId，立即更新节点到数据库
-      if (taskMessage.nodeId) {
+      if (nodeId) {
         try {
-          await this.updateNodeWithResult(taskMessage.nodeId, taskMessage.projectId, aiResult)
-          console.log(`✅ 节点已更新到数据库: ${taskMessage.nodeId}`)
+          await this.updateNodeWithResult(nodeId, taskMessage.projectId, aiResult)
+          console.log(`✅ 节点已更新到数据库: ${nodeId}`)
         } catch (error) {
-          console.error(`❌ 更新节点失败: ${taskMessage.nodeId}`, error)
+          console.error(`❌ 更新节点失败: ${nodeId}`, error)
           // 继续执行，不影响任务完成通知
         }
       }
@@ -215,12 +220,16 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务完成事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'completed',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: true,
         result: aiResult,
         savedData: savedResult,
+        processingTime: Date.now() - startTime,
+        timestamp: new Date(),
         progress: 100,
         message: 'AI任务处理完成'
       })
@@ -233,10 +242,14 @@ export class AITaskQueueConsumer extends EventEmitter {
       // 发布任务失败事件
       await this.publishTaskResult({
         taskId,
+        nodeId,
         type: taskMessage.type,
         status: 'failed',
         userId: taskMessage.userId,
         projectId: taskMessage.projectId,
+        success: false,
+        processingTime: Date.now() - startTime,
+        timestamp: new Date(),
         error: {
           code: 'AI_PROCESSING_ERROR',
           message: error instanceof Error ? error.message : '未知错误',

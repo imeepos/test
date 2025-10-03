@@ -11,7 +11,9 @@ import {
   QUEUE_NAMES,
   EXCHANGE_NAMES,
   ROUTING_KEYS,
-  getPriorityQueueName
+  getPriorityQueueName,
+  type UnifiedAIResultMessage,
+  type UnifiedTaskStatus
 } from '@sker/models'
 
 /**
@@ -252,12 +254,8 @@ export class AITaskQueueProcessor extends EventEmitter {
       // 处理任务
       const result = await this.processAITask(taskData)
 
-      // 发送任务完成通知
-      await this.publishTaskUpdate(taskData, 'completed', {
-        result,
-        completedAt: new Date(),
-        processingTime: Date.now() - startTime
-      })
+      // 发送任务完成通知（使用正确的结果消息格式）
+      await this.publishTaskResult(taskData, true, result, Date.now() - startTime)
 
       // 确认消息
       this.broker.ack(message)
@@ -270,18 +268,14 @@ export class AITaskQueueProcessor extends EventEmitter {
     } catch (error) {
       console.error(`[${workerId}] 任务处理失败:`, error)
 
-      // 发送任务失败通知
+      // 发送任务失败通知（使用正确的结果消息格式）
       if (taskData) {
-        await this.publishTaskUpdate(taskData, 'failed', {
-          error: {
-            code: error instanceof Error ? error.constructor.name : 'UNKNOWN_ERROR',
-            message: error instanceof Error ? error.message : String(error),
-            details: error instanceof Error ? error.stack : undefined,
-            severity: 'high',
-            retryable: this.isRetryableError(error)
-          },
-          failedAt: new Date(),
-          processingTime: Date.now() - startTime
+        await this.publishTaskResult(taskData, false, undefined, Date.now() - startTime, {
+          code: error instanceof Error ? error.constructor.name : 'UNKNOWN_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.stack : undefined,
+          severity: 'high',
+          retryable: this.isRetryableError(error)
         })
       }
 
@@ -391,7 +385,7 @@ export class AITaskQueueProcessor extends EventEmitter {
   }
 
   /**
-   * 发布任务更新
+   * 发布任务更新（用于状态更新，如 processing）
    */
   private async publishTaskUpdate(
     taskData: AITaskMessage,
@@ -406,7 +400,7 @@ export class AITaskQueueProcessor extends EventEmitter {
         timestamp: new Date()
       }
 
-      const routingKey = `task.result.${taskData.userId}.${taskData.projectId}`
+      const routingKey = `task.status.${taskData.userId}.${taskData.projectId}`
 
       await this.broker.publishWithConfirm(
         this.config.resultExchange,
@@ -426,6 +420,58 @@ export class AITaskQueueProcessor extends EventEmitter {
 
     } catch (error) {
       console.error('发布任务更新失败:', error)
+      // 不抛出错误，避免影响主任务处理流程
+    }
+  }
+
+  /**
+   * 发布任务结果（用于任务完成或失败）
+   */
+  private async publishTaskResult(
+    taskData: AITaskMessage,
+    success: boolean,
+    result?: any,
+    processingTime: number = 0,
+    error?: any
+  ): Promise<void> {
+    try {
+      const resultMessage: UnifiedAIResultMessage = {
+        taskId: taskData.taskId,
+        type: taskData.type,
+        nodeId: taskData.nodeId,
+        projectId: taskData.projectId,
+        userId: taskData.userId,
+        status: success ? 'completed' : 'failed',
+        success,
+        result,
+        error,
+        processingTime,
+        timestamp: new Date()
+      }
+
+      const routingKey = `task.result.${taskData.userId}.${taskData.projectId}`
+
+      await this.broker.publishWithConfirm(
+        this.config.resultExchange,
+        routingKey,
+        resultMessage,
+        {
+          persistent: true,
+          correlationId: taskData.taskId,
+          headers: {
+            taskType: taskData.type,
+            taskStatus: success ? 'completed' : 'failed',
+            userId: taskData.userId,
+            projectId: taskData.projectId,
+            success: String(success)
+          }
+        }
+      )
+
+      console.log(`任务结果已发布: ${taskData.taskId} (success: ${success})`)
+
+    } catch (error) {
+      console.error('发布任务结果失败:', error)
       // 不抛出错误，避免影响主任务处理流程
     }
   }

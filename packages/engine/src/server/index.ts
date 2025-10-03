@@ -94,6 +94,11 @@ async function main() {
             exchange: 'llm.direct',
             routingKey: 'llm.process',
             maxPriority: 10  // 必须与broker的配置一致
+          },
+          'result.notify.queue': {
+            durable: true,
+            exchange: 'ai.results.topic',
+            routingKey: 'llm.result.#'  // 使用通配符匹配所有结果消息
           }
         },
         retry: {

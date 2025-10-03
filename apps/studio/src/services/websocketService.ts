@@ -30,6 +30,7 @@ class WebSocketService {
   private reconnectAttempts: number = 0
   private currentStatus: WebSocketStatus = 'disconnected'
   private heartbeatTimer: NodeJS.Timeout | null = null
+  private reconnectTimer: NodeJS.Timeout | null = null
 
   constructor(config: WebSocketConfig) {
     this.config = config
@@ -80,6 +81,13 @@ class WebSocketService {
           })
           this.updateStatus('connected')
           this.reconnectAttempts = 0
+
+          // 清除重连定时器
+          if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer)
+            this.reconnectTimer = null
+          }
+
           this.authenticate()
           this.processMessageQueue()
           // 移除自定义心跳，使用 Socket.IO 内置机制
@@ -96,7 +104,9 @@ class WebSocketService {
 
           // Socket.IO 会自动重连，除非是服务器主动断开
           if (reason === 'io server disconnect') {
-            console.warn('服务器主动断开连接，需要手动重连')
+            console.warn('服务器主动断开连接，启动手动重连机制')
+            // 服务器主动断开时，Socket.IO不会自动重连，需要手动处理
+            this.scheduleReconnect()
           }
         })
 
@@ -161,6 +171,12 @@ class WebSocketService {
    * 断开连接
    */
   disconnect(): void {
+    // 清除重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
     // 移除自定义心跳停止
     // this.stopHeartbeat()
 
@@ -172,6 +188,42 @@ class WebSocketService {
 
     this.updateStatus('disconnected')
     console.log('🔌 WebSocket已断开')
+  }
+
+  /**
+   * 计划重连 - 处理服务器主动断开的情况
+   */
+  private scheduleReconnect(): void {
+    // 清除之前的重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+    }
+
+    // 如果已达到最大重连次数，则停止重连
+    if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+      console.error(`❌ 已达到最大重连次数 (${this.config.maxReconnectAttempts})，停止重连`)
+      return
+    }
+
+    // 计算重连延迟（指数退避）
+    const delay = Math.min(
+      this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts),
+      30000 // 最大30秒
+    )
+
+    console.log(`🔄 计划在 ${delay}ms 后进行第 ${this.reconnectAttempts + 1} 次重连`)
+
+    this.reconnectTimer = setTimeout(async () => {
+      try {
+        this.reconnectAttempts++
+        await this.connect()
+        console.log('✅ 手动重连成功')
+      } catch (error) {
+        console.error('❌ 手动重连失败:', error)
+        // 继续尝试重连
+        this.scheduleReconnect()
+      }
+    }, delay)
   }
 
   /**

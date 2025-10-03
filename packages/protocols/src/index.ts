@@ -19,10 +19,24 @@ export * from './contracts/index.js'
 export * from './validators/index.js'
 
 // ============================================================================
+// 工具函数
+// ============================================================================
+
+export * from './utils/index.js'
+
+// ============================================================================
 // 事件系统
 // ============================================================================
 
 export * from './events/index.js'
+
+// ============================================================================
+// 数据结构
+// ============================================================================
+
+export * from './structures/index.js'
+
+// 执行引擎、构建器、状态管理已被移除（未使用）
 
 // ============================================================================
 // 版本信息
@@ -39,7 +53,12 @@ import {
   NODE_PROTOCOL_VERSION
 } from './contracts/index.js'
 
+import {
+  EDGE_PROTOCOL_VERSION
+} from './structures/index.js'
+
 export const PROTOCOL_VERSIONS = {
   aiProcess: AI_PROCESS_PROTOCOL_VERSION,
-  node: NODE_PROTOCOL_VERSION
+  node: NODE_PROTOCOL_VERSION,
+  edge: EDGE_PROTOCOL_VERSION
 } as const

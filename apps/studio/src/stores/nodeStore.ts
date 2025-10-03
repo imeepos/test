@@ -6,6 +6,7 @@ import { EdgeStylePresets } from '@/types'
 import { nodeAPIService } from '@/services/nodeApiService'
 import type { CreateNodeParams, UpdateNodeParams } from '@/services/nodeApiService'
 import { useUIStore } from './uiStore'
+import { useSyncStore } from './syncStore'
 
 // 扩展的边数据结构
 export interface StoreEdge {
@@ -31,11 +32,8 @@ export interface NodeState {
     tags: string[]
   }>
 
-  // 同步状态
+  // 当前项目ID
   currentProjectId: string | null
-  isSyncing: boolean
-  lastSyncTime: Date | null
-  syncError: string | null
 
   // Actions
   addNode: (node: Omit<AINode, 'id' | 'createdAt' | 'updatedAt'>) => string
@@ -46,7 +44,7 @@ export interface NodeState {
 
   // 后端同步Actions
   setCurrentProject: (projectId: string) => void
-  syncFromBackend: (projectId: string) => Promise<void>
+  syncFromBackend: (projectId: string, options?: { silent?: boolean }) => Promise<void>
   createNodeWithSync: (params: CreateNodeParams) => Promise<AINode>
   updateNodeWithSync: (id: string, updates: UpdateNodeParams) => Promise<void>
   deleteNodeWithSync: (id: string, permanent?: boolean) => Promise<void>
@@ -116,10 +114,7 @@ export const useNodeStore = create<NodeState>()(
           },
         ],
         currentProjectId: null,
-        isSyncing: false,
-        lastSyncTime: null,
-        syncError: null,
-        
+
         // 节点CRUD操作
         addNode: (nodeData) => {
           const id = generateId()
@@ -467,9 +462,14 @@ export const useNodeStore = create<NodeState>()(
           set({ currentProjectId: projectId })
         },
 
-        syncFromBackend: async (projectId) => {
-          set({ isSyncing: true, syncError: null })
+        syncFromBackend: async (projectId, options = {}) => {
+          const { silent = false } = options
           const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          if (!silent) {
+            startSaving()
+          }
 
           try {
             // 从后端加载节点数据
@@ -492,33 +492,37 @@ export const useNodeStore = create<NodeState>()(
                 target: conn.target_node_id,
                 style: conn.style || EdgeStylePresets.solid,
               }))
-
-              state.lastSyncTime = new Date()
-              state.isSyncing = false
             })
 
-            addToast({
-              type: 'success',
-              title: '同步完成',
-              message: `成功加载 ${nodes.length} 个节点`,
-            })
+            if (!silent) {
+              savingComplete()
+              addToast({
+                type: 'success',
+                title: '同步完成',
+                message: `成功加载 ${nodes.length} 个节点`,
+              })
+            }
             console.log(`✅ 成功从后端同步 ${nodes.length} 个节点`)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '同步失败'
-            set({ syncError: errorMessage, isSyncing: false })
-            addToast({
-              type: 'error',
-              title: '同步失败',
-              message: errorMessage,
-            })
+            if (!silent) {
+              savingFailed(errorMessage)
+              addToast({
+                type: 'error',
+                title: '同步失败',
+                message: errorMessage,
+              })
+            }
             console.error('❌ 同步节点数据失败:', error)
             throw error
           }
         },
 
         createNodeWithSync: async (params) => {
-          set({ isSyncing: true, syncError: null })
           const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          startSaving()
 
           try {
             // 调用后端API创建节点
@@ -533,10 +537,9 @@ export const useNodeStore = create<NodeState>()(
                 data: node,
                 timestamp: new Date(),
               })
-              state.isSyncing = false
-              state.lastSyncTime = new Date()
             })
 
+            savingComplete()
             addToast({
               type: 'success',
               title: '节点已创建',
@@ -547,7 +550,7 @@ export const useNodeStore = create<NodeState>()(
             return node
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '创建节点失败'
-            set({ syncError: errorMessage, isSyncing: false })
+            savingFailed(errorMessage)
             addToast({
               type: 'error',
               title: '创建失败',
@@ -559,8 +562,10 @@ export const useNodeStore = create<NodeState>()(
         },
 
         updateNodeWithSync: async (id, updates) => {
-          set({ isSyncing: true, syncError: null })
           const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          startSaving()
 
           try {
             // 调用后端API更新节点
@@ -575,10 +580,9 @@ export const useNodeStore = create<NodeState>()(
                 data: updates,
                 timestamp: new Date(),
               })
-              state.isSyncing = false
-              state.lastSyncTime = new Date()
             })
 
+            savingComplete()
             addToast({
               type: 'success',
               title: '节点已更新',
@@ -587,7 +591,7 @@ export const useNodeStore = create<NodeState>()(
             console.log('✅ 节点更新成功:', id)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '更新节点失败'
-            set({ syncError: errorMessage, isSyncing: false })
+            savingFailed(errorMessage)
             addToast({
               type: 'error',
               title: '更新失败',
@@ -599,8 +603,10 @@ export const useNodeStore = create<NodeState>()(
         },
 
         deleteNodeWithSync: async (id, permanent = false) => {
-          set({ isSyncing: true, syncError: null })
           const { addToast } = useUIStore.getState()
+          const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
+
+          startSaving()
 
           try{
             // 调用后端API删除节点
@@ -622,10 +628,9 @@ export const useNodeStore = create<NodeState>()(
                   timestamp: new Date(),
                 })
               }
-              state.isSyncing = false
-              state.lastSyncTime = new Date()
             })
 
+            savingComplete()
             addToast({
               type: 'info',
               title: '节点已删除',
@@ -634,7 +639,7 @@ export const useNodeStore = create<NodeState>()(
             console.log('✅ 节点删除成功:', id)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '删除节点失败'
-            set({ syncError: errorMessage, isSyncing: false })
+            savingFailed(errorMessage)
             addToast({
               type: 'error',
               title: '删除失败',

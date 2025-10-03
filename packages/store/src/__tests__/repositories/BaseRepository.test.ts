@@ -220,7 +220,7 @@ describe('@sker/store - BaseRepository', () => {
 
     it('应该支持分页查询', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: 50 }] }) // 总数查询 - 使用数字而不是字符串
+        .mockResolvedValueOnce({ rows: [{ total: 50 }] }) // 总数查询 - 使用 total 字段
         .mockResolvedValueOnce({
           rows: [
             { id: '1', name: 'Item 1', status: 'active' },

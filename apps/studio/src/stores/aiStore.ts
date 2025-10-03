@@ -176,9 +176,18 @@ export const useAIStore = create<AIState>()(
           }
         })
 
-        // ✅ 不更新节点！由后端(Engine)负责更新数据库
-        // 前端只负责记录结果，UI会通过数据库变化自动刷新
+        // ✅ 后端已更新数据库，前端同步更新nodeStore以立即刷新UI
         console.log('✅ AI生成完成，结果已由后端更新到数据库:', nodeId)
+        console.log('🔄 同步更新前端nodeStore:', result)
+
+        // 更新nodeStore中的节点
+        const nodeStore = useNodeStore.getState()
+        nodeStore.updateNode(nodeId, {
+          content: result.content,
+          title: result.title || result.content.slice(0, 50),
+          tags: result.tags || [],
+          confidence: result.confidence !== undefined ? result.confidence : 0.8
+        })
       },
       
       failProcessing: (nodeId, error) => {

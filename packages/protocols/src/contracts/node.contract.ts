@@ -178,27 +178,3 @@ export function isValidNodeStatus(value: string): value is NodeStatus {
 export function isValidNode(value: unknown): value is Node {
   return NodeSchemaV1.safeParse(value).success
 }
-
-// ============================================================================
-// 实用工具函数
-// ============================================================================
-
-export function calculateNodeConfidence(
-  aiConfidence: number,
-  importance: number
-): number {
-  // 综合考虑AI置信度和重要性，计算最终置信度
-  const importanceWeight = 0.3
-  const aiWeight = 0.7
-
-  const normalizedImportance = (importance - 1) / 4 // 归一化到 0-1
-  return aiWeight * aiConfidence + importanceWeight * normalizedImportance
-}
-
-export function shouldAutoSaveNode(node: Partial<Node>): boolean {
-  // 自动保存逻辑：内容长度 > 10 或 置信度 > 0.7
-  return (
-    (node.content?.length ?? 0) > 10 ||
-    (node.confidence ?? 0) > 0.7
-  )
-}

@@ -85,7 +85,7 @@ describe('@sker/store - ProjectRepository', () => {
   describe('findByUserWithPagination', () => {
     it('应该分页查找用户的项目', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: 25 }] }) // 总数 - 使用数字
+        .mockResolvedValueOnce({ rows: [{ total: 25 }] }) // 总数 - 使用 total 字段
         .mockResolvedValueOnce({
           rows: [
             createMockProject({ id: '1' }),

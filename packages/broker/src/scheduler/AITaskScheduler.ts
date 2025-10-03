@@ -107,54 +107,13 @@ export class AITaskScheduler extends EventEmitter {
 
   /**
    * 设置结果消费者
+   * 注意：broker 不再消费结果队列，结果应该由 gateway 直接消费并转发给客户端
+   * broker 只负责任务调度和超时管理
    */
   private async setupResultConsumer(): Promise<void> {
-    const maxRetries = 10
-    const retryDelay = 1000 // 1秒
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // 检查broker是否完全准备就绪
-        if (!this.broker.isReady()) {
-          if (attempt === maxRetries) {
-            throw new Error(`Broker not ready after ${maxRetries} attempts`)
-          }
-          console.log(`⏳ Broker not ready, waiting... (attempt ${attempt}/${maxRetries})`)
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
-          continue
-        }
-
-        // 消费AI处理结果
-        await this.broker.consume(
-          QUEUE_NAMES.AI_RESULTS,
-          async (message) => {
-            if (!message) return
-
-            try {
-              const result: AIResultMessage = JSON.parse(message.content.toString())
-              await this.handleTaskResult(result)
-              this.broker.ack(message)
-            } catch (error) {
-              console.error('Error processing AI result:', error)
-              this.broker.nack(message, false) // 不重新入队
-            }
-          }
-        )
-
-        console.log('✅ AI task result consumer set up successfully')
-        return // 成功设置，退出重试循环
-
-      } catch (error) {
-        console.error(`❌ Failed to setup result consumer (attempt ${attempt}/${maxRetries}):`, error)
-        
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to setup result consumer after ${maxRetries} attempts: ${error.message}`)
-        }
-        
-        // 等待后重试
-        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
-      }
-    }
+    console.log('ℹ️ Broker 不再消费结果队列，结果由 gateway 直接处理')
+    // 不再设置结果消费者
+    return
   }
 
   /**
@@ -454,29 +413,34 @@ export class AITaskScheduler extends EventEmitter {
 
   /**
    * 处理任务结果
+   * 注意:由于当前架构中Gateway直接发布任务到RabbitMQ,
+   * Broker的activeTasks可能没有该任务记录,这是正常情况
    */
   private async handleTaskResult(result: AIResultMessage): Promise<void> {
     const task = this.activeTasks.get(result.taskId)
-    if (!task) {
-      console.warn(`Received result for unknown task: ${result.taskId}`)
-      return
+
+    // 如果在activeTasks中找到任务,清理相关状态
+    if (task) {
+      // 清理超时定时器
+      const timeout = this.taskTimeouts.get(result.taskId)
+      if (timeout) {
+        clearTimeout(timeout)
+        this.taskTimeouts.delete(result.taskId)
+      }
+
+      // 更新任务状态
+      if (result.success) {
+        this.updateTaskStatus(result.taskId, 'completed', 'Task completed successfully')
+      } else {
+        this.updateTaskStatus(result.taskId, 'failed', result.error?.message || 'Task failed')
+      }
+
+      // 从活跃任务中移除
+      this.activeTasks.delete(result.taskId)
     }
 
-    // 清理超时定时器
-    const timeout = this.taskTimeouts.get(result.taskId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.taskTimeouts.delete(result.taskId)
-    }
-
-    // 更新任务状态
-    if (result.success) {
-      this.updateTaskStatus(result.taskId, 'completed', 'Task completed successfully')
-    } else {
-      this.updateTaskStatus(result.taskId, 'failed', result.error?.message || 'Task failed')
-    }
-
-    // 触发结果事件
+    // 无论是否在activeTasks中,都触发结果事件
+    // Store服务已经记录了任务状态,这里只做事件通知
     this.emit('taskCompleted', {
       taskId: result.taskId,
       nodeId: result.nodeId,
@@ -486,10 +450,7 @@ export class AITaskScheduler extends EventEmitter {
       processingTime: result.processingTime
     })
 
-    // 从活跃任务中移除
-    this.activeTasks.delete(result.taskId)
-
-    console.log(`AI task completed: ${result.taskId} (success: ${result.success})`)
+    console.log(`AI task result processed: ${result.taskId} (success: ${result.success}, tracked: ${!!task})`)
   }
 
   /**

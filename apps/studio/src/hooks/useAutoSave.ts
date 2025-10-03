@@ -36,7 +36,7 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   const { currentProject, saveCanvasState } = useCanvasStore()
-  const { lastSyncTime } = useNodeStore()
+  const { lastSavedAt } = useSyncStore()
   const { startSaving, savingComplete, savingFailed } = useSyncStore()
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -57,7 +57,6 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
     try {
       await saveCanvasState()
       savingComplete()
-      console.log('🔄 自动保存完成')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '自动保存失败'
       savingFailed(errorMessage)
@@ -100,8 +99,6 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
       performSave()
     }, finalConfig.interval)
 
-    console.log(`🔄 自动保存已启动 (间隔: ${finalConfig.interval / 1000}秒)`)
-
     return () => {
       if (saveTimerRef.current) {
         clearInterval(saveTimerRef.current)
@@ -117,11 +114,11 @@ export function useAutoSave(config: AutoSaveConfig = {}) {
       return
     }
 
-    // 当lastSyncTime变化时,说明有数据更新,触发防抖保存
-    if (lastSyncTime) {
+    // 当lastSavedAt变化时,说明有数据更新,触发防抖保存
+    if (lastSavedAt) {
       debouncedSave()
     }
-  }, [lastSyncTime, currentProject, finalConfig.enabled, debouncedSave])
+  }, [lastSavedAt, currentProject, finalConfig.enabled, debouncedSave])
 
   /**
    * 清理函数

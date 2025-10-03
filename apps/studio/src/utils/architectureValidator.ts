@@ -278,7 +278,7 @@ export class ArchitectureValidator {
   private async checkServiceAvailability(): Promise<void> {
     await this.performAsyncCheck('service-availability', async () => {
       // 检查所有核心服务是否可用
-      const requiredServices = ['ai', 'websocket', 'node', 'queue', 'version']
+      const requiredServices = ['websocket', 'node', 'queue', 'version']
 
       requiredServices.forEach(serviceName => {
         if (!(serviceName in services)) {
@@ -286,27 +286,18 @@ export class ArchitectureValidator {
         }
       })
 
-      // 检查AI服务健康状态
-      const aiHealthy = await services.ai.checkHealth()
-      if (!aiHealthy) {
-        this.addWarning('service-health', 'AI服务不可用，系统将使用回退模式')
+      // 检查WebSocket服务状态（AI功能依赖WebSocket）
+      const wsStatus = services.websocket.getStatus()
+      if (wsStatus !== 'connected') {
+        this.addWarning('service-health', `WebSocket服务状态异常: ${wsStatus}，AI功能可能不可用`)
       }
     })
   }
 
   private async checkQueueServiceIntegration(): Promise<void> {
-    await this.performAsyncCheck('queue-integration', async () => {
-      const stats = services.queue.getQueueStats()
-
-      if (typeof stats.total !== 'number') {
-        throw new Error('队列服务统计信息格式错误')
-      }
-
-      // TODO: 实现回退模式检查
-      // if (stats.fallbackMode) {
-      //   this.addWarning('queue-fallback', '队列服务使用回退模式，性能可能受影响')
-      // }
-    })
+    // queueService已被删除，功能已迁移到aiStore
+    // 此检查已废弃
+    this.addWarning('queue-integration', '队列服务已迁移到aiStore，此检查已废弃')
   }
 
   private checkVersionManagementIntegration(): void {
@@ -524,8 +515,8 @@ export class ArchitectureValidator {
 
   private checkCoreFunctionality(): void {
     this.performCheck('core-functionality', () => {
-      // 检查核心功能是否正常
-      const coreServices = ['node', 'queue', 'version', 'ai']
+      // 检查核心功能是否正常 - queueService已迁移到aiStore
+      const coreServices = ['node', 'version', 'websocket']
 
       coreServices.forEach(serviceName => {
         const service = (services as any)[serviceName]
@@ -537,9 +528,8 @@ export class ArchitectureValidator {
       // 检查关键方法是否存在
       const criticalMethods = [
         ['node', 'createNode'],
-        ['queue', 'submitAITask'],
         ['version', 'createVersion'],
-        ['ai', 'generateContent']
+        ['websocket', 'generateContent']
       ]
 
       criticalMethods.forEach(([serviceName, methodName]) => {
