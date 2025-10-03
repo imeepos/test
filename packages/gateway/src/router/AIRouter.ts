@@ -11,6 +11,7 @@ import {
   TaskMetadata
 } from '@sker/models'
 import { PromptBuilder } from '@sker/engine'
+import { getDefaultModel, resolveModel, selectRequestedModel } from '../utils/aiModel.js'
 
 // 类型别名以兼容现有代码
 type AITaskType = UnifiedAITaskType
@@ -53,7 +54,7 @@ export class AIRouter extends BaseRouter {
         return this.generateContentDirect(req, res)
       }
 
-      const { inputs, context, instruction, type = 'generate' } = req.body
+      const { inputs, context, instruction, type: requestedType = 'generate', options } = req.body
       const userId = req.user?.id
       const projectId = req.body.projectId
 
@@ -67,16 +68,25 @@ export class AIRouter extends BaseRouter {
 
       // 创建AI任务 - 符合UnifiedAITaskMessage接口
       const taskId = this.generateTaskId()
+      const validTaskTypes: UnifiedAITaskType[] = ['generate', 'optimize', 'fusion', 'expand', 'analyze']
+      const normalizedType: UnifiedAITaskType = validTaskTypes.includes(requestedType as UnifiedAITaskType)
+        ? (requestedType as UnifiedAITaskType)
+        : 'generate'
+
+      const requestOptions = (typeof options === 'object' && options !== null) ? options : {}
+      const requestedModel = selectRequestedModel(requestOptions.model, req.body?.model)
+      const resolvedModel = resolveModel(requestedModel)
+
       const aiTask: UnifiedAITaskMessage = {
         taskId,
-        type: type === 'content_generation' ? 'generate' : 'generate',
+        type: normalizedType,
         inputs: inputs || [],
         context: context,
         instruction: instruction,
         parameters: {
-          model: 'gpt-3.5-turbo',
-          temperature: 0.7,
-          maxTokens: 2000
+          model: resolvedModel,
+          temperature: requestOptions.temperature ?? 0.7,
+          maxTokens: requestOptions.maxTokens ?? 2000
         },
         nodeId: req.params.nodeId || '',
         projectId,
@@ -87,7 +97,7 @@ export class AIRouter extends BaseRouter {
           originalRequestId: req.requestId,
           sessionId: req.sessionId,
           tags: ['gateway_api'],
-          model: 'gpt-3.5-turbo'
+          model: resolvedModel
         }
       }
 
@@ -120,6 +130,11 @@ export class AIRouter extends BaseRouter {
       }
 
       const { content, instruction } = req.body
+      const requestOptions = (typeof req.body?.options === 'object' && req.body.options !== null)
+        ? req.body.options
+        : {}
+      const requestedModel = selectRequestedModel(requestOptions.model, req.body?.model)
+      const resolvedModel = resolveModel(requestedModel)
       const userId = req.user?.id
       const projectId = req.body.projectId
 
@@ -144,10 +159,15 @@ export class AIRouter extends BaseRouter {
         userId,
         projectId,
         timestamp: new Date(),
+        parameters: {
+          model: resolvedModel,
+          temperature: requestOptions.temperature,
+          maxTokens: requestOptions.maxTokens
+        },
         metadata: {
           requestId: req.requestId,
           source: 'gateway_api',
-          model: 'gpt-3.5-turbo',
+          model: resolvedModel,
           retryCount: 0
         }
       }
@@ -181,6 +201,11 @@ export class AIRouter extends BaseRouter {
       }
 
       const { inputs, instruction } = req.body
+      const requestOptions = (typeof req.body?.options === 'object' && req.body.options !== null)
+        ? req.body.options
+        : {}
+      const requestedModel = selectRequestedModel(requestOptions.model, req.body?.model)
+      const resolvedModel = resolveModel(requestedModel)
       const userId = req.user?.id
       const projectId = req.body.projectId
 
@@ -201,9 +226,10 @@ export class AIRouter extends BaseRouter {
         context: undefined,
         instruction: instruction || '请将这些内容融合成一个统一、连贯的内容',
         parameters: {
-          model: 'gpt-3.5-turbo',
-          temperature: 0.7,
-          inputCount: inputs.length
+          model: resolvedModel,
+          temperature: requestOptions.temperature ?? 0.7,
+          inputCount: inputs.length,
+          maxTokens: requestOptions.maxTokens
         },
         nodeId: '',
         projectId,
@@ -213,7 +239,7 @@ export class AIRouter extends BaseRouter {
         metadata: {
           originalRequestId: req.requestId,
           tags: ['gateway_api', 'fusion'],
-          model: 'gpt-3.5-turbo'
+          model: resolvedModel
         }
       }
 
@@ -275,17 +301,15 @@ export class AIRouter extends BaseRouter {
       }
 
       const config = this.aiEngine.getConfiguration()
-      const providers = {}
-      const models: string[] = []
+      const models = new Set<string>()
 
-      // 从配置中提取可用模型
-      Object.values(providers).forEach((provider: Record<string, unknown>) => {
-        if (provider.models && Array.isArray(provider.models)) {
-          models.push(...(provider.models as string[]))
-        }
-      })
+      if (typeof config?.model === 'string' && config.model.trim().length > 0) {
+        models.add(config.model.trim())
+      }
 
-      res.success(models.length > 0 ? models : ['gpt-4', 'gpt-3.5-turbo'])
+      models.add(getDefaultModel())
+
+      res.success(Array.from(models))
     } catch (error) {
       res.error({
         code: 'GET_MODELS_ERROR',
@@ -301,6 +325,12 @@ export class AIRouter extends BaseRouter {
       const { requests, options = {} } = req.body
       const userId = req.user?.id
       const projectId = req.body.projectId
+      const resolvedModel = resolveModel(
+        selectRequestedModel(
+          (options as unknown as Record<string, unknown>)['model'],
+          (req.body as unknown as Record<string, unknown>)['model']
+        )
+      )
 
       // 验证批量请求数据
       if (!requests || !Array.isArray(requests) || requests.length === 0) {
@@ -336,7 +366,7 @@ export class AIRouter extends BaseRouter {
         context: undefined,
         instruction: 'Batch processing request',
         parameters: {
-          model: 'gpt-3.5-turbo',
+          model: resolvedModel,
           batchOptions: {
             parallel: options.parallel !== false,
             failFast: options.failFast === true,
@@ -353,7 +383,7 @@ export class AIRouter extends BaseRouter {
           originalRequestId: req.requestId,
           tags: ['gateway_api', 'batch'],
           batchId: batchTaskId,
-          model: 'gpt-3.5-turbo'
+          model: resolvedModel
         }
       }
 
@@ -386,11 +416,12 @@ export class AIRouter extends BaseRouter {
       if (!this.checkAIEngine(req, res)) return
 
       const { prompt, model, maxTokens, temperature, userId, projectId } = req.body
+      const resolvedModel = resolveModel(selectRequestedModel(model))
 
       const result = await this.aiEngine!.generateContent({
         prompt,
         inputs: [prompt],
-        model: model || 'gpt-4',
+        model: resolvedModel,
         maxTokens: maxTokens || 2000,
         temperature: temperature || 0.7,
         userId: userId || req.user?.id,
@@ -414,6 +445,7 @@ export class AIRouter extends BaseRouter {
       if (!this.checkAIEngine(req, res)) return
 
       const { content, instruction, model, userId, projectId, prompt } = req.body
+      const resolvedModel = resolveModel(selectRequestedModel(model))
 
       // 构建 prompt（如果未提供）
       const optimizePrompt = prompt || PromptBuilder.buildOptimize({
@@ -423,7 +455,7 @@ export class AIRouter extends BaseRouter {
 
       const result = await this.aiEngine!.optimizeContent({
         prompt: optimizePrompt,
-        model: model || 'gpt-4',
+        model: resolvedModel,
         userId: userId || req.user?.id,
         projectId,
         metadata: {
@@ -449,6 +481,7 @@ export class AIRouter extends BaseRouter {
       if (!this.checkAIEngine(req, res)) return
 
       const { inputs, instruction, model, userId, projectId, prompt } = req.body
+      const resolvedModel = resolveModel(selectRequestedModel(model))
 
       if (!inputs || !Array.isArray(inputs) || inputs.length < 2) {
         res.error(ResponseMapper.toAPIError(
@@ -467,7 +500,7 @@ export class AIRouter extends BaseRouter {
 
       const result = await this.aiEngine!.fuseContent({
         prompt: fusionPrompt,
-        model: model || 'gpt-4',
+        model: resolvedModel,
         userId: userId || req.user?.id,
         projectId
       })
@@ -513,21 +546,30 @@ export class AIRouter extends BaseRouter {
         }
 
         for (const chunk of chunks) {
+          const chunkRequests = chunk.map((request) => ({
+            request,
+            model: resolveModel(selectRequestedModel(request.model))
+          }))
+
           const chunkResults = await Promise.allSettled(
-            chunk.map(request => this.aiEngine!.generateContent({
-              prompt: request.prompt || request.inputs?.join('\n'),
-              inputs: request.inputs || [request.prompt || ''],
-              model: request.model || 'gpt-4',
-              maxTokens: request.maxTokens || 2000,
-              temperature: request.temperature || 0.7,
-              userId: userId,
-              projectId
-            }))
+            chunkRequests.map(({ request, model: requestModel }) =>
+              this.aiEngine!.generateContent({
+                prompt: request.prompt || request.inputs?.join('\n'),
+                inputs: request.inputs || [request.prompt || ''],
+                model: requestModel,
+                maxTokens: request.maxTokens || 2000,
+                temperature: request.temperature ?? 0.7,
+                userId,
+                projectId
+              })
+            )
           )
 
           // 处理块结果
           for (let i = 0; i < chunkResults.length; i++) {
             const result = chunkResults[i]
+            const requestContext = chunkRequests[i]
+
             if (result.status === 'fulfilled') {
               results.push(ResponseMapper.toAIGenerateResponse(result.value))
             } else {
@@ -537,7 +579,7 @@ export class AIRouter extends BaseRouter {
                 tags: [],
                 metadata: {
                   requestId: req.requestId,
-                  model: 'gpt-4',
+                  model: requestContext?.model ?? getDefaultModel(),
                   processingTime: 0,
                   tokenCount: 0,
                   error: result.reason,
@@ -559,13 +601,15 @@ export class AIRouter extends BaseRouter {
       } else {
         // 顺序处理
         for (let i = 0; i < requests.length; i++) {
+          const request = requests[i]
+          const requestModel = resolveModel(selectRequestedModel(request.model))
+
           try {
-            const request = requests[i]
             const result = await this.aiEngine!.generateContent({
               prompt: request.prompt || request.inputs?.join('\n'),
               inputs: request.inputs || [],
-              model: request.model || 'gpt-4',
-              temperature: request.temperature || 0.7,
+              model: requestModel,
+              temperature: request.temperature ?? 0.7,
               options: {
                 maxTokens: request.maxTokens || 2000
               }
@@ -579,7 +623,7 @@ export class AIRouter extends BaseRouter {
               tags: [],
               metadata: {
                 requestId: req.requestId,
-                model: 'gpt-4',
+                model: requestModel,
                 processingTime: 0,
                 tokenCount: 0,
                 error: error,

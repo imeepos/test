@@ -16,6 +16,7 @@ import type {
   CanvasStateEvent
 } from '../types/WebSocketTypes.js'
 import { WebSocketEventType } from '../types/WebSocketTypes.js'
+import { resolveModel, selectRequestedModel } from '../utils/aiModel.js'
 
 /**
  * WebSocket管理器 - 处理实时通信和连接管理
@@ -340,6 +341,10 @@ export class WebSocketManager extends EventEmitter {
 
       // 构造AI任务消息，使用requestId或taskId作为任务ID
       const taskId = data.requestId || data.taskId || this.generateEventId()
+      const options = (typeof data.options === 'object' && data.options !== null) ? data.options : {}
+      const requestedModel = selectRequestedModel(options?.model, data?.model, data?.parameters?.model)
+      const model = resolveModel(requestedModel)
+
       const taskMessage = {
         taskId,
         requestId: taskId, // 保持兼容性
@@ -351,10 +356,16 @@ export class WebSocketManager extends EventEmitter {
         projectId: data.projectId, // 已验证的projectId
         userId: connection.userId, // 来自连接认证的userId
         priority: (data.priority || 'normal') as TaskPriority,
+        parameters: {
+          model,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens
+        },
         timestamp: new Date(),
         metadata: {
           socketId: socket.id,
-          originalData: data
+          originalData: data,
+          model
         }
       }
 

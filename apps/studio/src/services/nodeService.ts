@@ -381,11 +381,10 @@ class NodeService {
 
     const aiRequest: AIGenerateRequest & { nodeId: string } = {
       inputs: context,
-      context: userPrompt || defaultContext,
+      context: defaultContext,
       type: 'expand',
       instruction: userPrompt || defaultInstruction,
       nodeId: nodeId,
-      options: userPrompt ? { prompt: userPrompt } : undefined,
     }
 
     // 异步发送AI请求，不阻塞返回

@@ -19,7 +19,6 @@ export interface AIGenerateOptions {
   temperature?: number
   maxTokens?: number
   model?: AIModel
-  prompt?: string
 }
 
 // AI模型类型

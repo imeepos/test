@@ -124,8 +124,8 @@ export class ValidationMiddleware {
         .withMessage('Each input must be between 1 and 5000 characters'),
 
       body('type')
-        .isIn(['generate', 'optimize', 'fusion'])
-        .withMessage('Type must be one of: generate, optimize, fusion'),
+        .isIn(['generate', 'optimize', 'fusion', 'expand', 'analyze'])
+        .withMessage('Type must be one of: generate, optimize, fusion, expand, analyze'),
 
       body('context')
         .optional()

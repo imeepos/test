@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui'
-import { Sparkles, FileText, X } from 'lucide-react'
+import { MarkdownContent } from '@/components/common/MarkdownContent'
+import { Sparkles, FileText, X, Pencil, Check, Loader2 } from 'lucide-react'
 
 interface EditNodeInstructionModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface EditNodeInstructionModalProps {
   nodeTitle?: string
   nodeContent?: string
   isLoading?: boolean
+  onUpdateTitle?: (title: string) => Promise<void>
 }
 
 const defaultPlaceholder = '请输入修改意见...\n例如: 添加更多技术细节\n例如: 简化表述\n例如: 补充安全性考虑'
@@ -27,9 +29,15 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
   nodeTitle,
   nodeContent,
   isLoading = false,
+  onUpdateTitle,
 }) => {
   const [instruction, setInstruction] = useState(defaultValue)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
+  const [titleError, setTitleError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -38,17 +46,37 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
     }
   }, [isOpen, defaultValue])
 
+  const normalizedTitle = nodeTitle?.trim() ?? ''
+  const displayTitle = normalizedTitle || '未命名节点'
+  const displayContent = nodeContent?.trim() || '当前节点暂无内容'
+  const isBusy = isLoading || isSavingTitle
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditingTitle(false)
+      setIsSavingTitle(false)
+      setTitleDraft(normalizedTitle)
+      setTitleError(null)
+    }
+  }, [isOpen, normalizedTitle])
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      requestAnimationFrame(() => titleInputRef.current?.focus())
+    }
+  }, [isEditingTitle])
+
   const handleClose = useCallback(() => {
-    if (!isLoading) {
+    if (!isBusy) {
       onClose()
     }
-  }, [isLoading, onClose])
+  }, [isBusy, onClose])
 
   const handleSubmit = useCallback(async () => {
     const trimmed = instruction.trim()
-    if (!trimmed || isLoading) return
+    if (!trimmed || isBusy) return
     await onSubmit(trimmed)
-  }, [instruction, isLoading, onSubmit])
+  }, [instruction, isBusy, onSubmit])
 
   const handleFormSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -71,8 +99,67 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
     [handleClose, handleSubmit]
   )
 
-  const displayTitle = nodeTitle?.trim() || '未命名节点'
-  const displayContent = nodeContent?.trim() || '当前节点暂无内容'
+  const handleStartEditTitle = useCallback(() => {
+    if (isBusy) return
+    setTitleDraft(normalizedTitle)
+    setTitleError(null)
+    setIsEditingTitle(true)
+  }, [isBusy, normalizedTitle])
+
+  const handleCancelEditTitle = useCallback(() => {
+    if (isBusy) return
+    setIsEditingTitle(false)
+    setTitleDraft(normalizedTitle)
+    setTitleError(null)
+  }, [isBusy, normalizedTitle])
+
+  const handleSaveTitle = useCallback(async () => {
+    if (isBusy) return
+    const trimmed = titleDraft.trim()
+
+    if (!trimmed) {
+      setTitleError('标题不能为空')
+      return
+    }
+
+    if (trimmed === normalizedTitle) {
+      setIsEditingTitle(false)
+      setTitleError(null)
+      return
+    }
+
+    if (!onUpdateTitle) {
+      setIsEditingTitle(false)
+      setTitleError(null)
+      return
+    }
+
+    setIsSavingTitle(true)
+    setTitleError(null)
+
+    try {
+      await onUpdateTitle(trimmed)
+      setIsEditingTitle(false)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '标题更新失败，请稍后重试'
+      setTitleError(message)
+    } finally {
+      setIsSavingTitle(false)
+    }
+  }, [isBusy, normalizedTitle, onUpdateTitle, titleDraft])
+
+  const handleTitleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        handleSaveTitle()
+      } else if (event.key === 'Escape') {
+        event.preventDefault()
+        handleCancelEditTitle()
+      }
+    },
+    [handleCancelEditTitle, handleSaveTitle]
+  )
 
   return (
     <AnimatePresence>
@@ -83,7 +170,7 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={!isLoading ? handleClose : undefined}
+            onClick={!isBusy ? handleClose : undefined}
           />
 
           <motion.div
@@ -109,14 +196,14 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
                   onClick={handleClose}
                   className="rounded-lg p-2 text-sidebar-text-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-text"
                   aria-label="关闭弹窗"
-                  disabled={isLoading}
+                  disabled={isBusy}
                 >
                   <X className="h-5 w-5" />
                 </button>
               </header>
 
               <form onSubmit={handleFormSubmit} className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex flex-1 flex-col gap-6 px-6 py-6 lg:flex-row">
+                <div className="flex flex-1 min-h-0 flex-col gap-6 px-6 py-6 lg:flex-row">
                   <div className="flex flex-1 flex-col">
                     <label className="mb-3 text-sm font-medium text-sidebar-text">修改指令</label>
                     <div className="flex-1 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-bg">
@@ -127,26 +214,79 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         className="h-full min-h-[240px] w-full resize-none bg-transparent px-5 py-4 text-sm leading-relaxed text-sidebar-text placeholder:text-sidebar-text-muted focus:outline-none"
-                        disabled={isLoading}
+                        disabled={isBusy}
                       />
                     </div>
                     <p className="mt-3 text-xs text-sidebar-text-muted">提示：使用 Ctrl / Cmd + Enter 快速提交，Esc 关闭弹窗</p>
                   </div>
 
-                  <aside className="flex flex-1 flex-col rounded-xl border border-sidebar-border bg-sidebar-surface/60">
-                    <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-3">
+                  <aside className="flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-sidebar-border bg-sidebar-surface/60">
+                    <div className="flex items-center justify-between gap-4 border-b border-sidebar-border px-5 py-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-sidebar-text">
                         <FileText className="h-4 w-4" />
                         当前节点内容
                       </div>
-                      <span className="truncate text-xs text-sidebar-text-muted" title={displayTitle}>
-                        {displayTitle}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isEditingTitle ? (
+                          <>
+                            <input
+                              ref={titleInputRef}
+                              value={titleDraft}
+                              onChange={(event) => setTitleDraft(event.target.value)}
+                              onKeyDown={handleTitleKeyDown}
+                              disabled={isBusy}
+                              className="h-8 w-48 max-w-[240px] rounded-md border border-sidebar-border bg-sidebar-bg px-2 text-sm text-sidebar-text placeholder:text-sidebar-text-muted focus:outline-none focus:ring-2 focus:ring-sidebar-accent"
+                              placeholder="请输入节点标题"
+                              aria-label="节点标题编辑"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleSaveTitle}
+                              className="flex h-8 w-8 items-center justify-center rounded-md bg-primary-500/10 text-primary-500 transition-colors hover:bg-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={isBusy}
+                              aria-label="保存节点标题"
+                            >
+                              {isSavingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditTitle}
+                              className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-text-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-text disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={isBusy}
+                              aria-label="取消编辑节点标题"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span
+                              className="block max-w-[240px] truncate text-sm text-sidebar-text"
+                              title={displayTitle}
+                            >
+                              {displayTitle}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleStartEditTitle}
+                              className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-text-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-text disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={isBusy}
+                              aria-label="编辑节点标题"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {titleError && (
+                      <div className="px-5 text-xs text-red-400">{titleError}</div>
+                    )}
                     <div className="flex-1 overflow-y-auto px-5 py-4 text-sm leading-relaxed text-sidebar-text">
-                      <pre className="whitespace-pre-wrap break-words text-sm text-sidebar-text">
-                        {displayContent}
-                      </pre>
+                      <MarkdownContent
+                        content={displayContent}
+                        className="text-sm leading-relaxed text-sidebar-text"
+                      />
                     </div>
                   </aside>
                 </div>
@@ -160,7 +300,7 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
                       type="button"
                       variant="secondary"
                       onClick={handleClose}
-                      disabled={isLoading}
+                      disabled={isBusy}
                     >
                       取消
                     </Button>
@@ -168,7 +308,7 @@ export const EditNodeInstructionModal: React.FC<EditNodeInstructionModalProps> =
                       type="submit"
                       variant="primary"
                       icon={Sparkles}
-                      disabled={!instruction.trim() || isLoading}
+                      disabled={!instruction.trim() || isBusy}
                       loading={isLoading}
                     >
                       开始修改

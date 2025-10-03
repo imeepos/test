@@ -337,14 +337,14 @@ Content-Type: application/json
 Authorization: Bearer <token>
 
 {
-  "prompt": "写一篇关于人工智能的短文",
-  "context": "这是为技术博客准备的内容",
+  "inputs": ["这是为技术博客准备的内容"],
+  "instruction": "写一篇关于人工智能的短文",
+  "type": "generate",
+  "context": "目标读者是技术从业者",
   "options": {
     "model": "gpt-4",
     "temperature": 0.7,
-    "max_tokens": 500,
-    "style": "professional",
-    "language": "zh-CN"
+    "maxTokens": 500
   }
 }
 ```
@@ -773,7 +773,8 @@ ws.on('message', (data) => {
   "data": {
     "request_id": "req_123",
     "node_id": "node_456",
-    "prompt": "生成内容的提示"
+    "instruction": "生成内容的提示",
+    "context": "相关背景信息"
   }
 }
 ```

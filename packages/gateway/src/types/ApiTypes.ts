@@ -88,8 +88,13 @@ export interface ListNodesParams extends PaginationParams {
 export interface AIGenerateRequest {
   inputs: string[]
   context?: string
-  type: 'generate' | 'optimize' | 'fusion'
+  type: 'generate' | 'optimize' | 'fusion' | 'expand' | 'analyze'
   instruction?: string
+  options?: {
+    model?: string
+    temperature?: number
+    maxTokens?: number
+  }
 }
 
 export interface AIGenerateResponse {

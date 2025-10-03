@@ -316,11 +316,15 @@ const CanvasPage: React.FC = () => {
       setIsExpandGenerating(true)
 
       try {
+        const trimmedPrompt = prompt.trim()
+        const defaultContext = `基于节点"${sourceNode.title || '未命名'}"的内容进行扩展`
+        const defaultInstruction = '请基于提供的内容，生成相关的扩展内容或下一步思考'
+
         startProcessing(sourceNode.id, {
           inputs: [sourceNode.content],
           type: 'expand',
-          context: prompt,
-          instruction: prompt,
+          context: defaultContext,
+          instruction: trimmedPrompt || defaultInstruction,
         })
 
         const newNode = await nodeService.dragExpandGenerate(sourceNode, expandDialogState.position, {
@@ -781,7 +785,55 @@ const CanvasPage: React.FC = () => {
         })
       }
     },
-    [editingNodeId, editingNodeContent, currentProject?.id, getNode, updateNode, addToast]
+    [editingNodeId, editingNodeContent, currentProject?.id, getNode, updateNodeWithSync, addToast]
+  )
+
+  const handleUpdateEditingNodeTitle = React.useCallback(
+    async (newTitle: string) => {
+      if (!editingNodeId) {
+        const error = new Error('缺少节点ID')
+        addToast({
+          type: 'error',
+          title: '更新失败',
+          message: '当前没有可编辑的节点',
+          duration: 3000,
+        })
+        throw error
+      }
+
+      const trimmed = newTitle.trim()
+      if (!trimmed) {
+        const error = new Error('标题不能为空')
+        addToast({
+          type: 'warning',
+          title: '更新失败',
+          message: '节点标题不能为空',
+          duration: 3000,
+        })
+        throw error
+      }
+
+      const node = getNode(editingNodeId)
+      if (!node) {
+        const error = new Error('找不到节点')
+        addToast({
+          type: 'error',
+          title: '更新失败',
+          message: '未找到对应节点，请重试',
+          duration: 3000,
+        })
+        throw error
+      }
+
+      try {
+        await updateNodeWithSync(editingNodeId, { title: trimmed }, { silent: true })
+        setEditingNodeTitle(trimmed)
+      } catch (error) {
+        console.error('CanvasPage: 更新节点标题失败:', error)
+        throw error instanceof Error ? error : new Error('更新节点标题失败')
+      }
+    },
+    [editingNodeId, getNode, updateNodeWithSync, addToast]
   )
 
   // 监听重试AI生成事件
@@ -965,6 +1017,7 @@ const CanvasPage: React.FC = () => {
         nodeTitle={editingNodeTitle}
         nodeContent={editingNodeContent}
         isLoading={false}
+        onUpdateTitle={handleUpdateEditingNodeTitle}
       />
     </div>
   )

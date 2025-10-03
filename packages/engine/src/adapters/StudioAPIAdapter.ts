@@ -26,7 +26,6 @@ export interface StudioAIGenerateOptions {
   temperature?: number
   maxTokens?: number
   model?: StudioAIModel
-  prompt?: string
 }
 
 export type StudioAIModel = 'gpt-3.5-turbo' | 'gpt-4' | 'claude-3' | 'local'
@@ -426,7 +425,8 @@ export class StudioAPIAdapter {
       'title': '为以下内容生成一个简洁准确的标题',
       'tags': '为以下内容提取关键标签',
       'summary': '请总结以下内容的核心要点',
-      'expand': '请扩展以下内容，添加更多细节和深度'
+      'expand': '请扩展以下内容，添加更多细节和深度',
+      'analyze': '请分析以下内容的关键要点、问题与改进建议'
     }
 
     return instructions[type || 'generate'] || instructions['generate']
