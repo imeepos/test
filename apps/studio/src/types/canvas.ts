@@ -55,6 +55,7 @@ export interface AINodeData {
   version: number
   createdAt: Date
   updatedAt: Date
+  user_rating?: number
   metadata?: {
     semantic: string[]
     userRating?: number

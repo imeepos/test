@@ -254,6 +254,7 @@ export class AITaskScheduler extends EventEmitter {
     }
 
     try {
+      console.log(`📤 准备将AI任务推送到队列: ${taskId} (type: ${request.type}, priority: ${request.priority || 'normal'})`)
       // 发布任务到处理队列
       await this.broker.publishWithConfirm(
         EXCHANGE_NAMES.LLM_DIRECT,
@@ -328,6 +329,7 @@ export class AITaskScheduler extends EventEmitter {
     }
 
     try {
+      console.log(`📤 准备将批量AI任务推送到队列: ${batchId} (${tasks.length} tasks)`)
       await this.broker.publishWithConfirm(
         EXCHANGE_NAMES.LLM_DIRECT,
         ROUTING_KEYS.AI_BATCH,
@@ -384,6 +386,8 @@ export class AITaskScheduler extends EventEmitter {
           type: 'ai_cancel'
         }
       )
+
+      console.log(`🛑 发送任务取消消息: ${taskId}`)
 
       // 更新任务状态
       this.updateTaskStatus(taskId, 'cancelled', 'Task cancelled by user')

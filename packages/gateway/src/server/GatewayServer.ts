@@ -20,7 +20,11 @@ import {
 } from '@sker/models'
 import type { AIEngine } from '@sker/engine'
 import { StoreClient } from '@sker/store-client'
-import { MessageBroker } from '@sker/broker'
+import {
+  MessageBroker,
+  createBroker
+} from '@sker/broker'
+import type { BrokerConfig } from '@sker/broker'
 
 /**
  * Gateway服务器 - 统一的API网关和WebSocket管理
@@ -31,6 +35,8 @@ export class GatewayServer {
   private apiRouter: ApiRouter
   private wsManager: WebSocketManager
   private queueManager?: QueueManager
+  private messageBroker?: MessageBroker
+  private ownsMessageBroker: boolean = false
   private config: GatewayConfig
   private isRunning: boolean = false
 
@@ -47,8 +53,10 @@ export class GatewayServer {
     this.server = createServer(this.app)
 
     // 初始化队列管理器
-    if (dependencies?.messageBroker) {
-      this.queueManager = new QueueManager(dependencies.messageBroker, {
+    this.messageBroker = dependencies?.messageBroker ?? this.createMessageBrokerFromEnv()
+
+    if (this.messageBroker) {
+      this.queueManager = new QueueManager(this.messageBroker, {
         exchanges: {
           aiTasks: EXCHANGE_NAMES.LLM_DIRECT,
           websocket: EXCHANGE_NAMES.REALTIME_FANOUT,
@@ -79,6 +87,8 @@ export class GatewayServer {
           }
         }
       })
+    } else {
+      console.warn('⚠️ MessageBroker 未提供且未能从环境变量创建，AI任务队列功能将不可用')
     }
 
     this.apiRouter = new ApiRouter({
@@ -92,6 +102,60 @@ export class GatewayServer {
     this.setupErrorHandling()
     this.setupQueueEventHandlers()
     this.setupWebSocketEventHandlers()
+  }
+
+  /**
+   * 尝试根据环境变量创建默认的 MessageBroker 实例
+   */
+  private createMessageBrokerFromEnv(): MessageBroker | undefined {
+    const connectionUrl =
+      process.env.RABBITMQ_URL ||
+      process.env.GATEWAY_RABBITMQ_URL ||
+      process.env.MESSAGE_BROKER_URL
+
+    if (!connectionUrl) {
+      console.warn('⚠️ 未检测到消息队列连接配置 (RABBITMQ_URL)，请确保已正确配置消息队列服务')
+      return undefined
+    }
+
+    try {
+      const brokerConfig: Partial<BrokerConfig> = {
+        connectionUrl
+      }
+
+      const prefetch = parseInt(process.env.RABBITMQ_PREFETCH || '', 10)
+      if (!Number.isNaN(prefetch)) {
+        brokerConfig.prefetch = prefetch
+      }
+
+      if (process.env.RABBITMQ_MAX_RETRIES) {
+        const maxRetries = parseInt(process.env.RABBITMQ_MAX_RETRIES, 10)
+        const initialDelay = parseInt(process.env.RABBITMQ_RETRY_DELAY || '1000', 10)
+        const maxDelay = parseInt(process.env.RABBITMQ_MAX_RETRY_DELAY || '30000', 10)
+        const backoffMultiplier = parseFloat(process.env.RABBITMQ_BACKOFF_MULTIPLIER || '2')
+        const retryableErrors = (process.env.RABBITMQ_RETRYABLE_ERRORS || '')
+          .split(',')
+          .map((err) => err.trim())
+          .filter(Boolean)
+
+        brokerConfig.retry = {
+          maxRetries: Number.isNaN(maxRetries) ? 3 : maxRetries,
+          initialDelay: Number.isNaN(initialDelay) ? 1000 : initialDelay,
+          maxDelay: Number.isNaN(maxDelay) ? 30000 : maxDelay,
+          backoffMultiplier: Number.isNaN(backoffMultiplier) ? 2 : backoffMultiplier,
+          retryableErrors: retryableErrors.length > 0 ? retryableErrors : ['ECONNRESET', 'ENOTFOUND', 'TIMEOUT', 'ECONNREFUSED']
+        }
+      }
+
+      const broker = createBroker(brokerConfig)
+      this.ownsMessageBroker = true
+      console.log('✅ 已根据环境变量创建 MessageBroker 实例')
+      return broker
+
+    } catch (error) {
+      console.error('❌ 创建 MessageBroker 失败:', error)
+      return undefined
+    }
   }
 
   /**
@@ -315,7 +379,30 @@ export class GatewayServer {
    */
   private setupWebSocketEventHandlers(): void {
     if (!this.queueManager) {
-      console.warn('QueueManager未初始化，跳过WebSocket事件处理器设置')
+      console.warn('QueueManager未初始化，AI任务请求将被拒绝')
+
+      this.wsManager.on('aiTaskRequest', async (taskMessage: any) => {
+        console.warn('收到AI任务请求但消息队列不可用，直接返回错误')
+
+        const requestId = taskMessage?.taskId || taskMessage?.requestId || `task-${Date.now()}`
+        const userId = taskMessage?.userId
+
+        if (userId) {
+          this.wsManager.sendToUser(userId, {
+            type: 'AI_GENERATE_ERROR',
+            data: {
+              requestId,
+              taskId: requestId,
+              error: {
+                code: 'QUEUE_UNAVAILABLE',
+                message: 'AI任务队列不可用，请稍后重试或联系管理员',
+                timestamp: new Date()
+              }
+            }
+          })
+        }
+      })
+
       return
     }
 
@@ -427,6 +514,14 @@ export class GatewayServer {
           console.log('队列管理器已清理')
         } catch (error) {
           console.error('队列管理器清理失败:', error)
+        }
+      } else if (this.ownsMessageBroker && this.messageBroker) {
+        try {
+          if (this.messageBroker.isConnected()) {
+            await this.messageBroker.stop()
+          }
+        } catch (error) {
+          console.error('MessageBroker 停止失败:', error)
         }
       }
 

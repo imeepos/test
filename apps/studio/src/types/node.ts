@@ -109,6 +109,7 @@ export interface NodeMetadata {
   lastEditReason?: string
   lastModified?: Date
   autoSaved?: boolean
+  userRating?: number
   fusionSource?: string[]
   fusionType?: 'summary' | 'synthesis' | 'comparison'
   error?: string

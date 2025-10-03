@@ -53,6 +53,7 @@ export interface NodeCreateData {
   importance?: number
   tags?: string[]
   metadata?: Record<string, unknown>
+  user_rating?: number
 }
 
 // 节点更新数据
@@ -66,6 +67,7 @@ export interface NodeUpdateData {
   status?: string
   metadata?: Record<string, unknown>
   updated_at?: Date
+  user_rating?: number
 }
 
 // 项目创建数据

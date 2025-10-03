@@ -58,7 +58,8 @@ export class NodeRouter extends BaseRouter {
         position,
         importance = 50,
         tags,
-        metadata
+        metadata,
+        user_rating
       } = req.body
 
       // 验证必需字段
@@ -83,6 +84,15 @@ export class NodeRouter extends BaseRouter {
       }
 
       // 创建节点数据
+      const nodeMetadata = this.mergeMetadata(
+        { source: 'gateway_api', request_id: req.requestId },
+        {
+          ...(metadata ?? {}),
+          user_rating
+        },
+        req.requestId
+      )
+
       const nodeData = {
         title: title || content?.substring(0, 50) + '...',
         content: content || '',
@@ -95,11 +105,7 @@ export class NodeRouter extends BaseRouter {
         tags: tags || [],
         status: 'active',
         confidence: 100,
-        metadata: {
-          source: 'gateway_api',
-          requestId: req.requestId,
-          ...metadata
-        }
+        metadata: nodeMetadata
       }
 
       // 使用存储服务创建节点
@@ -246,7 +252,8 @@ export class NodeRouter extends BaseRouter {
         importance,
         tags,
         status,
-        metadata
+        metadata,
+        user_rating
       } = req.body
 
       if (title !== undefined) updateData.title = title
@@ -258,17 +265,16 @@ export class NodeRouter extends BaseRouter {
       }
       if (tags !== undefined) updateData.tags = tags
       if (status !== undefined) updateData.status = status
-      if (metadata !== undefined) {
-        updateData.metadata = {
-          ...existingNode.metadata,
-          ...metadata,
-          lastModified: {
-            source: 'gateway_api',
-            requestId: req.requestId,
-            timestamp: new Date()
-          }
-        }
+      const incomingMetadata = {
+        ...(metadata ?? {}),
+        user_rating
       }
+
+      updateData.metadata = this.mergeMetadata(
+        existingNode.metadata,
+        incomingMetadata,
+        req.requestId
+      )
 
       // 更新时间戳
       updateData.updated_at = new Date()
@@ -389,13 +395,12 @@ export class NodeRouter extends BaseRouter {
         const updatedNode = await this.storeClient!.nodes.update(id, {
           status: 'deleted',
           updated_at: new Date(),
-          metadata: {
-            ...existingNode.metadata,
+          metadata: this.mergeMetadata(existingNode.metadata, {
             deletedAt: new Date(),
             deletedBy: req.user?.id,
             deletedFrom: 'gateway_api',
             requestId: req.requestId
-          }
+          }, req.requestId)
         })
 
         result = !!updatedNode
@@ -915,16 +920,9 @@ export class NodeRouter extends BaseRouter {
         ])
 
         // 更新节点为指定版本的数据
-        const updateData = {
-          title: versionData.title,
-          content: versionData.content,
-          type: versionData.type,
-          position: JSON.parse(versionData.position || '{}'),
-          importance: versionData.importance,
-          tags: JSON.parse(versionData.tags || '[]'),
-          updated_at: new Date(),
-          metadata: {
-            ...JSON.parse(versionData.metadata || '{}'),
+        const rollbackMetadata = this.mergeMetadata(
+          JSON.parse(versionData.metadata || '{}'),
+          {
             rollback: {
               from_version: nextVersion,
               to_version: version_number,
@@ -933,7 +931,19 @@ export class NodeRouter extends BaseRouter {
               change_description: change_description || `Rolled back to version ${version_number}`,
               requestId: req.requestId
             }
-          }
+          },
+          req.requestId
+        )
+
+        const updateData = {
+          title: versionData.title,
+          content: versionData.content,
+          type: versionData.type,
+          position: JSON.parse(versionData.position || '{}'),
+          importance: versionData.importance,
+          tags: JSON.parse(versionData.tags || '[]'),
+          updated_at: new Date(),
+          metadata: rollbackMetadata
         }
 
         const updatedNode = await this.storeClient!.nodes.update(id, updateData)
@@ -1007,5 +1017,242 @@ export class NodeRouter extends BaseRouter {
         requestId: req.requestId
       })
     }
+  }
+
+  /**
+   * 合并并规范化节点元数据
+   */
+  private mergeMetadata(
+    existing: Record<string, any> | null | undefined,
+    incoming: Record<string, any> | null | undefined,
+    requestId: string
+  ): Record<string, any> {
+    const existingSafe = this.normalizeMetadata(existing)
+    const incomingSafe = this.normalizeMetadata(incoming)
+
+    const mergedMetadata = {
+      ...existingSafe,
+      ...incomingSafe
+    }
+
+    mergedMetadata.last_modified = {
+      source: 'gateway_api',
+      request_id: requestId,
+      timestamp: new Date().toISOString()
+    }
+
+    return mergedMetadata
+  }
+
+  /**
+   * 将元数据字段转换为后端使用的 snake_case 结构
+   */
+  private normalizeMetadata(metadata: Record<string, any> | null | undefined): Record<string, any> {
+    if (!metadata || typeof metadata !== 'object') {
+      return {}
+    }
+
+    const normalized: Record<string, any> = {}
+
+    for (const [rawKey, value] of Object.entries(metadata)) {
+      if (value === undefined) continue
+
+      const key = this.mapMetadataKey(rawKey)
+
+      switch (key) {
+        case 'semantic_types':
+          normalized.semantic_types = Array.isArray(value) ? value : []
+          break
+        case 'processing_history':
+          normalized.processing_history = this.normalizeProcessingHistory(value)
+          break
+        case 'statistics':
+          normalized.statistics = this.normalizeStatistics(value)
+          break
+        case 'auto_saved':
+          normalized.auto_saved = Boolean(value)
+          break
+        case 'edit_count':
+          normalized.edit_count = this.toNumber(value, 0)
+          break
+        case 'user_rating':
+          normalized.user_rating = value === null || value === undefined ? null : this.toNumber(value)
+          break
+        case 'ai_generated':
+          normalized.ai_generated = Boolean(value)
+          break
+        case 'token_count':
+          normalized.token_count = this.toNumber(value, 0)
+          break
+        case 'processing_time':
+          normalized.processing_time = this.toNumber(value, 0)
+          break
+        case 'timestamp': {
+          const normalizedTimestamp = this.normalizeTimestamp(value)
+          if (normalizedTimestamp) {
+            normalized.timestamp = normalizedTimestamp
+          }
+          break
+        }
+        case 'last_edit_reason':
+          normalized.last_edit_reason = value
+          break
+        case 'request_id':
+          normalized.request_id = String(value)
+          break
+        case 'last_modified':
+          // 忽略传入的 last_modified，由 mergeMetadata 统一生成
+          break
+        default:
+          normalized[key] = value
+      }
+    }
+
+    return normalized
+  }
+
+  /**
+   * 映射常见的 camelCase 元数据字段为 snake_case
+   */
+  private mapMetadataKey(key: string): string {
+    switch (key) {
+      case 'semantic':
+      case 'semanticTypes':
+        return 'semantic_types'
+      case 'editCount':
+        return 'edit_count'
+      case 'lastEditReason':
+        return 'last_edit_reason'
+      case 'processingHistory':
+        return 'processing_history'
+      case 'userRating':
+        return 'user_rating'
+      case 'autoSaved':
+        return 'auto_saved'
+      case 'lastModified':
+        return 'last_modified'
+      case 'requestId':
+        return 'request_id'
+      case 'deletedAt':
+        return 'deleted_at'
+      case 'deletedBy':
+        return 'deleted_by'
+      case 'deletedFrom':
+        return 'deleted_from'
+      case 'aiGenerated':
+        return 'ai_generated'
+      case 'tokenCount':
+        return 'token_count'
+      case 'processingTime':
+        return 'processing_time'
+      default:
+        return key
+    }
+  }
+
+  /**
+   * 规范化处理历史记录数组
+   */
+  private normalizeProcessingHistory(history: any): any[] {
+    if (!Array.isArray(history)) {
+      return []
+    }
+
+    return history.map((record) => {
+      if (!record || typeof record !== 'object') {
+        return record
+      }
+
+      return {
+        timestamp: record.timestamp,
+        operation: record.operation,
+        model_used: record.model_used ?? record.modelUsed,
+        token_count: record.token_count ?? record.tokenCount,
+        processing_time: record.processing_time ?? record.processingTime,
+        confidence_before: record.confidence_before ?? record.confidenceBefore,
+        confidence_after: record.confidence_after ?? record.confidenceAfter
+      }
+    })
+  }
+
+  /**
+   * 规范化统计信息字段
+   */
+  private normalizeStatistics(statistics: any): Record<string, any> {
+    if (!statistics || typeof statistics !== 'object') {
+      return {}
+    }
+
+    const normalized: Record<string, any> = {}
+
+    for (const [rawKey, value] of Object.entries(statistics)) {
+      if (value === undefined) continue
+
+      switch (rawKey) {
+        case 'view_count':
+        case 'viewCount':
+          normalized.view_count = this.toNumber(value, 0)
+          break
+        case 'edit_duration_total':
+        case 'editDurationTotal':
+          normalized.edit_duration_total = this.toNumber(value, 0)
+          break
+        case 'ai_interactions':
+        case 'aiInteractions':
+          normalized.ai_interactions = this.toNumber(value, 0)
+          break
+        default:
+          normalized[rawKey] = value
+      }
+    }
+
+    if (normalized.view_count === undefined) {
+      normalized.view_count = 0
+    }
+    if (normalized.edit_duration_total === undefined) {
+      normalized.edit_duration_total = 0
+    }
+    if (normalized.ai_interactions === undefined) {
+      normalized.ai_interactions = 0
+    }
+
+    return normalized
+  }
+
+  /**
+   * 将值转换为数字，如果无法转换则返回默认值
+   */
+  private toNumber(value: any, fallback?: number): number | null {
+    if (value === null || value === undefined || value === '') {
+      return fallback ?? null
+    }
+
+    const numberValue = typeof value === 'number' ? value : Number(value)
+    if (Number.isNaN(numberValue)) {
+      return fallback ?? null
+    }
+
+    return numberValue
+  }
+
+  /**
+   * 将时间戳标准化为ISO字符串
+   */
+  private normalizeTimestamp(value: any): string | null {
+    if (value instanceof Date) {
+      return value.toISOString()
+    }
+
+    if (typeof value === 'string') {
+      const parsed = new Date(value)
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+    }
+
+    if (value && typeof value === 'object') {
+      const nested = value.timestamp ?? value.time ?? value.date
+      return nested ? this.normalizeTimestamp(nested) : null
+    }
+
+    return null
   }
 }

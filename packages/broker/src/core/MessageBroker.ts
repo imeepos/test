@@ -189,6 +189,8 @@ export class MessageBroker extends EventEmitter {
       if (!result) {
         throw new Error('Failed to publish message - channel flow control')
       }
+
+      console.log(`[Broker] Published message to ${exchange}/${routingKey} (messageId=${messageOptions.messageId}, correlationId=${messageOptions.correlationId})`)
     } catch (error) {
       console.error('Error publishing message:', error)
       throw error
@@ -232,6 +234,8 @@ export class MessageBroker extends EventEmitter {
         throw new Error('Failed to publish message - channel flow control')
       }
 
+      console.log(`[Broker] Publishing with confirm to ${exchange}/${routingKey} (messageId=${messageOptions.messageId}, correlationId=${messageOptions.correlationId})`)
+
       // 使用 waitForConfirms 等待确认，带超时
       const confirmPromise = this.confirmChannel.waitForConfirms()
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -239,6 +243,8 @@ export class MessageBroker extends EventEmitter {
       })
 
       await Promise.race([confirmPromise, timeoutPromise])
+
+      console.log(`[Broker] Message confirmed by broker ${exchange}/${routingKey} (messageId=${messageOptions.messageId}, correlationId=${messageOptions.correlationId})`)
     } catch (error) {
       throw error
     }
@@ -287,7 +293,19 @@ export class MessageBroker extends EventEmitter {
 
     return await this.channel.consume(queue, async (message) => {
       try {
+        if (message) {
+          const { messageId, correlationId, type } = message.properties
+          console.log(`[Broker] Received message from ${queue} (messageId=${messageId || 'n/a'}, correlationId=${correlationId || 'n/a'}, type=${type || 'n/a'})`)
+        } else {
+          console.log(`[Broker] Consumer for ${queue} received null message (cancelled)`)
+        }
+
         await handler(message)
+
+        if (message) {
+          const { messageId, correlationId } = message.properties
+          console.log(`[Broker] Message processed successfully ${queue} (messageId=${messageId || 'n/a'}, correlationId=${correlationId || 'n/a'})`)
+        }
       } catch (error) {
         console.error('Error processing message:', error)
 

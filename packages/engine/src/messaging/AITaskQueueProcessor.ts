@@ -334,6 +334,7 @@ export class AITaskQueueProcessor extends EventEmitter {
    * 处理 AI 任务 - 使用统一的任务类型
    */
   private async processAITask(taskData: AITaskMessage): Promise<any> {
+    console.log(`🎯 工作节点执行任务: ${taskData.taskId}, 类型: ${taskData.type}`)
     // 使用统一的任务类型处理
     switch (taskData.type) {
       case 'generate':

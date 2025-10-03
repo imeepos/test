@@ -14,27 +14,7 @@ interface BackendNode {
   version: number
   position: { x: number; y: number }
   size?: { width: number; height: number }
-  metadata: {
-    semantic_types: SemanticType[]
-    user_rating?: number
-    ai_rating?: number
-    edit_count: number
-    last_edit_reason?: string
-    processing_history: Array<{
-      timestamp: Date
-      operation: string
-      model_used?: string
-      token_count?: number
-      processing_time: number
-      confidence_before?: number
-      confidence_after?: number
-    }>
-    statistics: {
-      view_count: number
-      edit_duration_total: number
-      ai_interactions: number
-    }
-  }
+  metadata: Record<string, any>
   parent_id?: string
   created_at: Date
   updated_at: Date
@@ -97,9 +77,79 @@ export class NodeDataConverter {
   static fromBackend(backendNode: BackendNode): AINode {
     // 安全地访问 metadata，提供默认值
     const metadata = backendNode.metadata || {}
-    const semanticTypes = metadata.semantic_types || []
-    const processingHistory = metadata.processing_history || []
-    const statistics = metadata.statistics
+    const semanticTypes = (metadata.semantic_types ?? metadata.semantic ?? []) as SemanticType[]
+    const processingHistoryRaw = metadata.processing_history ?? metadata.processingHistory ?? []
+    const statisticsRaw = metadata.statistics ?? (metadata as any).stats
+
+    const editCountRaw = metadata.edit_count ?? metadata.editCount
+    const lastEditReasonRaw = metadata.last_edit_reason ?? metadata.lastEditReason
+    const userRatingRaw = metadata.user_rating ?? metadata.userRating
+    const autoSavedRaw = metadata.auto_saved ?? metadata.autoSaved
+    const lastModifiedRaw = metadata.last_modified ?? metadata.lastModified
+
+    const normalizedProcessingHistory = Array.isArray(processingHistoryRaw)
+      ? processingHistoryRaw.map((record: any) => {
+          if (!record || typeof record !== 'object') {
+            return record as ProcessingRecord
+          }
+
+          const timestampValue = record.timestamp ?? record.time
+          const parsedTimestamp = timestampValue ? new Date(timestampValue) : undefined
+
+          return {
+            timestamp: parsedTimestamp && !isNaN(parsedTimestamp.getTime()) ? parsedTimestamp : new Date(),
+            operation: record.operation,
+            modelUsed: record.model_used ?? record.modelUsed,
+            tokenCount: record.token_count ?? record.tokenCount,
+            processingTime: record.processing_time ?? record.processingTime,
+            confidenceBefore: record.confidence_before ?? record.confidenceBefore,
+            confidenceAfter: record.confidence_after ?? record.confidenceAfter,
+          }
+        })
+      : []
+
+    const normalizedStatistics = statisticsRaw && typeof statisticsRaw === 'object'
+      ? {
+          viewCount: Number((statisticsRaw as any).view_count ?? (statisticsRaw as any).viewCount ?? 0),
+          editDurationTotal: Number((statisticsRaw as any).edit_duration_total ?? (statisticsRaw as any).editDurationTotal ?? 0),
+          aiInteractions: Number((statisticsRaw as any).ai_interactions ?? (statisticsRaw as any).aiInteractions ?? 0),
+        }
+      : undefined
+
+    const normalizedUserRating = (() => {
+      if (userRatingRaw === null || userRatingRaw === undefined || userRatingRaw === '') {
+        return undefined
+      }
+
+      const value = typeof userRatingRaw === 'number' ? userRatingRaw : Number(userRatingRaw)
+      return Number.isNaN(value) ? undefined : value
+    })()
+
+    const fallbackUpdatedAt = backendNode.updated_at ? new Date(backendNode.updated_at) : new Date()
+    const lastModified = (() => {
+      if (!lastModifiedRaw) return fallbackUpdatedAt
+
+      if (lastModifiedRaw instanceof Date) {
+        return lastModifiedRaw
+      }
+
+      if (typeof lastModifiedRaw === 'string') {
+        const parsed = new Date(lastModifiedRaw)
+        return isNaN(parsed.getTime()) ? fallbackUpdatedAt : parsed
+      }
+
+      if (typeof lastModifiedRaw === 'object') {
+        const timestamp = (lastModifiedRaw as any).timestamp ?? (lastModifiedRaw as any).time ?? (lastModifiedRaw as any).date
+        if (timestamp) {
+          const parsed = new Date(timestamp)
+          if (!isNaN(parsed.getTime())) {
+            return parsed
+          }
+        }
+      }
+
+      return fallbackUpdatedAt
+    })()
 
     // 确保 importance 是有效值
     const importance = this.normalizeImportance(backendNode.importance || 3)
@@ -129,31 +179,20 @@ export class NodeDataConverter {
       position: backendNode.position || { x: 0, y: 0 },
       size: backendNode.size,
       connections: [], // 连接关系需要单独处理
-      semantic_type: semanticTypes[0],
-      user_rating: metadata.user_rating,
+      semantic_type: Array.isArray(semanticTypes) && semanticTypes.length > 0 ? semanticTypes[0] : undefined,
+      user_rating: normalizedUserRating,
       metadata: {
-        semantic: semanticTypes,
-        editCount: metadata.edit_count || 0,
-        lastEditReason: metadata.last_edit_reason,
-        lastModified: backendNode.updated_at,
-        autoSaved: false,
-        processingHistory: processingHistory.map(record => ({
-          timestamp: record.timestamp,
-          operation: record.operation,
-          modelUsed: record.model_used,
-          tokenCount: record.token_count,
-          processingTime: record.processing_time,
-          confidenceBefore: record.confidence_before,
-          confidenceAfter: record.confidence_after,
-        })),
-        statistics: statistics ? {
-          viewCount: statistics.view_count,
-          editDurationTotal: statistics.edit_duration_total,
-          aiInteractions: statistics.ai_interactions,
-        } : undefined
+        semantic: Array.isArray(semanticTypes) ? semanticTypes : [],
+        editCount: typeof editCountRaw === 'number' ? editCountRaw : Number(editCountRaw) || 0,
+        lastEditReason: lastEditReasonRaw,
+        userRating: normalizedUserRating,
+        lastModified,
+        autoSaved: Boolean(autoSavedRaw),
+        processingHistory: normalizedProcessingHistory,
+        statistics: normalizedStatistics
       },
-      createdAt: backendNode.created_at || new Date(),
-      updatedAt: backendNode.updated_at || new Date()
+      createdAt: backendNode.created_at ? new Date(backendNode.created_at) : new Date(),
+      updatedAt: fallbackUpdatedAt
     }
   }
 

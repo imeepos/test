@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ZoomIn, ZoomOut, Eye, Grid } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useCanvasStore, useUIStore } from '@/stores'
+import type { ViewMode } from '@/types'
 
 const ZoomIndicator: React.FC = () => {
   const {
@@ -43,8 +44,18 @@ const ZoomIndicator: React.FC = () => {
     return Math.max(0, Math.min(100, normalizedZoom * 100))
   }, [viewport?.zoom])
 
+  const viewModes: ViewMode[] = ['overview', 'preview', 'detail']
+  const viewModeLabels: Record<ViewMode, string> = {
+    overview: '概览模式',
+    preview: '预览模式',
+    detail: '详细模式'
+  }
+
+  const currentIndex = viewModes.indexOf(viewMode)
+  const nextViewMode = viewModes[(currentIndex + 1) % viewModes.length]
+
   const handleViewModeToggle = () => {
-    setViewMode(viewMode === 'preview' ? 'detail' : 'preview')
+    setViewMode(nextViewMode)
   }
 
   const handleGridToggle = () => {
@@ -108,13 +119,14 @@ const ZoomIndicator: React.FC = () => {
       {/* 视图选项 */}
       <div className="flex gap-1">
         <Button
-          variant={viewMode === 'detail' ? 'secondary' : 'ghost'}
+          variant={viewMode === 'detail' ? 'secondary' : viewMode === 'overview' ? 'ghost' : 'ghost'}
           size="sm"
           icon={Eye}
           onClick={handleViewModeToggle}
           className="flex-1 h-8 text-xs"
+          title={`切换到${viewModeLabels[nextViewMode]}`}
         >
-          {viewMode === 'preview' ? '详细模式' : '预览模式'}
+          {viewModeLabels[viewMode]}
         </Button>
         
         <Button

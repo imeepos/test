@@ -273,6 +273,8 @@ export class AITaskQueueConsumer extends EventEmitter {
   private async executeAITask(taskMessage: UnifiedAITaskMessage): Promise<any> {
     const { type, inputs, context, instruction, parameters } = taskMessage
 
+    console.log(`🎯 引擎开始执行任务: ${taskMessage.taskId}, 类型: ${type}`)
+
     // 根据任务类型调用不同的AI处理方法
     switch (type) {
       case 'generate':

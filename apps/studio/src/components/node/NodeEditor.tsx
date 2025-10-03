@@ -31,7 +31,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   onClose,
   onSave,
 }) => {
-  const { getNode } = useNodeStore()
+  const { getNode, updateNodeWithSync } = useNodeStore()
   const { addToast } = useUIStore()
   
   const node = getNode(nodeId)
@@ -42,6 +42,8 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   const [importance, setImportance] = useState<ImportanceLevel>(3)
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
+  const [userRating, setUserRating] = useState<number | undefined>(undefined)
+  const [changeReason, setChangeReason] = useState('')
 
   // 编辑器模式
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('edit')
@@ -60,70 +62,121 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
       setTitle(node.title || '')
       setImportance(node.importance)
       setTags([...node.tags])
+      setUserRating(node.user_rating)
+      setChangeReason(node.metadata?.lastEditReason || '')
       setHasChanges(false)
     }
   }, [node, isOpen])
 
   // 检测变更
   useEffect(() => {
-    if (!node) return
+    if (!node) {
+      setHasChanges(false)
+      return
+    }
+
+    if (!isOpen) {
+      setHasChanges(false)
+      return
+    }
 
     const hasContentChanged = content !== node.content
     const hasTitleChanged = title !== (node.title || '')
     const hasImportanceChanged = importance !== node.importance
     const hasTagsChanged = JSON.stringify(tags.sort()) !== JSON.stringify([...node.tags].sort())
+    const normalizedReason = changeReason.trim()
+    const originalReason = (node.metadata?.lastEditReason || '').trim()
+    const hasReasonChanged = normalizedReason !== originalReason
+    const hasRatingChanged = (userRating ?? undefined) !== (node.user_rating ?? undefined)
 
-    setHasChanges(hasContentChanged || hasTitleChanged || hasImportanceChanged || hasTagsChanged)
-  }, [content, title, importance, tags, node])
+    setHasChanges(
+      hasContentChanged ||
+      hasTitleChanged ||
+      hasImportanceChanged ||
+      hasTagsChanged ||
+      hasReasonChanged ||
+      hasRatingChanged
+    )
+  }, [content, title, importance, tags, changeReason, userRating, node, isOpen])
 
   // 自动保存
   const handleAutoSave = useCallback(async () => {
-    if (!node || !hasChanges || !content.trim()) return
+    if (!node || !hasChanges || !isOpen) return
 
     try {
+      const trimmedReason = changeReason.trim()
+      const trimmedContent = content.trim()
+      const trimmedTitle = title.trim()
+      const metadataUpdates = {
+        ...node.metadata,
+        lastModified: new Date(),
+        autoSaved: true,
+        lastEditReason: trimmedReason || undefined,
+        userRating: userRating,
+      }
+
       const updates: Partial<AINode> = {
-        content: content.trim(),
-        title: title.trim() || undefined,
+        content: trimmedContent,
+        title: trimmedTitle || undefined,
         importance,
         tags,
-        metadata: {
-          ...node.metadata,
-          lastModified: new Date(),
-          autoSaved: true
-        }
+        user_rating: userRating,
+        metadata: metadataUpdates,
       }
 
       onSave(updates)
+      setContent(trimmedContent)
+      setTitle(trimmedTitle)
       setHasChanges(false)
       setLastSaved(new Date())
+
+      await updateNodeWithSync(node.id, {
+        content: updates.content,
+        title: updates.title,
+        importance,
+        tags,
+        metadata: metadataUpdates,
+        user_rating: userRating,
+      }, { silent: true })
 
       addToast({
         type: 'info',
         title: '自动保存',
         message: '内容已自动保存',
-        duration: 2000
+        duration: 2000,
       })
     } catch (error) {
       console.error('自动保存失败:', error)
     }
-  }, [node, hasChanges, content, title, importance, tags, onSave, addToast])
+  }, [
+    node,
+    hasChanges,
+    content,
+    title,
+    importance,
+    tags,
+    userRating,
+    changeReason,
+    onSave,
+    updateNodeWithSync,
+    addToast,
+    isOpen,
+  ])
 
   // 自动保存功能
   useEffect(() => {
-    if (!autoSaveEnabled || !hasChanges || isSaving || isOptimizing) return
+    if (!isOpen || !autoSaveEnabled || !hasChanges || isSaving || isOptimizing) return
 
     const autoSaveTimer = setTimeout(() => {
-      if (content.trim() && hasChanges) {
-        handleAutoSave()
-      }
+      handleAutoSave()
     }, 5000) // 5秒后自动保存
 
     return () => clearTimeout(autoSaveTimer)
-  }, [hasChanges, content, autoSaveEnabled, isSaving, isOptimizing, handleAutoSave])
+  }, [hasChanges, autoSaveEnabled, isSaving, isOptimizing, isOpen, handleAutoSave])
 
   // 保存更改
   const handleSave = async () => {
-    if (!node || !hasChanges) return
+    if (!node || !isOpen || !hasChanges) return
 
     // 验证内容
     if (!content.trim()) {
@@ -137,6 +190,9 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
 
     setIsSaving(true)
     try {
+      const trimmedReason = changeReason.trim()
+      const trimmedContent = content.trim()
+      const trimmedTitle = title.trim()
       // 创建版本记录
       // const versionRecord = {
       //   id: Date.now().toString(),
@@ -149,21 +205,29 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
       //   tags: [...tags]
       // }
 
+      const metadataUpdates = {
+        ...node.metadata,
+        lastModified: new Date(),
+        editCount: (node.metadata?.editCount || 0) + 1,
+        lastEditReason: trimmedReason || undefined,
+        userRating: userRating,
+        autoSaved: false,
+      }
+
       const updates: Partial<AINode> = {
-        content: content.trim(),
-        title: title.trim() || undefined,
+        content: trimmedContent,
+        title: trimmedTitle || undefined,
         importance,
         tags,
-        // 更新最后修改时间
-        metadata: {
-          ...node.metadata,
-          lastModified: new Date(),
-          editCount: (node.metadata?.editCount || 0) + 1
-        }
+        user_rating: userRating,
+        metadata: metadataUpdates
       }
 
       onSave(updates)
+      setContent(trimmedContent)
+      setTitle(trimmedTitle)
       setHasChanges(false)
+      setLastSaved(new Date())
 
       // 如果内容很长，提供简短预览
       const contentPreview = content.length > 50
@@ -176,6 +240,15 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
         message: `节点内容已更新: "${contentPreview}"`,
         duration: 3000
       })
+
+      await updateNodeWithSync(node.id, {
+        content: updates.content,
+        title: updates.title,
+        importance,
+        tags,
+        metadata: metadataUpdates,
+        user_rating: userRating,
+      }, { silent: true })
 
       onClose()
     } catch (error) {
@@ -263,6 +336,14 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   // 移除标签
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove))
+  }
+
+  const handleRatingSelect = (rating: number) => {
+    if (userRating === rating) {
+      setUserRating(undefined)
+    } else {
+      setUserRating(rating)
+    }
   }
 
   // 简单的Markdown渲染器
@@ -507,6 +588,38 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       <Star className="h-4 w-4" fill={importance >= level ? 'currentColor' : 'none'} />
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* 用户评分 */}
+              <div>
+                <label className="block text-sm font-medium text-sidebar-text mb-2">
+                  用户评分
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      onClick={() => handleRatingSelect(rating)}
+                      className={`p-2 rounded-md transition-colors ${
+                        (userRating || 0) >= rating
+                          ? 'text-amber-400 bg-amber-400/20'
+                          : 'text-sidebar-text-muted hover:text-sidebar-text'
+                      }`}
+                      aria-label={`评分 ${rating} 星`}
+                    >
+                      <Star
+                        className="h-4 w-4"
+                        fill={(userRating || 0) >= rating ? 'currentColor' : 'none'}
+                      />
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setUserRating(undefined)}
+                    className="text-xs text-sidebar-text-muted hover:text-sidebar-text transition-colors"
+                  >
+                    清除
+                  </button>
                 </div>
               </div>
 

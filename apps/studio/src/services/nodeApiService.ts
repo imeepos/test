@@ -57,6 +57,7 @@ export interface UpdateNodeParams {
   status?: 'idle' | 'processing' | 'completed' | 'error'
   confidence?: number
   metadata?: any
+  user_rating?: number
 }
 
 /**

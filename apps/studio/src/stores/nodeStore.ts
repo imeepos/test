@@ -46,7 +46,7 @@ export interface NodeState {
   setCurrentProject: (projectId: string) => void
   syncFromBackend: (projectId: string, options?: { silent?: boolean }) => Promise<void>
   createNodeWithSync: (params: CreateNodeParams) => Promise<AINode>
-  updateNodeWithSync: (id: string, updates: UpdateNodeParams) => Promise<void>
+  updateNodeWithSync: (id: string, updates: UpdateNodeParams, options?: { silent?: boolean }) => Promise<void>
   deleteNodeWithSync: (id: string, permanent?: boolean) => Promise<void>
   
   // 连接管理
@@ -153,25 +153,41 @@ export const useNodeStore = create<NodeState>()(
         updateNode: (id, updates) => {
           set((state) => {
             const node = state.nodes.get(id)
-            if (node) {
-              const updatedNode = {
-                ...node,
-                ...updates,
-                updatedAt: new Date(),
-                version: updates.content !== node.content ? node.version + 1 : node.version,
-                metadata: {
-                  ...node.metadata,
-                  editCount: node.metadata.editCount + 1,
-                },
-              }
-              state.nodes.set(id, updatedNode)
-              state.history.push({
-                id: generateId(),
-                type: 'update',
-                data: updates,
-                timestamp: new Date(),
-              })
+            if (!node) {
+              return
             }
+
+            const { metadata: updatesMetadata, ...restUpdates } = updates as typeof updates & { metadata?: AINode['metadata'] }
+
+            const mergedMetadataBase: AINode['metadata'] = {
+              ...node.metadata,
+              ...(updatesMetadata ?? {}),
+            }
+
+            const nextEditCount = typeof updatesMetadata?.editCount === 'number'
+              ? updatesMetadata.editCount
+              : (node.metadata?.editCount ?? 0) + 1
+
+            const contentChanged = restUpdates.content !== undefined && restUpdates.content !== node.content
+
+            const updatedNode: AINode = {
+              ...node,
+              ...restUpdates,
+              updatedAt: new Date(),
+              version: contentChanged ? node.version + 1 : node.version,
+              metadata: {
+                ...mergedMetadataBase,
+                editCount: nextEditCount,
+              },
+            }
+
+            state.nodes.set(id, updatedNode)
+            state.history.push({
+              id: generateId(),
+              type: 'update',
+              data: updates,
+              timestamp: new Date(),
+            })
           })
         },
         
@@ -582,11 +598,15 @@ export const useNodeStore = create<NodeState>()(
           }
         },
 
-        updateNodeWithSync: async (id, updates) => {
+        updateNodeWithSync: async (id, updates, options = {}) => {
           const { addToast } = useUIStore.getState()
           const { startSaving, savingComplete, savingFailed } = useSyncStore.getState()
 
-          startSaving()
+          const silent = options?.silent === true
+
+          if (!silent) {
+            startSaving()
+          }
 
           try {
             // 调用后端API更新节点
@@ -603,12 +623,15 @@ export const useNodeStore = create<NodeState>()(
               })
             })
 
-            savingComplete()
-            addToast({
-              type: 'success',
-              title: '节点已更新',
-              duration: 2000,
-            })
+            if (!silent) {
+              savingComplete()
+              addToast({
+                type: 'success',
+                title: '节点已更新',
+                duration: 2000,
+              })
+            }
+
             console.log('✅ 节点更新成功:', id)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '更新节点失败'

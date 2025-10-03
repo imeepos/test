@@ -3,7 +3,7 @@
  * 修复了信息层级混乱、添加了可访问性支持、优化了性能
  */
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { motion } from 'framer-motion'
 import {
@@ -37,7 +37,19 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
 
   // 状态管理
   const [isEditorOpen, setIsEditorOpen] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false) // 默认折叠
+  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false) // 预览模式下的手动展开
+
+  const isOverview = viewMode === 'overview'
+  const isPreview = viewMode === 'preview'
+  const isDetail = viewMode === 'detail'
+
+  useEffect(() => {
+    if (isDetail) {
+      setIsManuallyExpanded(true)
+    } else if (isOverview) {
+      setIsManuallyExpanded(false)
+    }
+  }, [isDetail, isOverview])
 
   // 键盘导航支持
   useKeyboardNavigation({
@@ -138,8 +150,13 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
    */
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    setIsExpanded(!isExpanded)
-  }, [isExpanded])
+
+    if (!isPreview) {
+      return
+    }
+
+    setIsManuallyExpanded((prev) => !prev)
+  }, [isPreview])
 
   /**
    * 重试AI生成
@@ -177,10 +194,19 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
     return `版本 ${data.version} | 编辑 ${editCount} 次\n创建: ${createdDate}\n更新: ${updatedDate}${data.metadata?.autoSaved ? '\n自动保存' : ''}`
   }, [data.version, data.metadata, data.createdAt, data.updatedAt])
 
+  const showFullDetail = isDetail || isManuallyExpanded
+  const displayContent = showFullDetail ? data.content : contentPreview
+  const cardSizeClasses = isOverview ? 'min-w-[160px] max-w-[220px]' : 'min-w-[220px] max-w-[320px]'
+  const nodeTitle = data.title || '未命名节点'
+  const contentClassNames = showFullDetail
+    ? 'text-sm text-sidebar-text leading-relaxed whitespace-pre-wrap break-words'
+    : 'text-sm text-sidebar-text leading-relaxed break-words'
+  const showUserRating = typeof data.user_rating === 'number' && data.user_rating > 0
+
   // ARIA 属性
   const nodeAriaProps = createAriaProps({
     role: 'article',
-    label: `AI节点: ${data.title || '未命名节点'}`,
+    label: `AI节点: ${nodeTitle}`,
     describedBy: `node-content-${data.id}`
   })
 
@@ -201,7 +227,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
       <motion.div
         {...nodeAriaProps}
         className={`
-          group relative min-w-[200px] max-w-[300px] rounded-lg border-2 bg-canvas-node cursor-pointer
+          group relative ${cardSizeClasses} rounded-lg border-2 bg-canvas-node cursor-pointer
           ${importanceColors.border} ${importanceColors.bg}
           ${selected ? 'ring-2 ring-sidebar-accent shadow-xl' : 'shadow-lg'}
           transition-shadow duration-200
@@ -214,74 +240,120 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: ANIMATION_DURATION.fast / 1000 }}
       >
-        {/* 头部 - 统一的信息栏 */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-canvas-node-border">
-          {/* 折叠/展开按钮 + 标题和状态 */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button
-              onClick={toggleExpanded}
-              className="p-0.5 hover:bg-sidebar-accent/10 rounded transition-colors"
-              aria-label={isExpanded ? "折叠详细信息" : "展开详细信息"}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-sidebar-text-muted" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-sidebar-text-muted" />
-              )}
-            </button>
-            {data.title && (
-              <h3 className="text-sm font-medium text-sidebar-text truncate">
-                {data.title}
-              </h3>
+        {/* 头部信息 */}
+        <div
+          className={`px-3 py-2 border-b border-canvas-node-border ${
+            isOverview ? 'flex flex-col gap-1' : 'flex items-center justify-between gap-2'
+          }`}
+        >
+          <div className={`flex items-center ${isOverview ? 'gap-1' : 'gap-2'} flex-1 min-w-0`}>
+            {isPreview && (
+              <button
+                onClick={toggleExpanded}
+                className="p-0.5 hover:bg-sidebar-accent/10 rounded transition-colors"
+                aria-label={showFullDetail ? '折叠详细信息' : '展开详细信息'}
+              >
+                {showFullDetail ? (
+                  <ChevronDown className="h-4 w-4 text-sidebar-text-muted" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-sidebar-text-muted" />
+                )}
+              </button>
             )}
-            {statusIcon}
+
+            <h3 className="text-sm font-medium text-sidebar-text truncate">
+              {nodeTitle}
+            </h3>
           </div>
+
+          {!isOverview && statusIcon}
+
+          {isOverview && (
+            <div className="flex items-center gap-1" aria-label={`重要性等级 ${data.importance}`}>
+              {renderStars(data.importance)}
+            </div>
+          )}
         </div>
 
-        {/* 详细信息区域 - 仅在展开时显示 */}
-        {isExpanded && (
+        {/* 内容区域 */}
+        {isOverview ? (
           <>
-            {/* 版本信息 - 仅展开时显示 */}
-            <div className="flex items-center justify-end px-3 py-2 border-b border-canvas-node-border">
-              <div
-                className="flex items-center gap-2 cursor-help"
-                title={versionTooltip}
-                aria-label={versionTooltip}
-              >
-                <div className="flex items-center gap-1 text-xs text-sidebar-text-muted">
-                  <Clock className="h-3 w-3" aria-hidden="true" />
-                  <span aria-label={`版本 ${data.version}`}>v{data.version}</span>
-                </div>
-
-                {data.metadata?.autoSaved && (
-                  <span
-                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
-                             bg-green-500/20 text-green-400 border border-green-500/30"
-                    title="自动保存"
-                    aria-label="自动保存"
-                  >
-                    AS
-                  </span>
-                )}
+            <div className="px-3 py-2 text-xs text-sidebar-text-muted flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Zap className="h-3 w-3" aria-hidden="true" />
+                <span aria-label={`置信度 ${Math.round(data.confidence * 100)}%`}>
+                  {Math.round(data.confidence * 100)}%
+                </span>
               </div>
+              <span className="text-[11px]" aria-label={`版本 ${data.version}`}>
+                v{data.version}
+              </span>
             </div>
+            {showUserRating && (
+              <div className="px-3 pb-2 text-[11px] text-amber-400 flex items-center gap-1">
+                <Star className="h-3 w-3" aria-hidden="true" />
+                <span aria-label={`用户评分 ${data.user_rating} / 5`}>
+                  {data.user_rating}/5
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {showFullDetail && (
+              <div className="flex items-center justify-between px-3 py-2 border-b border-canvas-node-border">
+                <div
+                  className="flex items-center gap-2 cursor-help"
+                  title={versionTooltip}
+                  aria-label={versionTooltip}
+                >
+                  <div className="flex items-center gap-1 text-xs text-sidebar-text-muted">
+                    <Clock className="h-3 w-3" aria-hidden="true" />
+                    <span aria-label={`版本 ${data.version}`}>v{data.version}</span>
+                  </div>
 
-            {/* 内容区域 - 增加padding */}
+                  {data.metadata?.autoSaved && (
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30"
+                      title="自动保存"
+                      aria-label="自动保存"
+                    >
+                      AS
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="px-4 py-3">
               <p
                 id={`node-content-${data.id}`}
-                className="text-sm text-sidebar-text leading-relaxed whitespace-pre-wrap break-words"
+                className={contentClassNames}
               >
-                {contentPreview}
+                {displayContent || '暂无内容'}
               </p>
             </div>
 
-            {/* 元信息栏 */}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-canvas-node-border">
-              {/* 重要性星级 */}
-              {renderStars(data.importance)}
+            {showFullDetail && data.metadata?.lastEditReason && (
+              <div className="px-4 pb-2 text-xs text-sidebar-text-muted italic">
+                变更原因：{data.metadata.lastEditReason}
+              </div>
+            )}
 
-              {/* 置信度 */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-canvas-node-border">
+              <div className="flex items-center gap-3">
+                {renderStars(data.importance)}
+                {showUserRating && (
+                  <div
+                    className="flex items-center gap-1 text-xs text-amber-400"
+                    aria-label={`用户评分 ${data.user_rating} / 5`}
+                  >
+                    <Star className="h-3 w-3" aria-hidden="true" />
+                    <span>{data.user_rating}/5</span>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center gap-1">
                 <Zap className="h-3 w-3" aria-hidden="true" />
                 <span
@@ -293,8 +365,7 @@ const AINode: React.FC<AINodeProps> = ({ data, selected }) => {
               </div>
             </div>
 
-            {/* 标签 - 最多显示2个 */}
-            {data.tags.length > 0 && (
+            {showFullDetail && data.tags.length > 0 && (
               <div className="px-3 pb-3">
                 <div className="flex flex-wrap gap-1" role="list" aria-label="节点标签">
                   {data.tags.slice(0, 2).map((tag, index) => (

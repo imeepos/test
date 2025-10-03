@@ -211,7 +211,7 @@ import MyPlugin from 'my-plugin'
                 <FolderOutlined className="mr-2" />
                 <span>{node.title}</span>
                 {node.children && (
-                  <div className="ml-4">
+                  <div className="ml-4 file-node-children">
                     {renderFileTree(node.children)}
                   </div>
                 )}

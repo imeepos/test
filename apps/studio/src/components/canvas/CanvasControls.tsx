@@ -66,10 +66,27 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   const [searchQuery, setSearchQuery] = React.useState('')
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
+  // 视图模式配置
+  const viewModes: ViewMode[] = ['overview', 'preview', 'detail']
+  const viewModeLabels: Record<ViewMode, string> = {
+    overview: '概览模式',
+    preview: '预览模式',
+    detail: '详细模式'
+  }
+
+  const currentViewModeIndex = viewModes.indexOf(viewMode)
+  const nextViewMode = viewModes[(currentViewModeIndex + 1) % viewModes.length]
+
   // 视图模式切换
   const handleViewModeToggle = () => {
-    const newMode: ViewMode = viewMode === 'preview' ? 'detail' : 'preview'
-    setViewMode(newMode)
+    setViewMode(nextViewMode)
+
+    addToast({
+      type: 'info',
+      title: '视图模式已切换',
+      message: `当前为${viewModeLabels[nextViewMode]}`,
+      duration: 1800
+    })
   }
 
   // 网格显示切换
@@ -333,6 +350,17 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           title="搜索节点 (Ctrl+F)"
         >
           <Search className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* 视图模式切换 */}
+      <div className="p-2 bg-sidebar-surface/90 backdrop-blur-sm border border-sidebar-border rounded-lg shadow-lg">
+        <button
+          onClick={handleViewModeToggle}
+          className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-hover rounded text-sidebar-text-muted hover:text-sidebar-text transition-colors"
+          title={`切换到${viewModeLabels[nextViewMode]}`}
+        >
+          <Eye className="h-5 w-5" />
         </button>
       </div>
 
