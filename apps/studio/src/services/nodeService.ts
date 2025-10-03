@@ -8,6 +8,7 @@ import type {
   SemanticType
 } from '@/types'
 import { NodeDataConverter } from '@/types/converter'
+import { useNodeStore } from '@/stores/nodeStore'
 import { websocketService } from './websocketService'
 
 interface NodeCreationOptions {
@@ -56,12 +57,22 @@ class NodeService {
     let confidence = 0.5
 
     // 如果启用AI生成
-    if (useAI && (content || context.length > 0)) {
+    if (useAI && (content || context.length > 0 || parentNodeIds.length > 0 || externalNodeId)) {
       try {
+        const manualInputs = context.map((item) => item?.trim()).filter((item): item is string => Boolean(item))
+        const trimmedContent = content.trim()
+
+        const { contextText: parentContext, inputs: parentInputs } = this.buildParentContext(parentNodeIds, externalNodeId)
+        const aiInputs = this.composeAIInputs(manualInputs, trimmedContent, parentInputs)
+
+        if (aiInputs.length === 0) {
+          throw new Error('AI生成缺少输入内容，请提供文本或连接有内容的上游节点')
+        }
+
         const aiRequest: AIGenerateRequest & { nodeId?: string } = {
-          inputs: context.length > 0 ? context : [content],
-          context: this.buildContext(parentNodeIds),
-          type: context.length > 1 ? 'fusion' : 'generate',
+          inputs: aiInputs,
+          context: parentContext,
+          type: aiInputs.length > 1 ? 'fusion' : 'generate',
           nodeId: externalNodeId // ✅ 传递 nodeId 给后端
         }
 
@@ -426,10 +437,97 @@ class NodeService {
   /**
    * 准备AI请求上下文
    */
-  private buildContext(parentNodeIds: string[]): string {
-    // 这里应该从store获取父节点信息，暂时返回空字符串
-    // 实际实现时需要注入nodeStore依赖
-    return parentNodeIds.length > 0 ? `相关节点: ${parentNodeIds.join(', ')}` : ''
+  private buildParentContext(parentNodeIds: string[], targetNodeId?: string): { contextText: string; inputs: string[] } {
+    const relatedNodes = this.resolveContextNodes(parentNodeIds, targetNodeId)
+
+    if (relatedNodes.length === 0) {
+      return { contextText: '', inputs: [] }
+    }
+
+    const contextParts: string[] = []
+    const inputs: string[] = []
+
+    for (const node of relatedNodes) {
+      const nodeContent = (node.content ?? '').trim()
+      if (!nodeContent) {
+        continue
+      }
+
+      const title = this.escapeXmlAttribute(node.title || '未命名节点')
+      contextParts.push(`<node title="${title}">${nodeContent}</node>`)
+      inputs.push(nodeContent)
+    }
+
+    return {
+      contextText: contextParts.join('\n'),
+      inputs
+    }
+  }
+
+  private resolveContextNodes(parentNodeIds: string[], targetNodeId?: string): AINode[] {
+    try {
+      const { nodes, edges } = useNodeStore.getState()
+
+      const relatedIds = new Set<string>()
+      parentNodeIds.filter(Boolean).forEach((id) => relatedIds.add(id))
+
+      if (targetNodeId) {
+        for (const edge of edges) {
+          if (edge.target === targetNodeId) {
+            relatedIds.add(edge.source)
+          }
+
+          if (edge.metadata.bidirectional && edge.source === targetNodeId) {
+            relatedIds.add(edge.target)
+          }
+        }
+
+        relatedIds.delete(targetNodeId)
+      }
+
+      const relatedNodes: AINode[] = []
+      relatedIds.forEach((id) => {
+        const node = nodes.get(id)
+        if (node && typeof node.content === 'string' && node.content.trim().length > 0) {
+          relatedNodes.push(node)
+        }
+      })
+
+      return relatedNodes
+    } catch (error) {
+      console.warn('构建AI上下文时无法获取节点信息:', error)
+      return []
+    }
+  }
+
+  private composeAIInputs(manualInputs: string[], content: string, relatedInputs: string[]): string[] {
+    const inputs: string[] = []
+    const seen = new Set<string>()
+
+    const addInput = (value?: string) => {
+      const trimmed = value?.trim()
+      if (!trimmed || seen.has(trimmed)) {
+        return
+      }
+
+      seen.add(trimmed)
+      inputs.push(trimmed)
+    }
+
+    manualInputs.forEach((input) => addInput(input))
+    addInput(content)
+    relatedInputs.forEach((input) => addInput(input))
+
+    return inputs
+  }
+
+  private escapeXmlAttribute(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
   }
 
   /**

@@ -521,6 +521,7 @@ const CanvasPage: React.FC = () => {
                         })
 
                         addNode({
+                          id: newNode.id,
                           content: newNode.content,
                           title: newNode.title,
                           importance: newNode.importance,
@@ -531,6 +532,11 @@ const CanvasPage: React.FC = () => {
                           connections: newNode.connections,
                           version: newNode.version,
                           metadata: newNode.metadata,
+                          createdAt: newNode.createdAt,
+                          updatedAt: newNode.updatedAt,
+                          semantic_type: newNode.semantic_type,
+                          user_rating: newNode.user_rating,
+                          size: newNode.size,
                         })
                         pastedCount++
                       } catch (error) {
@@ -553,6 +559,7 @@ const CanvasPage: React.FC = () => {
                     })
 
                     addNode({
+                      id: newNode.id,
                       content: newNode.content,
                       title: newNode.title,
                       importance: newNode.importance,
@@ -563,6 +570,11 @@ const CanvasPage: React.FC = () => {
                       connections: newNode.connections,
                       version: newNode.version,
                       metadata: newNode.metadata,
+                      createdAt: newNode.createdAt,
+                      updatedAt: newNode.updatedAt,
+                      semantic_type: newNode.semantic_type,
+                      user_rating: newNode.user_rating,
+                      size: newNode.size,
                     })
 
                     // 成功时不显示toast
@@ -576,6 +588,7 @@ const CanvasPage: React.FC = () => {
                     })
 
                     addNode({
+                      id: newNode.id,
                       content: newNode.content,
                       title: newNode.title,
                       importance: newNode.importance,
@@ -586,6 +599,11 @@ const CanvasPage: React.FC = () => {
                       connections: newNode.connections,
                       version: newNode.version,
                       metadata: newNode.metadata,
+                      createdAt: newNode.createdAt,
+                      updatedAt: newNode.updatedAt,
+                      semantic_type: newNode.semantic_type,
+                      user_rating: newNode.user_rating,
+                      size: newNode.size,
                     })
 
                     // 成功时不显示toast
@@ -600,6 +618,7 @@ const CanvasPage: React.FC = () => {
                   })
 
                   addNode({
+                    id: newNode.id,
                     content: newNode.content,
                     title: newNode.title,
                     importance: newNode.importance,
@@ -610,6 +629,11 @@ const CanvasPage: React.FC = () => {
                     connections: newNode.connections,
                     version: newNode.version,
                     metadata: newNode.metadata,
+                    createdAt: newNode.createdAt,
+                    updatedAt: newNode.updatedAt,
+                    semantic_type: newNode.semantic_type,
+                    user_rating: newNode.user_rating,
+                    size: newNode.size,
                   })
 
                   // 成功时不显示toast

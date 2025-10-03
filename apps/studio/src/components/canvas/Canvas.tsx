@@ -448,6 +448,7 @@ const Canvas: React.FC<CanvasProps> = ({
         const newNode = await nodeService.dragExpandGenerate(sourceNode, position)
 
         const newNodeId = addNode({
+          id: newNode.id,
           content: newNode.content,
           title: newNode.title,
           importance: newNode.importance,
@@ -455,9 +456,14 @@ const Canvas: React.FC<CanvasProps> = ({
           status: newNode.status,
           tags: newNode.tags,
           position: newNode.position,
-          connections: [],
+          connections: newNode.connections,
           version: newNode.version,
           metadata: newNode.metadata,
+          createdAt: newNode.createdAt,
+          updatedAt: newNode.updatedAt,
+          semantic_type: newNode.semantic_type,
+          user_rating: newNode.user_rating,
+          size: newNode.size,
         })
 
         if (newNodeId) {
@@ -688,6 +694,7 @@ const Canvas: React.FC<CanvasProps> = ({
             })
 
             const newNodeId = addNode({
+              id: aiNode.id,
               content: aiNode.content,
               title: aiNode.title,
               importance: aiNode.importance,
@@ -698,6 +705,11 @@ const Canvas: React.FC<CanvasProps> = ({
               connections: aiNode.connections,
               version: aiNode.version,
               metadata: aiNode.metadata,
+              createdAt: aiNode.createdAt,
+              updatedAt: aiNode.updatedAt,
+              semantic_type: aiNode.semantic_type,
+              user_rating: aiNode.user_rating,
+              size: aiNode.size,
             })
 
             if (newNodeId) {
@@ -1129,6 +1141,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
         // 添加融合节点到store
         const newNodeId = addNode({
+          id: fusionNode.id,
           content: fusionNode.content,
           title: fusionNode.title,
           importance: fusionNode.importance,
@@ -1136,9 +1149,14 @@ const Canvas: React.FC<CanvasProps> = ({
           status: fusionNode.status,
           tags: fusionNode.tags,
           position: fusionNode.position,
-          connections: [],
+          connections: fusionNode.connections,
           version: fusionNode.version,
           metadata: fusionNode.metadata,
+          createdAt: fusionNode.createdAt,
+          updatedAt: fusionNode.updatedAt,
+          semantic_type: fusionNode.semantic_type,
+          user_rating: fusionNode.user_rating,
+          size: fusionNode.size,
         })
 
         if (newNodeId) {

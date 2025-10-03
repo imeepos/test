@@ -42,6 +42,12 @@ export interface StoreEdge {
   metadata: ConnectionMetadata
 }
 
+type AddNodeInput = Omit<AINode, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 export interface NodeState {
   // 节点数据
   nodes: Map<string, AINode>
@@ -62,7 +68,7 @@ export interface NodeState {
   currentProjectId: string | null
 
   // Actions
-  addNode: (node: Omit<AINode, 'id' | 'createdAt' | 'updatedAt'>) => string
+  addNode: (node: AddNodeInput) => string
   updateNode: (id: string, updates: Partial<AINode>) => void
   deleteNode: (id: string) => void
   getNode: (id: string) => AINode | undefined
@@ -147,26 +153,37 @@ export const useNodeStore = create<NodeState>()(
 
         // 节点CRUD操作
         addNode: (nodeData) => {
-          const id = generateId()
           const now = new Date()
+          const id = nodeData.id ?? generateId()
+          const createdAt = nodeData.createdAt ?? now
+          const updatedAt = nodeData.updatedAt ?? createdAt
+          const version = typeof nodeData.version === 'number' && !Number.isNaN(nodeData.version)
+            ? nodeData.version
+            : 1
+
+          const metadataSource = nodeData.metadata ?? {}
+          const metadata: AINode['metadata'] = {
+            ...metadataSource,
+            semantic: Array.isArray(metadataSource.semantic) ? metadataSource.semantic : [],
+            editCount: typeof metadataSource.editCount === 'number' ? metadataSource.editCount : 0,
+          }
+
           const node: AINode = {
             ...nodeData,
             id,
-            version: 1,
-            createdAt: now,
-            updatedAt: now,
-            connections: [],
-            metadata: {
-              semantic: [],
-              editCount: 0,
-            },
+            version,
+            createdAt,
+            updatedAt,
+            connections: nodeData.connections ?? [],
+            tags: nodeData.tags ?? [],
+            metadata,
           }
-          
+
           set((state) => {
             if (!(state.nodes instanceof Map)) {
               state.nodes = new Map()
             }
-            
+
             state.nodes.set(id, node)
             state.history.push({
               id: generateId(),
@@ -175,7 +192,7 @@ export const useNodeStore = create<NodeState>()(
               timestamp: now,
             })
           })
-          
+
           return id
         },
         
@@ -682,18 +699,40 @@ export const useNodeStore = create<NodeState>()(
         duplicateNode: (id) => {
           const node = get().nodes.get(id)
           if (!node) return undefined
-          
-          const duplicatedNode = {
-            ...node,
+
+          const now = new Date()
+          const duplicatedMetadata: AINode['metadata'] = {
+            ...node.metadata,
+            semantic: Array.isArray(node.metadata?.semantic) ? [...node.metadata.semantic] : [],
+            processingHistory: node.metadata?.processingHistory
+              ? [...node.metadata.processingHistory]
+              : [],
+            statistics: node.metadata?.statistics
+              ? { ...node.metadata.statistics }
+              : undefined,
+            editCount: 0,
+          }
+
+          return get().addNode({
+            content: node.content,
+            title: node.title ? `${node.title} (复制)` : undefined,
+            importance: node.importance,
+            confidence: node.confidence,
+            status: node.status,
+            tags: [...node.tags],
             position: {
               x: node.position.x + 50,
               y: node.position.y + 50,
             },
-            title: node.title ? `${node.title} (复制)` : undefined,
-            connections: [], // 不复制连接
-          }
-          
-          return get().addNode(duplicatedNode)
+            size: node.size ? { ...node.size } : undefined,
+            connections: [],
+            version: 1,
+            metadata: duplicatedMetadata,
+            semantic_type: node.semantic_type,
+            user_rating: node.user_rating,
+            createdAt: now,
+            updatedAt: now,
+          })
         },
         
         moveNode: (id, position) => {
